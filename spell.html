@@ -86,6 +86,9 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
 .keys.narrow .key { opacity: .18; }
 .keys.narrow .key.maybe { opacity: 1; border-color: #F59E0B; background: var(--try-bg); }
 .key.no { border-color: #F87171; background: #3A1717; }
+.key.tried { border-color: #F87171; background: #3A1717; color: #FCA5A5; position: relative; }
+.key.tried::after { content: "✕"; position: absolute; top: 3px; right: 7px; font: 700 14px Fredoka, sans-serif; color: #F87171; }
+.keys.narrow .key.tried { opacity: .6; border-color: #F87171; background: #3A1717; }
 .tools { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .btn.help { background: var(--try-bg); border-color: var(--try); color: var(--try); }
 .btn.help.locked { background: var(--surface-2); border-color: var(--line); border-style: dashed; color: var(--muted); }
@@ -162,7 +165,7 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
       <ol>
         <li>He hears the word, normal and slow, and can tap each part to hear just that part.</li>
         <li>The part he’s working on lights up, so he knows which sound to listen for.</li>
-        <li>He taps a letter. Right letters stay in the box. A wrong letter wiggles and doesn’t stay, so there’s nothing to erase.</li>
+        <li>He taps a letter. Right letters stay in the box. A wrong letter wiggles, doesn’t stay, and its button turns red with an ✕ so he doesn’t pick it again. The red clears when he gets that letter.</li>
         <li><b>Help me is locked until he tries.</b> It unlocks after the number of tries you pick (2 to start). Dots on the button show how many tries are left. If he taps it early, it tells him to try his best first and replays the sound.</li>
         <li>Tries only count if they’re real: after a wrong letter the keys pause for a second, taps that come too fast don’t count, and tapping a letter he already tried doesn’t count.</li>
         <li>Help goes one step at a time, with a new try needed between each: first it plays just that part slowly, then it narrows the letters down to 3 choices, then it shows a faint letter to copy. He still taps it himself.</li>
@@ -380,7 +383,7 @@ function firstPrompt() { return 'What letter does it start with?'; }
 
 /* ============ Child's screen ============ */
 function skipFixed() { while (pos < plan.letters.length && plan.letters[pos].fixed) pos++; }
-function resetLetterHelp() { tries = 0; level = 0; triesAtHelp = 0; triedSet = new Set(); updateHelpBtn(); $('keys').classList.remove('narrow'); document.querySelectorAll('.key.maybe').forEach(k => k.classList.remove('maybe')); }
+function resetLetterHelp() { tries = 0; level = 0; triesAtHelp = 0; triedSet = new Set(); updateHelpBtn(); document.querySelectorAll('.key.tried').forEach(k => k.classList.remove('tried')); $('keys').classList.remove('narrow'); document.querySelectorAll('.key.maybe').forEach(k => k.classList.remove('maybe')); }
 function setMsg(t, kind) { const m = $('msg'); m.textContent = t; m.className = 'message' + (kind ? ' ' + kind : ''); }
 
 function buildKeys() {
@@ -444,6 +447,7 @@ function press(ch, keyEl) {
     if (triedSet.has(ch)) { setMsg('You tried that one already. Listen, and try a different letter.', 'try'); say(partSay(plan.parts[plan.letters[pos].partIdx]), 0.55); return; }
     if (now - lastTry < COOL_MS + 400) { setMsg('Slow down. Listen first, then pick.', 'try'); return; }
     lastTry = now; tries++; stats.tries++; triedSet.add(ch);
+    const tk = document.querySelector(`.key[data-k="${ch}"]`); if (tk) tk.classList.add('tried');   // stays red until he gets this letter
     $('keys').classList.add('cool'); setTimeout(() => $('keys').classList.remove('cool'), COOL_MS);
     const unlockedNow = canHelp() && (level === 0 ? tries === settings.need : tries === triesAtHelp + 1);
     setMsg(unlockedNow && level < 3 ? 'Good try! Listen again. You can use Help me now if you need it.' : 'Close! Listen again and try another one.', 'try');
@@ -483,7 +487,9 @@ function help() {
     say(partSay(P), 0.5);
   } else if (level === 2) {
     const want = L.ch.toLowerCase();
-    const opts = [want, ...(CONFUSE[want] || 'ae').split('')].slice(0, 3);
+    // 3 bright choices: the answer plus 2 look-alike/sound-alike letters he hasn't already tried
+    const pool = [...(CONFUSE[want] || ''), ...'aeioubdpmntsrlfvgkcwyzhjxq'].filter(c => c !== want && !triedSet.has(c));
+    const opts = [want, ...[...new Set(pool)].slice(0, 2)];
     document.querySelectorAll('.key').forEach(k => k.classList.toggle('maybe', opts.includes(k.dataset.k)));
     $('keys').classList.add('narrow');
     setMsg('It’s one of the bright letters. Which one?', 'part');
