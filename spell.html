@@ -156,7 +156,8 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .kidhome p { margin: 0; font-size: 22px; color: var(--muted); line-height: 1.4; }
 .kidhome .btn.big { font-size: 30px; padding: 22px 40px; min-height: 84px; border-radius: 24px; }
 .kidhome .done-today { color: var(--good); font: 600 22px Fredoka, sans-serif; }
-.kidhome .grownup { order: 20; }
+.kidhome .grownup, .kidhome .kid-hold { order: 20; }
+.kid-hold { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
 body.authwait main, body.authwait .app-header .review-btn, body.authwait .app-header .back { visibility: hidden; }
 body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-header .back { display: none; }
 .gate-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; width: 100%; max-width: 520px; }
@@ -431,7 +432,7 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
   <div class="kid-sheets" id="kidSheets" hidden></div>
   <div id="kidMicSlot" style="max-width:520px;margin:0 auto 14px;text-align:left"></div>
   <button class="btn big primary" id="kidStart">Start today’s words</button>
-  <button class="grownup" id="kidGrown">Grown-up: hold for the grown-up screen</button>
+  <div class="kid-hold"><button class="grownup" id="kidGrown">Grown-up: hold for the grown-up screen</button><button class="grownup" id="kidSwitch">Switch user (hold)</button></div>
 </main>
 
 <!-- Grown-up: Parent Review (recordings + results, by day) -->
@@ -911,7 +912,7 @@ renderWin();
 function holdToOpen(btn, ms, target = 'setup') {
   let t = null;
   const cancel = () => { clearTimeout(t); t = null; btn.classList.remove('holding'); };
-  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.classList.add('holding'); t = setTimeout(() => { cancel(); if (target === 'grown') { grownMode = true; show('setup'); } else show(target); }, ms); });
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.classList.add('holding'); t = setTimeout(() => { cancel(); if (target === 'grown') { grownMode = true; show('setup'); } else if (target === 'signout') $('acctOutBtn').click(); else show(target); }, ms); });
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, cancel));
   btn.addEventListener('contextmenu', e => e.preventDefault());
 }
@@ -929,7 +930,7 @@ function placeMicTest(id) {   // his start screen gets the same mic test (sensit
   if ($('micTestPanel').previousElementSibling !== target && $('micTestPanel').parentNode !== target) { if (testing) stopMicTest(); onKid ? target.appendChild($('micTestPanel')) : target.after($('micTestPanel')); }
   $('micTestPanel').hidden = id === 'kidhome' && !onKid;
 }
-function show(id) { if (cloud.sb && !cloud.user && id !== 'gate') id = 'gate'; if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome', 'gate'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('gated', id === 'gate'); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
+function show(id) { if (cloud.sb && !cloud.user && id !== 'gate') id = 'gate'; if (id === 'gate') { $('gatePick').hidden = false; $('gateForm').hidden = true; $('gateErr').textContent = ''; } if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome', 'gate'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('gated', id === 'gate'); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
 
 function start() {
   stopRecord();
@@ -1733,16 +1734,29 @@ async function renderReview() {
         <div class="ln">${wordList(x.test)}</div><div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div></div>`;
     }).join('') + '</div>').join('');
 }
-$('reviewList').addEventListener('click', e => {
+$('reviewList').addEventListener('click', async e => {
   const c = e.target.closest('[data-clip]'); if (c) return playLogClip(c.dataset.clip);
   const d = e.target.closest('[data-delsess]');
-  if (d) { const log = lookLog(); const sess = log.find(x => String(x.session) === d.dataset.delsess); if (sess) { sess.clips = []; saveLookLog(log); } renderReview(); renderClips(); }
+  if (!d) return;
+  // Delete on this device AND in the shared database, or Parent Review pulls them right back
+  d.disabled = true; d.textContent = 'Deleting…';
+  const log = lookLog(); const sess = log.find(x => String(x.session) === d.dataset.delsess);
+  if (sess) {
+    const keys = (sess.clips || []).map(x => x.key).filter(Boolean);
+    sess.clips = []; saveLookLog(log);
+    if (cloudMember()) {
+      await cloudPutLook(sess);   // the session's list of recordings is now empty
+      for (const k of keys) await cloudRun('unaudio', { key: k }, false);   // the recordings themselves (his login can't; they still go after 7 days)
+    }
+  }
+  renderReview(); renderClips();
 });
 holdToOpen($('reviewBtn'), 2000, 'review');
 $('openReview').onclick = () => show('review');
 $('reviewDone').onclick = () => show('setup');
 $('kidStart').onclick = () => { if (testing) stopMicTest(); const d = store('spell-daily') || {}; const words = parseList(d.words || ''); if (!words.length) return renderKidHome(); startDaily(words, d); };
 holdToOpen($('kidGrown'), 2000, 'grown');
+holdToOpen($('kidSwitch'), 2000, 'signout');   // back to the Parent / Child screen
 
 /* ================= Shared across devices: the Recipe Box's Supabase database =================
    Tables (study-setup.sql): study_state (today's words, settings, sounds, history, recent), study_log (checks, Fix-Ups,
