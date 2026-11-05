@@ -19,6 +19,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: Andika,
 a { color: var(--accent); }
 .sheet { --navy: #1E3A5F; --ink: #1F2937; --muted: #475569; --line: #E2E8F0; --accent: #1D4ED8; }
 .app-header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.app-header .speller-link { margin-left: auto; font: 600 16px Fredoka, sans-serif; color: #FFFFFF; background: var(--study); border-radius: 999px; padding: 8px 16px; text-decoration: none; }
+.app-header .speller-link:hover { filter: brightness(1.1); }
 .app-header h1 { margin: 0; font-family: Fredoka, sans-serif; font-weight: 700; font-size: 26px; color: var(--navy); }
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 24px 0; }
 .tabs button { font: 600 16px Fredoka, sans-serif; border: 2px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 8px 16px; cursor: pointer; min-height: 44px; }
@@ -239,6 +241,7 @@ textarea { resize: vertical; min-height: 44px; }
 <body>
 <header class="app-header">
   <h1>First Grade Fun Worksheets</h1>
+  <a class="speller-link" href="spell.html">Spelling Helper: spell any word together →</a>
 </header>
 <nav class="tabs" role="tablist" aria-label="Worksheet makers">
   <button role="tab" data-tool="sight">Sight Word Practice</button>

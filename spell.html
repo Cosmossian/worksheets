@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spelling Helper · The Study</title>
+<meta name="description" content="Help a young speller sound out any word, one letter at a time, without giving the answer away.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='14' width='56' height='40' rx='8' fill='%233C7DD9' stroke='%2317201A' stroke-width='4'/%3E%3Crect x='22' y='30' width='20' height='7' rx='3.5' fill='%2317201A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Same dark look as the worksheets page. The child's screen uses big, friendly targets and only says one thing at a time. */
+:root { color-scheme: dark; --navy: #8DB8F2; --ink: #E5ECF4; --muted: #9AABBF; --line: #2B3A4D; --bg: #0E151D; --accent: #7FB0F0;
+  --study: #3C7DD9; --surface: #16202B; --surface-2: #1C2836; --field: #0F1822; --field-line: #3A4B60;
+  --good: #34D399; --good-bg: #0F2E25; --try: #FBBF24; --try-bg: #33270C; --part: #C4B5FD; --part-bg: #241C3D; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: Andika, system-ui, sans-serif; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+a { color: var(--accent); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid #F59E0B; outline-offset: 3px; }
+[hidden] { display: none !important; }
+
+.app-header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.app-header h1 { margin: 0; font: 700 26px Fredoka, sans-serif; color: var(--navy); }
+.app-header .back { margin-left: auto; font-size: 15px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 18px Fredoka, sans-serif; border: 2px solid var(--line); border-radius: 14px; padding: 10px 18px; min-height: 48px; cursor: pointer; background: var(--surface-2); color: var(--ink); }
+.btn:hover { border-color: var(--field-line); }
+.btn.primary { background: var(--study); border-color: var(--study); color: #fff; }
+.btn.big { font-size: 22px; padding: 14px 24px; min-height: 60px; border-radius: 18px; }
+.btn svg { width: 24px; height: 24px; flex: none; }
+
+/* ---------- Grown-up setup ---------- */
+.setup { max-width: 640px; margin: 0 auto; padding: 28px 20px 60px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
+.card h2 { margin: 0 0 4px; font: 700 24px Fredoka, sans-serif; color: var(--navy); }
+.card p.help { margin: 0 0 16px; color: var(--muted); line-height: 1.45; }
+label.lbl { display: block; font-weight: 700; margin: 14px 0 6px; }
+input[type=text] { font: 22px Andika, sans-serif; width: 100%; border: 2px solid var(--field-line); border-radius: 12px; padding: 10px 14px; background: var(--field); color: var(--ink); }
+small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6px; line-height: 1.4; }
+.parts-edit { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.pe { display: flex; flex-direction: column; gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.pe-top { display: flex; align-items: center; gap: 8px; }
+.pe-top b { font-size: 22px; letter-spacing: 1px; }
+.pe-top button { border: 0; background: var(--field); border-radius: 8px; width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer; }
+.pe-top button svg { width: 20px; height: 20px; }
+.pe input { font-size: 15px; padding: 5px 8px; width: 130px; border-radius: 8px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.recent { margin-top: 18px; }
+.recent b { display: block; font-size: 15px; color: var(--muted); margin-bottom: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: 16px; }
+.how { margin-top: 18px; }
+.how summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+.how ol { margin: 10px 0 0; padding-left: 22px; line-height: 1.5; color: var(--ink); }
+.voice-warn { margin-top: 14px; background: var(--try-bg); border: 1px solid var(--try); color: var(--try); border-radius: 12px; padding: 10px 14px; font-size: 15px; }
+
+/* ---------- Child's screen ---------- */
+.play { max-width: 980px; margin: 0 auto; padding: 16px 16px 32px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.hear { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.message { min-height: 56px; text-align: center; font: 600 26px Fredoka, sans-serif; color: var(--ink); display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 10px; }
+.message.good { color: var(--good); } .message.try { color: var(--try); } .message.part { color: var(--part); }
+
+.word { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 22px 30px; }
+.wgroup { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.part { display: flex; flex-direction: column; align-items: center; gap: 8px; border-radius: 18px; padding: 8px 8px 6px; border: 3px solid transparent; transition: background .2s, border-color .2s; }
+.part.now { background: var(--part-bg); border-color: var(--part); }
+.part .boxes { display: flex; gap: 6px; }
+.part .ear { border: 2px solid var(--line); background: var(--surface-2); border-radius: 999px; height: 40px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font: 600 16px Fredoka, sans-serif; color: var(--part); }
+.part .ear svg { width: 20px; height: 20px; }
+.lbox { width: 66px; height: 82px; border-radius: 14px; border: 3px dashed var(--field-line); background: var(--field); display: grid; place-items: center; font: 700 52px Andika, sans-serif; position: relative; }
+.lbox.done { border-style: solid; border-color: var(--good); background: var(--good-bg); color: #fff; }
+.lbox.done.helped { border-color: var(--try); background: var(--try-bg); }
+.lbox.cur { border-style: solid; border-color: #F59E0B; animation: pulse 1.4s ease-in-out infinite; }
+.lbox .ghost { color: rgba(229, 236, 244, .28); }
+.lbox.quiet::after { content: "shh"; position: absolute; bottom: -22px; font: 600 13px Fredoka, sans-serif; color: var(--muted); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(245, 158, 11, .25); } }
+.shake { animation: shake .4s; }
+@keyframes shake { 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } }
+
+.keys { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; width: 100%; max-width: 760px; margin-top: 6px; }
+.key { height: clamp(50px, 9.5vh, 78px); min-height: 50px; border: 2px solid var(--line); background: var(--surface-2); border-radius: 14px; font: 700 34px Andika, sans-serif; cursor: pointer; display: grid; place-items: center; transition: opacity .2s, transform .1s; touch-action: manipulation; }
+.key:active { transform: scale(.94); }
+.keys.narrow .key { opacity: .18; }
+.keys.narrow .key.maybe { opacity: 1; border-color: #F59E0B; background: var(--try-bg); }
+.key.no { border-color: #F87171; background: #3A1717; }
+.tools { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.btn.help { background: var(--try-bg); border-color: var(--try); color: var(--try); }
+.btn.help.locked { background: var(--surface-2); border-color: var(--line); border-style: dashed; color: var(--muted); }
+.btn.help .left { display: inline-flex; gap: 4px; margin-left: 2px; }
+.btn.help .left i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; }
+.btn.help .left i.used { background: currentColor; }
+.btn.help.ready { animation: glow 1.6s ease-in-out 3; }
+@keyframes glow { 50% { box-shadow: 0 0 0 8px rgba(251, 191, 36, .28); } }
+.keys.cool .key { pointer-events: none; opacity: .55; }
+.seg { display: inline-flex; border: 2px solid var(--field-line); border-radius: 12px; overflow: hidden; }
+.seg button { border: 0; background: var(--field); padding: 8px 16px; font: 600 17px Fredoka, sans-serif; cursor: pointer; min-width: 52px; }
+.seg button[aria-pressed="true"] { background: var(--study); color: #fff; }
+.grownup { position: relative; padding: 6px 4px; }
+.grownup::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--try); border-radius: 2px; }
+.grownup.holding { color: var(--try); }
+.grownup.holding::after { width: 100%; transition: width 2s linear; }
+.summary { font-size: 15px !important; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+.grownup { font-size: 14px; color: var(--muted); background: none; border: 0; text-decoration: underline; cursor: pointer; margin-top: 8px; }
+
+/* ---------- Finished ---------- */
+.done-wrap { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; padding-top: 10px; }
+.done-wrap h2 { margin: 0; font: 700 34px Fredoka, sans-serif; color: var(--good); }
+.big-word { font: 700 clamp(48px, 11vw, 96px) Andika, sans-serif; letter-spacing: 4px; background: #fff; color: #1F2937; border-radius: 22px; padding: 10px 34px; }
+.stars { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.stars svg { width: 42px; height: 42px; }
+.done-wrap p { margin: 0; font-size: 20px; color: var(--muted); max-width: 34ch; line-height: 1.4; }
+.confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.confetti i { position: absolute; top: -20px; width: 12px; height: 16px; border-radius: 3px; animation: fall 2.6s linear forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(540deg); } }
+
+@media (max-width: 640px) {
+  .lbox { width: 42px; height: 56px; font-size: 34px; border-radius: 10px; }
+  .word { gap: 14px 16px; }
+  .wgroup { gap: 6px; } .part .boxes { gap: 4px; } .part { padding: 6px 4px; }
+  .keys { gap: 6px; } .key { font-size: 26px; min-height: 46px; border-radius: 11px; }
+  .message { font-size: 20px; }
+  .btn.big { font-size: 18px; padding: 10px 14px; min-height: 52px; }
+  .hear { gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <h1>Spelling Helper</h1>
+  <a class="back" href="./">← Worksheets</a>
+</header>
+
+<!-- Grown-up: type the word -->
+<main class="setup" id="setup">
+  <div class="card">
+    <h2>What word does he want to spell?</h2>
+    <p class="help">Type it here, then hand him the screen. He spells it one letter at a time, and the helper says the word and its parts out loud, as slowly and as often as he needs. It never fills in a letter for him.</p>
+    <label class="lbl" for="wordIn">Word</label>
+    <input type="text" id="wordIn" placeholder="vitamin D" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div id="partsArea" hidden>
+      <label class="lbl">Sound parts</label>
+      <small class="note" style="margin-top:0">Tap a speaker to hear a part. If a part is split oddly, type the word with dashes (like <b>vi-ta-min</b>). If a part sounds wrong, type how it should sound (like “vy” or “tuh”).</small>
+      <div class="parts-edit" id="partsEdit"></div>
+    </div>
+    <label class="lbl">Help me unlocks after</label>
+    <div class="seg" id="needSeg" role="group" aria-label="Tries before Help me works">
+      <button data-need="1">1 try</button><button data-need="2">2 tries</button><button data-need="3">3 tries</button>
+    </div>
+    <small class="note">That many real tries on a letter before Help me works. Each help step after that needs one more try first. Fast tapping and repeating the same letter don't count.</small>
+    <div class="row">
+      <button class="btn primary big" id="startBtn" disabled>Start</button>
+      <button class="btn" id="testWord" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>Hear the word</button>
+    </div>
+    <div class="recent" id="recent" hidden><b>Words he asked for before</b><div class="chips" id="chips"></div></div>
+    <div class="voice-warn" id="voiceWarn" hidden>This browser can’t talk, so the “hear it” buttons won’t make sound. It still works if you say the word and the parts out loud for him.</div>
+    <details class="how">
+      <summary>How the help works</summary>
+      <ol>
+        <li>He hears the word, normal and slow, and can tap each part to hear just that part.</li>
+        <li>The part he’s working on lights up, so he knows which sound to listen for.</li>
+        <li>He taps a letter. Right letters stay in the box. A wrong letter wiggles and doesn’t stay, so there’s nothing to erase.</li>
+        <li><b>Help me is locked until he tries.</b> It unlocks after the number of tries you pick (2 to start). Dots on the button show how many tries are left. If he taps it early, it tells him to try his best first and replays the sound.</li>
+        <li>Tries only count if they’re real: after a wrong letter the keys pause for a second, taps that come too fast don’t count, and tapping a letter he already tried doesn’t count.</li>
+        <li>Help goes one step at a time, with a new try needed between each: first it plays just that part slowly, then it narrows the letters down to 3 choices, then it shows a faint letter to copy. He still taps it himself.</li>
+        <li>The “change word” button has to be held down for 2 seconds, so he can’t pop back here and read the word.</li>
+        <li>At the end you’ll see a small summary of how many tries and helps he used.</li>
+        <li>Quiet letters (like the e in “like”) are flagged, because he can’t hear them.</li>
+        <li>At the end he sees the whole word big, to copy onto his paper.</li>
+      </ol>
+    </details>
+  </div>
+</main>
+
+<!-- Child: spell it -->
+<main class="play" id="play" hidden>
+  <div class="hear">
+    <button class="btn big primary" id="hearWord"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>Hear the word</button>
+    <button class="btn big" id="hearSlow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>Say it slow</button>
+    <button class="btn big help" id="helpBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1.3 1.7 1.5 2.5h5c.2-.8.7-1.7 1.5-2.5A6 6 0 0 0 12 3z"/></svg><span class="lab">Help me</span><span class="left"></span></button>
+  </div>
+  <div class="message" id="msg" aria-live="polite"></div>
+  <div class="word" id="word"></div>
+  <div class="keys" id="keys" role="group" aria-label="Letters"></div>
+  <button class="grownup" id="toSetup">Grown-up: hold to change the word</button>
+</main>
+
+<!-- Finished -->
+<main class="play" id="done" hidden>
+  <div class="done-wrap">
+    <h2>You spelled it!</h2>
+    <div class="big-word" id="bigWord"></div>
+    <div class="stars" id="stars"></div>
+    <p>Now write it on your paper. Look at each letter as you go.</p>
+    <p class="summary" id="summary"></p>
+    <div class="row" style="justify-content:center">
+      <button class="btn big primary" id="hearDone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>Hear it</button>
+      <button class="btn big" id="again">Spell it again</button>
+      <button class="btn big" id="newWord">New word</button>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ============ Talking ============ */
+const canTalk = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+let voice = null;
+function pickVoice() {
+  if (!canTalk) return;
+  const vs = speechSynthesis.getVoices().filter(v => /^en(-|_|$)/i.test(v.lang));
+  const prefer = [/samantha/i, /google us english/i, /aria/i, /jenny/i, /allison/i, /ava/i, /zira/i, /en-us/i];
+  voice = null;
+  for (const re of prefer) { voice = vs.find(v => re.test(v.name) || re.test(v.lang)); if (voice) break; }
+  voice = voice || vs[0] || null;
+}
+if (canTalk) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function say(text, rate = 0.9) {
+  if (!canTalk || !text) return Promise.resolve();
+  speechSynthesis.cancel();
+  return new Promise(res => {
+    const u = new SpeechSynthesisUtterance(text);
+    if (voice) u.voice = voice;
+    u.lang = (voice && voice.lang) || 'en-US'; u.rate = rate; u.pitch = 1.05;
+    u.onend = u.onerror = () => res();
+    speechSynthesis.speak(u);
+    setTimeout(res, 6000);
+  });
+}
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const letterName = ch => ({ a: 'ay', e: 'ee', i: 'eye', o: 'oh', u: 'you', y: 'why', z: 'zee' }[ch] || ch.toUpperCase());
+
+/* ============ Splitting a word into sound parts ============ */
+const DIGRAPHS = ['tch', 'ch', 'sh', 'th', 'wh', 'ph', 'ck', 'ng', 'gh', 'qu', 'kn', 'wr'];
+const ONSETS = new Set('ch sh th wh ph qu kn wr bl br cl cr dr fl fr gl gr pl pr sc sk sl sm sn sp st sw tr tw scr spl spr str thr shr squ'.split(' '));
+const isV = (w, i) => 'aeiou'.includes(w[i]) || (w[i] === 'y' && i > 0 && !'aeiou'.includes(w[i - 1]));
+/* Simple first-grade syllable rules. The grown-up can override with dashes. */
+function syllables(word) {
+  const w = word.toLowerCase();
+  if (w.length <= 3) return [word];
+  let end = w.length;
+  if (/[^aeiou]le$/.test(w) && w.length > 4) end = w.length - 3;        // lit-tle, ta-ble
+  const groups = [];                                                      // [start, end) of each vowel group
+  for (let i = 0; i < end; i++) if (isV(w, i)) { let j = i; while (j + 1 < end && isV(w, j + 1)) j++; groups.push([i, j + 1]); i = j; }
+  if (groups.length > 1) { const [s, e] = groups[groups.length - 1]; if (e === w.length && w[s] === 'e' && e - s === 1) groups.pop(); } // quiet e
+  if (groups.length > 1 && /[^aeiou]ed$/.test(w) && !/[td]ed$|[^aeiou][rl]ed$/.test(w) && w.slice(groups[groups.length - 1][0]) === 'ed') groups.pop(); // jumped
+  const cuts = [];
+  for (let g = 0; g < groups.length - 1; g++) {
+    const a = groups[g][1], b = groups[g + 1][0], cl = w.slice(a, b);
+    if (cl.length === 0) cuts.push(a);
+    else if (cl.length === 1) cuts.push(cl === 'x' ? b : a);
+    else if (cl === 'ck') cuts.push(b);                                       // chick-en, rock-et
+    else if (cl === 'tch') cuts.push(a + 1);                                  // kit-chen
+    else if (DIGRAPHS.includes(cl)) cuts.push(a);
+    else if (cl.length === 2 || DIGRAPHS.some(x => cl.startsWith(x) && x.length === cl.length - 1)) {
+      const d = DIGRAPHS.find(x => cl.startsWith(x)); cuts.push(a + (d && d.length < cl.length ? d.length : 1));   // hap-py, dol-phin
+    } else {
+      let k = 1; while (k < cl.length - 1 && !ONSETS.has(cl.slice(k))) k++;   // lunch-box, sand-wich, mon-ster
+      cuts.push(a + k);
+    }
+  }
+  if (end < w.length) cuts.push(end);
+  const out = []; let p = 0;
+  for (const c of cuts) { if (c > p && c < w.length) { out.push(word.slice(p, c)); p = c; } }
+  out.push(word.slice(p));
+  return out.filter(Boolean);
+}
+/* Quiet letters: you can't hear them, so the helper says so. */
+function quietSet(word) {
+  const w = word.toLowerCase(), q = new Set();
+  if (w.length > 2 && /[^aeiou]e$/.test(w) && /[aeiouy]/.test(w.slice(0, -2))) q.add(w.length - 1);
+  if (/^kn/.test(w)) q.add(0);
+  if (/^wr/.test(w)) q.add(0);
+  for (let i = w.indexOf('gh'); i >= 0; i = w.indexOf('gh', i + 1)) if (i > 0 && w[i - 1] === 'i') { q.add(i); q.add(i + 1); }
+  if (/mb$/.test(w)) q.add(w.length - 1);
+  return q;
+}
+
+/* Letters that are easy to mix up, by sound or by shape. */
+const CONFUSE = { a: 'eu', b: 'dp', c: 'ks', d: 'bt', e: 'ia', f: 'vp', g: 'jk', h: 'ny', i: 'ey', j: 'gy', k: 'cg', l: 'rw', m: 'nw', n: 'mu', o: 'ua', p: 'bq', q: 'kp', r: 'wl', s: 'cz', t: 'dk', u: 'oa', v: 'fb', w: 'ru', x: 'kz', y: 'ie', z: 'sx' };
+
+/* ============ State ============ */
+const $ = id => document.getElementById(id);
+let plan = null;        // { text, parts: [{ text, say, start, end, word }], letters: [{ ch, partIdx, quiet, fixed }] }
+let pos = 0, tries = 0, level = 0, helpedAt = new Set();
+let triedSet = new Set(), lastTry = 0, triesAtHelp = 0, stats = { tries: 0, helps: 0, letters: 0 };
+let settings = Object.assign({ need: 2 }, store('spell-settings') || {});
+const COOL_MS = 1000;   // keys pause after a wrong letter, so he has to stop and listen
+
+function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+let sounds = store('spell-sounds') || {};   // part text (lowercase) -> "say it like"
+
+function buildPlan(input) {
+  const text = input.trim().replace(/\s+/g, ' ');
+  const parts = [], letters = [];
+  let idx = 0;
+  text.split(' ').forEach((wd, wi) => {
+    const pieces = wd.includes('-') ? wd.split('-').filter(Boolean) : syllables(wd);
+    const clean = pieces.join('');
+    const quiet = quietSet(clean.replace(/[^A-Za-z]/g, ''));
+    let wpos = 0;
+    pieces.forEach(pc => {
+      const pIdx = parts.length;
+      parts.push({ text: pc, say: sounds[pc.toLowerCase()] || '', word: wi });
+      [...pc].forEach(ch => {
+        const isLetter = /[a-z]/i.test(ch);
+        letters.push({ ch, partIdx: pIdx, quiet: isLetter && quiet.has(wpos), fixed: !isLetter });
+        wpos++; idx++;
+      });
+    });
+  });
+  return { text: text.replace(/-/g, ''), parts, letters };
+}
+const partSay = p => p.say || (p.text.length === 1 ? letterName(p.text.toLowerCase()) : p.text.toLowerCase());
+
+/* ============ Grown-up setup ============ */
+function renderSetup() {
+  const v = $('wordIn').value;
+  const ok = /[a-z]/i.test(v);
+  $('startBtn').disabled = !ok; $('testWord').disabled = !ok;
+  $('partsArea').hidden = !ok;
+  if (!ok) return;
+  const pl = buildPlan(v);
+  $('partsEdit').innerHTML = pl.parts.map((p, i) => `<div class="pe"><div class="pe-top"><b>${esc(p.text)}</b><button data-hear="${i}" aria-label="Hear ${esc(p.text)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg></button></div><input type="text" data-say="${esc(p.text.toLowerCase())}" value="${esc(p.say)}" placeholder="sounds like…" aria-label="How ${esc(p.text)} should sound"></div>`).join('');
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function renderRecent() {
+  const r = store('spell-recent') || [];
+  $('recent').hidden = !r.length;
+  $('chips').innerHTML = r.map(w => `<button class="chip" data-w="${esc(w)}">${esc(w.replace(/-/g, ''))}</button>`).join('');
+}
+$('wordIn').addEventListener('input', renderSetup);
+$('wordIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !$('startBtn').disabled) start(); });
+$('partsEdit').addEventListener('click', e => {
+  const b = e.target.closest('[data-hear]'); if (!b) return;
+  const pl = buildPlan($('wordIn').value); say(partSay(pl.parts[+b.dataset.hear]), 0.6);
+});
+$('partsEdit').addEventListener('input', e => {
+  const el = e.target; if (!el.dataset.say) return;
+  if (el.value.trim()) sounds[el.dataset.say] = el.value.trim(); else delete sounds[el.dataset.say];
+  store('spell-sounds', sounds);
+});
+$('testWord').onclick = () => say(buildPlan($('wordIn').value).text);
+$('chips').addEventListener('click', e => { const c = e.target.closest('[data-w]'); if (c) { $('wordIn').value = c.dataset.w; renderSetup(); } });
+$('startBtn').onclick = start;
+function renderNeed() { document.querySelectorAll('#needSeg [data-need]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.need === settings.need)); }
+$('needSeg').addEventListener('click', e => { const b = e.target.closest('[data-need]'); if (!b) return; settings.need = +b.dataset.need; store('spell-settings', settings); renderNeed(); });
+renderNeed();
+(function holdToOpen(btn, ms) {
+  let t = null;
+  const cancel = () => { clearTimeout(t); t = null; btn.classList.remove('holding'); };
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.classList.add('holding'); t = setTimeout(() => { cancel(); show('setup'); }, ms); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, cancel));
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+})($('toSetup'), 2000);
+$('newWord').onclick = () => { $('wordIn').value = ''; renderSetup(); show('setup'); $('wordIn').focus(); };
+$('again').onclick = () => begin();
+if (!canTalk) $('voiceWarn').hidden = false;
+
+function show(id) { ['setup', 'play', 'done'].forEach(x => $(x).hidden = x !== id); if (canTalk) speechSynthesis.cancel(); }
+
+function start() {
+  const raw = $('wordIn').value.trim(); if (!/[a-z]/i.test(raw)) return;
+  const r = (store('spell-recent') || []).filter(w => w.toLowerCase() !== raw.toLowerCase());
+  r.unshift(raw); store('spell-recent', r.slice(0, 12)); renderRecent();
+  begin();
+}
+function begin() {
+  document.querySelectorAll('.confetti').forEach(c => c.remove());
+  plan = buildPlan($('wordIn').value);
+  pos = 0; helpedAt = new Set(); stats = { tries: 0, helps: 0, letters: 0 }; skipFixed();
+  resetLetterHelp();
+  buildKeys(); renderWord(); show('play');
+  setMsg('Listen to the word.', '');
+  say(plan.text).then(() => { if (!$('play').hidden) setMsg(firstPrompt(), ''); });
+}
+function firstPrompt() { return 'What letter does it start with?'; }
+
+/* ============ Child's screen ============ */
+function skipFixed() { while (pos < plan.letters.length && plan.letters[pos].fixed) pos++; }
+function resetLetterHelp() { tries = 0; level = 0; triesAtHelp = 0; triedSet = new Set(); updateHelpBtn(); $('keys').classList.remove('narrow'); document.querySelectorAll('.key.maybe').forEach(k => k.classList.remove('maybe')); }
+function setMsg(t, kind) { const m = $('msg'); m.textContent = t; m.className = 'message' + (kind ? ' ' + kind : ''); }
+
+function buildKeys() {
+  $('keys').innerHTML = 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<button class="key" data-k="${ch}" aria-label="${ch.toUpperCase()}">${ch}</button>`).join('');
+}
+function renderWord() {
+  const cur = plan.letters[pos];
+  const byWord = [];
+  plan.parts.forEach((p, i) => { (byWord[p.word] = byWord[p.word] || []).push(i); });
+  $('word').innerHTML = byWord.map(pis => `<div class="wgroup">${pis.map(pi => {
+    const p = plan.parts[pi];
+    const boxes = plan.letters.map((l, li) => ({ l, li })).filter(x => x.l.partIdx === pi).map(({ l, li }) => {
+      if (l.fixed) return `<span class="lbox done" style="width:24px;border:0;background:none">${esc(l.ch)}</span>`;
+      const doneCls = li < pos ? ' done' + (helpedAt.has(li) ? ' helped' : '') : '';
+      const curCls = li === pos ? ' cur' : '';
+      const quietCls = l.quiet && li <= pos ? ' quiet' : '';
+      const inner = li < pos ? esc(l.ch) : (li === pos && level >= 3 ? `<span class="ghost">${esc(l.ch)}</span>` : '');
+      return `<span class="lbox${doneCls}${curCls}${quietCls}">${inner}</span>`;
+    }).join('');
+    const now = cur && cur.partIdx === pi;
+    return `<div class="part${now ? ' now' : ''}"><div class="boxes">${boxes}</div><button class="ear" data-part="${pi}" aria-label="Hear this part"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>hear</button></div>`;
+  }).join('')}</div>`).join('');
+}
+
+$('word').addEventListener('click', e => { const b = e.target.closest('[data-part]'); if (b) say(partSay(plan.parts[+b.dataset.part]), 0.55); });
+$('hearWord').onclick = () => say(plan.text, 0.9);
+$('hearSlow').onclick = async () => {
+  for (const [i, p] of plan.parts.entries()) {
+    highlightPart(i); await say(partSay(p), 0.55); await wait(350);
+  }
+  highlightPart(null); renderWord();
+};
+function highlightPart(i) { document.querySelectorAll('.part').forEach((el, k) => el.classList.toggle('now', k === i)); }
+
+$('keys').addEventListener('click', e => { const k = e.target.closest('[data-k]'); if (k) press(k.dataset.k, k); });
+document.addEventListener('keydown', e => {
+  if ($('play').hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (/^[a-z]$/i.test(e.key)) { const k = document.querySelector(`.key[data-k="${e.key.toLowerCase()}"]`); press(e.key.toLowerCase(), k); }
+});
+
+function press(ch, keyEl) {
+  if (pos >= plan.letters.length) return;
+  const want = plan.letters[pos].ch.toLowerCase();
+  if (ch === want) {
+    if (level > 0 || tries > 0) helpedAt.add(pos);
+    stats.tries++; stats.letters++;
+    const wasQuiet = plan.letters[pos].quiet;
+    pos++; skipFixed(); resetLetterHelp(); renderWord();
+    if (pos >= plan.letters.length) return finish();
+    const nextPart = plan.letters[pos].partIdx !== plan.letters[pos - 1 >= 0 ? pos - 1 : 0].partIdx;
+    const cheers = ['Yes!', 'You got it!', 'Great listening!', 'Nice!', 'That’s right!'];
+    let m = cheers[Math.floor(Math.random() * cheers.length)];
+    if (wasQuiet) m = 'Yes! That one is quiet. You can’t hear it.';
+    setMsg(m + (nextPart ? ' Listen to the next part.' : ' What comes next?'), 'good');
+    const np = plan.letters[pos].partIdx, atPos = pos;
+    say(letterName(ch), 1).then(async () => { if (nextPart && !$('play').hidden && pos === atPos) { await wait(200); say(partSay(plan.parts[np]), 0.55); } });
+  } else {
+    if (keyEl) { keyEl.classList.add('no', 'shake'); setTimeout(() => keyEl.classList.remove('no', 'shake'), 500); }
+    const box = document.querySelector('.lbox.cur'); if (box) { box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake'); }
+    const now = Date.now();
+    if (triedSet.has(ch)) { setMsg('You tried that one already. Listen, and try a different letter.', 'try'); say(partSay(plan.parts[plan.letters[pos].partIdx]), 0.55); return; }
+    if (now - lastTry < COOL_MS + 400) { setMsg('Slow down. Listen first, then pick.', 'try'); return; }
+    lastTry = now; tries++; stats.tries++; triedSet.add(ch);
+    $('keys').classList.add('cool'); setTimeout(() => $('keys').classList.remove('cool'), COOL_MS);
+    const unlockedNow = canHelp() && (level === 0 ? tries === settings.need : tries === triesAtHelp + 1);
+    setMsg(unlockedNow && level < 3 ? 'Good try! Listen again. You can use Help me now if you need it.' : 'Close! Listen again and try another one.', 'try');
+    updateHelpBtn(unlockedNow);
+    say(partSay(plan.parts[plan.letters[pos].partIdx]), 0.55);
+  }
+}
+
+$('helpBtn').onclick = () => help();
+function canHelp() { return level === 0 ? tries >= settings.need : (level < 3 && tries > triesAtHelp); }
+function updateHelpBtn(flash) {
+  const b = $('helpBtn'); if (!b || !plan) return;
+  const ok = canHelp(), left = level === 0 ? Math.max(0, settings.need - tries) : (tries > triesAtHelp ? 0 : 1);
+  b.classList.toggle('locked', !ok);
+  b.classList.toggle('ready', !!flash && ok);
+  const dots = level === 0 ? settings.need : 1, used = dots - left;
+  b.querySelector('.lab').textContent = level >= 3 ? 'Help me' : ok ? 'Help me' : 'Try first';
+  b.querySelector('.left').innerHTML = ok || level >= 3 ? '' : Array.from({ length: dots }, (_, i) => `<i class="${i < used ? 'used' : ''}"></i>`).join('');
+  b.setAttribute('aria-label', ok ? 'Help me' : `Help me is locked. Try ${left} more time${left > 1 ? 's' : ''} first`);
+}
+function help() {
+  if (pos >= plan.letters.length) return;
+  const L = plan.letters[pos], P = plan.parts[L.partIdx];
+  if (level >= 3) { setMsg('Look closely at the box. Find that letter and tap it!', 'part'); return; }
+  if (!canHelp()) {
+    const left = level === 0 ? settings.need - tries : 1;
+    setMsg(level === 0 ? `Try your best first! Listen, then pick a letter. (${left} more ${left > 1 ? 'tries' : 'try'})` : 'Try one more letter first, then you can get more help.', 'try');
+    const b = $('helpBtn'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+    highlightPart(L.partIdx); say(partSay(P), 0.55);
+    return;
+  }
+  level = Math.min(level + 1, 3); triesAtHelp = tries; stats.helps++; updateHelpBtn();
+  highlightPart(L.partIdx);
+  if (level === 1) {
+    if (L.quiet) { setMsg('This letter is quiet. You can’t hear it! Tap Help me again for a hint.', 'part'); return; }
+    setMsg('Listen to just this part. What sound do you hear next?', 'part');
+    say(partSay(P), 0.5);
+  } else if (level === 2) {
+    const want = L.ch.toLowerCase();
+    const opts = [want, ...(CONFUSE[want] || 'ae').split('')].slice(0, 3);
+    document.querySelectorAll('.key').forEach(k => k.classList.toggle('maybe', opts.includes(k.dataset.k)));
+    $('keys').classList.add('narrow');
+    setMsg('It’s one of the bright letters. Which one?', 'part');
+    say(partSay(P), 0.5);
+  } else {
+    renderWord();
+    setMsg('Look closely at the box. Find that letter and tap it!', 'part');
+  }
+}
+
+function finish() {
+  show('done');
+  $('bigWord').textContent = plan.text;
+  const n = plan.letters.filter(l => !l.fixed).length;
+  const star = c => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14.9 8.6 L22 9.3 L16.6 14 L18.2 21 L12 17.3 L5.8 21 L7.4 14 L2 9.3 L9.1 8.6 Z" fill="${c}"/></svg>`;
+  $('stars').innerHTML = Array.from({ length: n }, (_, i) => star('#FACC15')).join('');
+  const conf = document.createElement('div'); conf.className = 'confetti';
+  const cols = ['#3C7DD9', '#F59E0B', '#34D399', '#C4B5FD', '#F87171', '#FACC15'];
+  conf.innerHTML = Array.from({ length: 60 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-delay:${Math.random() * 0.8}s"></i>`).join('');
+  document.body.appendChild(conf); setTimeout(() => conf.remove(), 3600);
+  const helped = helpedAt.size;
+  $('summary').textContent = `For the grown-up: ${stats.letters} letters, ${stats.tries} tries in all. ${helped ? `${helped} letter${helped > 1 ? 's' : ''} took more than one try (amber boxes)` : 'Every letter right on the first try'}${stats.helps ? `, and he used Help me ${stats.helps} time${stats.helps > 1 ? 's' : ''}.` : ', with no Help me.'}`;
+  say('You spelled ' + plan.text + '!', 0.95);
+}
+$('hearDone').onclick = () => say(plan.text, 0.85);
+
+renderRecent();
+renderSetup();
+const q = new URLSearchParams(location.search).get('word');
+if (q) { $('wordIn').value = q; renderSetup(); }
+</script>
+<script src="/nav.js" defer></script>
+</body>
+</html>
