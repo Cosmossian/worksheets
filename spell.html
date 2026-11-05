@@ -89,6 +89,12 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
 .lbox.done.helped { border-color: var(--try); background: var(--try-bg); }
 .lbox.cur { border-style: solid; border-color: #F59E0B; animation: pulse 1.4s ease-in-out infinite; }
 .lbox .ghost { color: rgba(229, 236, 244, .28); }
+.lbox.hard:not(.done)::before { content: "★"; position: absolute; top: -14px; right: -8px; font: 700 20px Fredoka, sans-serif; color: var(--try); text-shadow: 0 1px 0 #000; }
+.rem { background: var(--try-bg); border: 2px solid var(--try); color: var(--try); border-radius: 999px; padding: 6px 16px; font: 600 17px Fredoka, sans-serif; text-align: center; }
+.rem b { color: #fff; }
+.done-wrap .compare { font: 700 26px Fredoka, sans-serif; color: var(--try); margin: 0; max-width: 30ch; }
+.practice b { color: var(--try) !important; }
+.chip small { color: var(--muted); font-size: 13px; margin-left: 4px; }
 .lbox.quiet::after { content: "shh"; position: absolute; bottom: -22px; font: 600 13px Fredoka, sans-serif; color: var(--muted); }
 @keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(245, 158, 11, .25); } }
 .shake { animation: shake .4s; }
@@ -180,10 +186,16 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
       <button data-need="1">1 try</button><button data-need="2">2 tries</button><button data-need="3">3 tries</button>
     </div>
     <small class="note">That many real tries on a letter before Help me works. Each help step after that needs one more try first. Fast tapping and repeating the same letter don't count.</small>
+    <label class="lbl">“Remember it” mode lasts</label>
+    <div class="seg" id="winSeg" role="group" aria-label="How long Remember it mode lasts">
+      <button data-win="30">30 min</button><button data-win="60">1 hour</button><button data-win="1440">1 day</button>
+    </div>
+    <small class="note">If he spells the same word again within this time, he’s asked to remember it: Help me needs one extra try at every step, starts at the 3 gold letters, and the letters he struggled with last time get a ★.</small>
     <div class="row">
       <button class="btn primary big" id="startBtn" disabled>Start</button>
       <button class="btn" id="testWord" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>Hear the word</button>
     </div>
+    <div class="recent practice" id="practice" hidden><b>Practice again: words he needed the most help with</b><div class="chips" id="pchips"></div></div>
     <div class="recent" id="recent" hidden><b>Words he asked for before</b><div class="chips" id="chips"></div></div>
     <div class="voice-warn" id="voiceWarn" hidden>This browser can’t talk, so the “hear it” buttons won’t make sound. It still works if you say the word and the parts out loud for him.</div>
     <details class="how">
@@ -199,7 +211,9 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
         <li>Help goes one step at a time, with a new try needed between each: first it plays just that part slowly, then it narrows the letters down to 3 gold choices, and he <b>has to listen to all 3</b> before he can pick, then it shows a faint letter to copy. He still taps it himself.</li>
         <li>Every letter button has a speaker strip along the bottom. Tapping it says the letter and a word with its sound (“V, like van”) without picking it. During a normal run that’s optional.</li>
         <li>The “change word” button has to be held down for 2 seconds, so he can’t pop back here and read the word.</li>
+        <li><b>Remember it:</b> if he spells the same word again within the time you pick (30 minutes, 1 hour or 1 day), he’s told he spelled it recently and to remember it. Help me needs one extra try at every step and starts at the 3 gold letters, and the letters he struggled with last time get a ★. The finish screen says whether he did better than last time.</li>
         <li>At the end you’ll see a small summary of how many tries and helps he used.</li>
+        <li>Words he needed the most help with show up under <b>Practice again</b>, with how long ago he spelled them. They drop off the list once he spells them with no trouble.</li>
         <li>Quiet letters (like the e in “like”) are flagged, because he can’t hear them.</li>
         <li>At the end he sees the whole word big, to copy onto his paper.</li>
       </ol>
@@ -214,6 +228,7 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
     <button class="btn big" id="hearSlow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>Say it slow</button>
     <button class="btn big help" id="helpBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1.3 1.7 1.5 2.5h5c.2-.8.7-1.7 1.5-2.5A6 6 0 0 0 12 3z"/></svg><span class="lab">Help me</span><span class="left"></span></button>
   </div>
+  <div class="rem" id="remBanner" hidden></div>
   <div class="message" id="msg" aria-live="polite"></div>
   <div class="word" id="word"></div>
   <div class="keys" id="keys" role="group" aria-label="Letters"></div>
@@ -226,6 +241,7 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
     <h2>You spelled it!</h2>
     <div class="big-word" id="bigWord"></div>
     <div class="stars" id="stars"></div>
+    <p class="compare" id="compare" hidden></p>
     <p>Now write it on your paper. Look at each letter as you go.</p>
     <p class="summary" id="summary"></p>
     <div class="row" style="justify-content:center">
@@ -446,7 +462,27 @@ let plan = null;        // { text, parts: [{ text, say, start, end, word }], let
 let pos = 0, tries = 0, level = 0, helpedAt = new Set();
 let mustHear = new Set();   // gold Help letters he still has to listen to
 let triedSet = new Set(), lastTry = 0, triesAtHelp = 0, stats = { tries: 0, helps: 0, letters: 0 };
-let settings = Object.assign({ need: 2 }, store('spell-settings') || {});
+let settings = Object.assign({ need: 2, win: 60 }, store('spell-settings') || {});
+let remember = null;          // set when he spelled this word recently: { last, ago, hard: Set of letter positions }
+let helpUsedAt = new Set();   // letters where he pressed Help me
+const extra = () => remember ? 1 : 0;   // Remember-it mode: one more try before every Help step
+
+/* ---- What he has spelled, and when (localStorage "spell-history": word -> [{t, hard, helps, tries, letters}]) ---- */
+function loadHist() { return store('spell-history') || {}; }
+function saveHist(h) {
+  const words = Object.keys(h);
+  if (words.length > 200) words.sort((a, b) => h[a].at(-1).t - h[b].at(-1).t).slice(0, words.length - 200).forEach(w => delete h[w]);
+  store('spell-history', h);
+}
+function agoText(ms) {
+  const m = Math.round(ms / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m} minute${m > 1 ? 's' : ''} ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h} hour${h > 1 ? 's' : ''} ago`;
+  const d = Math.round(h / 24);
+  return d === 1 ? 'yesterday' : `${d} days ago`;
+}
 const COOL_MS = 1000;   // keys pause after a wrong letter, so he has to stop and listen
 
 function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
@@ -524,7 +560,16 @@ function renderSetup() {
       + `<input type="text" data-say="${esc(p.key)}" value="${esc(p.say)}" placeholder="${esc(p.unit ? unitPhrase(p.unit) : p.text.toLowerCase())}" aria-label="What ${esc(p.text)} should say">${mine(p.key)}</div>`).join('');
 }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function renderPractice() {
+  const h = loadHist(), now = Date.now();
+  const list = Object.entries(h).map(([w, es]) => ({ w, last: es.at(-1) })).filter(x => x.last && (x.last.hard.length || x.last.helps))
+    .sort((a, b) => (b.last.hard.length + b.last.helps) - (a.last.hard.length + a.last.helps) || b.last.t - a.last.t).slice(0, 8);
+  $('practice').hidden = !list.length;
+  $('pchips').innerHTML = list.map(x => `<button class="chip" data-w="${esc(x.last.text || x.w)}">${esc(x.last.text || x.w)}<small>${x.last.hard.length} tricky · ${agoText(now - x.last.t)}</small></button>`).join('');
+}
+$('pchips').addEventListener('click', e => { const c = e.target.closest('[data-w]'); if (c) { $('wordIn').value = c.dataset.w; renderSetup(); } });
 function renderRecent() {
+  renderPractice();
   const r = store('spell-recent') || [];
   $('recent').hidden = !r.length;
   $('chips').innerHTML = r.map(w => `<button class="chip" data-w="${esc(w)}">${esc(w.replace(/-/g, ''))}</button>`).join('');
@@ -596,6 +641,9 @@ $('startBtn').onclick = start;
 function renderNeed() { document.querySelectorAll('#needSeg [data-need]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.need === settings.need)); }
 $('needSeg').addEventListener('click', e => { const b = e.target.closest('[data-need]'); if (!b) return; settings.need = +b.dataset.need; store('spell-settings', settings); renderNeed(); });
 renderNeed();
+function renderWin() { document.querySelectorAll('#winSeg [data-win]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.win === settings.win)); }
+$('winSeg').addEventListener('click', e => { const b = e.target.closest('[data-win]'); if (!b) return; settings.win = +b.dataset.win; store('spell-settings', settings); renderWin(); });
+renderWin();
 (function holdToOpen(btn, ms) {
   let t = null;
   const cancel = () => { clearTimeout(t); t = null; btn.classList.remove('holding'); };
@@ -607,7 +655,7 @@ $('newWord').onclick = () => { $('wordIn').value = ''; renderSetup(); show('setu
 $('again').onclick = () => begin();
 if (!canTalk) $('voiceWarn').hidden = false;
 
-function show(id) { ['setup', 'play', 'done'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('playing', id === 'play'); if (canTalk) speechSynthesis.cancel(); }
+function show(id) { if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('playing', id === 'play'); if (canTalk) speechSynthesis.cancel(); }
 
 function start() {
   stopRecord();
@@ -619,13 +667,19 @@ function start() {
 function begin() {
   document.querySelectorAll('.confetti').forEach(c => c.remove());
   plan = buildPlan($('wordIn').value);
-  pos = 0; helpedAt = new Set(); stats = { tries: 0, helps: 0, letters: 0 }; skipFixed();
+  pos = 0; helpedAt = new Set(); helpUsedAt = new Set(); stats = { tries: 0, helps: 0, letters: 0 }; skipFixed();
+  const last = (loadHist()[plan.text.toLowerCase()] || []).at(-1);
+  remember = last && Date.now() - last.t <= settings.win * 60000 ? { last, ago: agoText(Date.now() - last.t), hard: new Set(last.hard) } : null;
   resetLetterHelp();
   buildKeys(); renderWord(); show('play');
-  setMsg('Listen to the word.', '');
-  playWord(plan.text).then(() => { if (!$('play').hidden) setMsg(firstPrompt(), ''); });
+  $('remBanner').hidden = !remember;
+  if (remember) $('remBanner').innerHTML = `<b>Remember it!</b> You spelled this ${esc(remember.ago)}.${remember.hard.size ? ' ★ = tricky last time.' : ''}`;
+  setMsg(remember ? 'You know this word! Try to remember it.' : 'Listen to the word.', remember ? 'part' : '');
+  const intro = remember ? say('You spelled this a little while ago. Try to remember it!', 0.95).then(() => playWord(plan.text)) : playWord(plan.text);
+  intro.then(() => { if (!$('play').hidden && pos === firstPos()) setMsg(firstPrompt(), ''); });
 }
-function firstPrompt() { return 'What letter does it start with?'; }
+function firstPos() { let i = 0; while (i < plan.letters.length && plan.letters[i].fixed) i++; return i; }
+function firstPrompt() { return remember && remember.hard.has(pos) ? 'What letter does it start with? ★ This one was tricky last time. Think hard!' : 'What letter does it start with?'; }
 
 /* ============ Child's screen ============ */
 function skipFixed() { while (pos < plan.letters.length && plan.letters[pos].fixed) pos++; }
@@ -647,8 +701,9 @@ function renderWord() {
       const doneCls = li < pos ? ' done' + (helpedAt.has(li) ? ' helped' : '') : '';
       const curCls = li === pos ? ' cur' : '';
       const quietCls = l.quiet && li <= pos ? ' quiet' : '';
+      const hardCls = remember && remember.hard.has(li) && li >= pos ? ' hard' : '';
       const inner = li < pos ? esc(l.ch) : (li === pos && level >= 3 ? `<span class="ghost">${esc(l.ch)}</span>` : '');
-      return `<span class="lbox${doneCls}${curCls}${quietCls}">${inner}</span>`;
+      return `<span class="lbox${doneCls}${curCls}${quietCls}${hardCls}">${inner}</span>`;
     }).join('');
     const now = cur && cur.partIdx === pi;
     return `<div class="part${now ? ' now' : ''}${p.team ? ' team' : ''}"><div class="boxes">${boxes}</div><button class="ear" data-part="${pi}" aria-label="Hear this part"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>hear</button></div>`;
@@ -702,7 +757,8 @@ function press(ch, keyEl) {
     const cheers = ['Yes!', 'You got it!', 'Great listening!', 'Nice!', 'That’s right!'];
     let m = cheers[Math.floor(Math.random() * cheers.length)];
     if (wasQuiet) m = 'Yes! That one is quiet. You can’t hear it.';
-    setMsg(m + (nextPart ? ' Listen to the next part.' : ' What comes next?'), 'good');
+    const hardNext = remember && remember.hard.has(pos) ? ' ★ This next one was tricky last time. Think hard!' : '';
+    setMsg(m + (hardNext || (nextPart ? ' Listen to the next part.' : ' What comes next?')), 'good');
     const np = plan.letters[pos].partIdx, atPos = pos;
     say(letterName(ch), 1).then(async () => { if (nextPart && !$('play').hidden && pos === atPos) { await wait(200); playPart(plan.parts[np]); } });
   } else {
@@ -714,7 +770,7 @@ function press(ch, keyEl) {
     lastTry = now; tries++; stats.tries++; triedSet.add(ch);
     const tk = document.querySelector(`.key[data-k="${ch}"]`); if (tk) tk.classList.add('tried');   // stays red until he gets this letter
     $('keys').classList.add('cool'); setTimeout(() => $('keys').classList.remove('cool'), COOL_MS);
-    const unlockedNow = canHelp() && (level === 0 ? tries === settings.need : tries === triesAtHelp + 1);
+    const unlockedNow = canHelp() && (level === 0 ? tries === needFirst() : tries === triesAtHelp + needStep());
     setMsg(unlockedNow && level < 3 ? 'Good try! Listen again. You can use Help me now if you need it.' : 'Close! Listen again and try another one.', 'try');
     updateHelpBtn(unlockedNow);
     playPart(plan.parts[plan.letters[pos].partIdx]);
@@ -722,13 +778,16 @@ function press(ch, keyEl) {
 }
 
 $('helpBtn').onclick = () => help();
-function canHelp() { return level === 0 ? tries >= settings.need : (level < 3 && tries > triesAtHelp); }
+const needFirst = () => settings.need + extra();   // tries before the first Help step
+const needStep = () => 1 + extra();                // tries between Help steps
+function canHelp() { return level === 0 ? tries >= needFirst() : (level < 3 && tries >= triesAtHelp + needStep()); }
+function triesLeft() { return level === 0 ? Math.max(0, needFirst() - tries) : Math.max(0, triesAtHelp + needStep() - tries); }
 function updateHelpBtn(flash) {
   const b = $('helpBtn'); if (!b || !plan) return;
-  const ok = canHelp(), left = level === 0 ? Math.max(0, settings.need - tries) : (tries > triesAtHelp ? 0 : 1);
+  const ok = canHelp(), left = triesLeft();
   b.classList.toggle('locked', !ok);
   b.classList.toggle('ready', !!flash && ok);
-  const dots = level === 0 ? settings.need : 1, used = dots - left;
+  const dots = level === 0 ? needFirst() : needStep(), used = dots - left;
   b.querySelector('.lab').textContent = level >= 3 ? 'Help me' : ok ? 'Help me' : 'Try first';
   b.querySelector('.left').innerHTML = ok || level >= 3 ? '' : Array.from({ length: dots }, (_, i) => `<i class="${i < used ? 'used' : ''}"></i>`).join('');
   b.setAttribute('aria-label', ok ? 'Help me' : `Help me is locked. Try ${left} more time${left > 1 ? 's' : ''} first`);
@@ -739,13 +798,14 @@ function help() {
   if (level >= 3) { setMsg('Look closely at the box. Find that letter and tap it!', 'part'); return; }
   if (mustHear.size) { setMsg(`Listen to the bright letters first. ${mustHear.size} more to hear.`, 'try'); return; }
   if (!canHelp()) {
-    const left = level === 0 ? settings.need - tries : 1;
-    setMsg(level === 0 ? `Try your best first! Listen, then pick a letter. (${left} more ${left > 1 ? 'tries' : 'try'})` : 'Try one more letter first, then you can get more help.', 'try');
+    const left = triesLeft();
+    setMsg(level === 0 ? `${remember ? 'Try to remember it first!' : 'Try your best first!'} Listen, then pick a letter. (${left} more ${left > 1 ? 'tries' : 'try'})` : `Try ${left} more letter${left > 1 ? 's' : ''} first, then you can get more help.`, 'try');
     const b = $('helpBtn'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
     highlightPart(L.partIdx); playPart(P);
     return;
   }
-  level = Math.min(level + 1, 3); triesAtHelp = tries; stats.helps++; updateHelpBtn();
+  level = remember && level === 0 ? 2 : Math.min(level + 1, 3);   // Remember-it mode skips the slow replay: he's heard it before
+  triesAtHelp = tries; stats.helps++; helpUsedAt.add(pos); updateHelpBtn();
   highlightPart(L.partIdx);
   if (level === 1) {
     if (L.quiet) { setMsg('This letter is quiet. You can’t hear it! Tap Help me again for a hint.', 'part'); return; }
@@ -779,8 +839,24 @@ function finish() {
   conf.innerHTML = Array.from({ length: 60 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-delay:${Math.random() * 0.8}s"></i>`).join('');
   document.body.appendChild(conf); setTimeout(() => conf.remove(), 3600);
   const helped = helpedAt.size;
-  $('summary').textContent = `For the grown-up: ${stats.letters} letters, ${stats.tries} tries in all. ${helped ? `${helped} letter${helped > 1 ? 's' : ''} took more than one try (amber boxes)` : 'Every letter right on the first try'}${stats.helps ? `, and he used Help me ${stats.helps} time${stats.helps > 1 ? 's' : ''}.` : ', with no Help me.'}`;
-  (voices[wordKey(plan.text)] ? say('You spelled it!', 0.95).then(() => playWord(plan.text)) : say('You spelled ' + plan.text + '!', 0.95));
+  const h = loadHist(), wk = plan.text.toLowerCase();
+  (h[wk] = h[wk] || []).push({ t: Date.now(), text: plan.text, hard: [...helpedAt], helps: stats.helps, helpLetters: helpUsedAt.size, tries: stats.tries, letters: stats.letters });
+  h[wk] = h[wk].slice(-10); saveHist(h);
+  let cmp = '', cmpSay = '', cmpGrown = '';
+  if (remember) {
+    const before = remember.last.hard.length, now = helped;
+    if (now < before) { cmp = `Better than last time! Last time ${before} letter${before > 1 ? 's were' : ' was'} tricky. This time: ${now}.`; cmpSay = 'That’s better than last time!'; }
+    else if (now === 0) { cmp = 'Perfect again! You remembered every letter.'; cmpSay = 'Perfect again!'; }
+    else if (now === before) { cmp = `Same as last time: ${now} tricky letter${now > 1 ? 's' : ''}. Keep practicing!`; cmpSay = 'Keep practicing. You’re getting there!'; }
+    else { cmp = 'This one is still tricky. Keep practicing, you’ll get it!'; cmpSay = 'Keep practicing. You’ll get it!'; }
+    const lh = remember.last.helps || 0;
+    cmpGrown = ` Last time (${remember.ago}): ${before} tricky letter${before === 1 ? '' : 's'}, Help me ${lh} time${lh === 1 ? '' : 's'}.`;
+  }
+  $('compare').hidden = !cmp; $('compare').textContent = cmp;
+  $('summary').textContent = `For the grown-up: ${stats.letters} letters, ${stats.tries} tries in all. ${helped ? `${helped} letter${helped > 1 ? 's' : ''} took more than one try (amber boxes)` : 'Every letter right on the first try'}${stats.helps ? `, and he used Help me ${stats.helps} time${stats.helps > 1 ? 's' : ''}.` : ', with no Help me.'}${cmpGrown}`;
+  const cheer = voices[wordKey(plan.text)] ? say('You spelled it!', 0.95).then(() => playWord(plan.text)) : say('You spelled ' + plan.text + '!', 0.95);
+  if (cmpSay) cheer.then(() => say(cmpSay, 0.95));
+  renderRecent();
 }
 $('hearDone').onclick = () => playWord(plan.text, 0.85);
 
