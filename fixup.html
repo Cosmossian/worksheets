@@ -373,24 +373,27 @@ const app = $('app');
 
 /* ============ The words: from the sight word check (link), or the latest check on this device ============ */
 const RESULTS_EMAIL = 'dylan.l.cosmos@gmail.com';
-const FORM_URL = 'https://formsubmit.co/ajax/' + RESULTS_EMAIL;
+const MAILER_URL = 'https://script.google.com/macros/s/AKfycbzbr4Wpw4mrT6MbTViKI3K7PxLnp1avmygg0E5_imNpjTaF_Za6smj70ay-e1tKEJQr/exec';   // Google Apps Script web app on Dylan's account (SpellingHelperMailer.gs): emails go from his Gmail to his Gmail
 
-/* FormSubmit replies {"success":"true"} when it sent the email. Anything else (like "This form needs Activation") is not sent yet:
-   the results stay queued and are tried again, and the reply is shown on the grown-up screen. */
-async function postForm(body) {
+/* Sends one results email through the Apps Script mailer. `body` is a flat {field: value} list (fields starting with _ are settings,
+   _subject is the subject). `attachments` = [{name, type, data(base64)}]. The script answers {"success":"true"} once Gmail has sent it.
+   Anything else stays queued and is tried again; what happened is shown on the grown-up screen. Gives up after 20 s so nothing hangs. */
+async function postForm(body, attachments = []) {
   const save = (ok, msg) => { store('spell-send-status', { t: Date.now(), ok, msg }); return ok; };
-  const read = async res => { let j = {}; try { j = await res.json(); } catch (e) { } return { ok: res.ok && (j.success === true || j.success === 'true'), msg: j.message || (res.ok ? '' : `FormSubmit answered with error ${res.status}`) }; };
-  const form = () => { const p = new URLSearchParams(); Object.entries(body).forEach(([k, v]) => p.append(k, String(v))); return p; };
-  // 1) JSON (FormSubmit's documented way)
-  try { const r = await read(await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) })); return save(r.ok, r.msg); } catch (e) { }
-  // 2) Plain form data: no browser pre-check (some browsers block the JSON way)
-  try { const r = await read(await fetch(FORM_URL, { method: 'POST', headers: { Accept: 'application/json' }, body: form() })); return save(r.ok, r.msg); } catch (e) { }
-  // 3) Last resort: send without reading the reply. The page can't confirm it, so it says so.
+  const payload = JSON.stringify({ subject: body._subject || 'Spelling Helper', rows: Object.entries(body).filter(([k]) => !k.startsWith('_')).map(([k, v]) => [k, String(v)]), attachments });
+  const withTimeout = (opts) => { const c = new AbortController(); const t = setTimeout(() => c.abort(), 20000); return fetch(MAILER_URL, { ...opts, signal: c.signal }).finally(() => clearTimeout(t)); };
   try {
-    await fetch('https://formsubmit.co/' + RESULTS_EMAIL, { method: 'POST', mode: 'no-cors', body: form() });
-    return save(true, 'Sent, but FormSubmit’s reply couldn’t be read, so this one is unconfirmed. Check your inbox (and spam). The first time, look for FormSubmit’s “Activate Form” email.');
-  } catch (e) { }
-  return save(false, 'Couldn’t reach FormSubmit at all. Something on this device or network may be blocking formsubmit.co (an ad blocker, a privacy setting, or a network filter).');
+    // text/plain keeps it a "simple" request, so the browser sends it straight to Google with no pre-check
+    const res = await withTimeout({ method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: payload, redirect: 'follow' });
+    let j = {}; try { j = await res.json(); } catch (e) { }
+    if (res.ok && (j.success === 'true' || j.success === true)) return save(true, '');
+    return save(false, j.message ? `The mailer said: ${j.message}` : `The mailer answered with error ${res.status}`);
+  } catch (e) {
+    if (e && e.name === 'AbortError') return save(false, 'The mailer didn’t answer within 20 seconds. It will try again later.');
+    // The reply couldn't be read (some browsers block reading it). Send it anyway and say it's unconfirmed.
+    try { await withTimeout({ method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: payload }); return save(true, 'Sent, but the reply couldn’t be read, so this one is unconfirmed. Check your inbox.'); }
+    catch (e2) { return save(false, 'Couldn’t reach the mailer (no internet?). It will try again later.'); }
+  }
 }
 const params = new URLSearchParams(location.search);
 let WORDS = [];   // [{ w, his }]

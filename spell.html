@@ -1032,24 +1032,27 @@ $('hearDone').onclick = () => playWord(plan.text, 0.85);
 
 /* ================= Daily sight words: practice → check → results (emailed) ================= */
 const RESULTS_EMAIL = 'dylan.l.cosmos@gmail.com';
-const FORM_URL = 'https://formsubmit.co/ajax/' + RESULTS_EMAIL;   // FormSubmit: free form-to-email (first email asks you to confirm once)
+const MAILER_URL = 'https://script.google.com/macros/s/AKfycbzbr4Wpw4mrT6MbTViKI3K7PxLnp1avmygg0E5_imNpjTaF_Za6smj70ay-e1tKEJQr/exec';   // Google Apps Script web app on Dylan's account (SpellingHelperMailer.gs): emails go from his Gmail to his Gmail
 
-/* FormSubmit replies {"success":"true"} when it sent the email. Anything else (like "This form needs Activation") is not sent yet:
-   the results stay queued and are tried again, and the reply is shown on the grown-up screen. */
-async function postForm(body) {
+/* Sends one results email through the Apps Script mailer. `body` is a flat {field: value} list (fields starting with _ are settings,
+   _subject is the subject). `attachments` = [{name, type, data(base64)}]. The script answers {"success":"true"} once Gmail has sent it.
+   Anything else stays queued and is tried again; what happened is shown on the grown-up screen. Gives up after 20 s so nothing hangs. */
+async function postForm(body, attachments = []) {
   const save = (ok, msg) => { store('spell-send-status', { t: Date.now(), ok, msg }); return ok; };
-  const read = async res => { let j = {}; try { j = await res.json(); } catch (e) { } return { ok: res.ok && (j.success === true || j.success === 'true'), msg: j.message || (res.ok ? '' : `FormSubmit answered with error ${res.status}`) }; };
-  const form = () => { const p = new URLSearchParams(); Object.entries(body).forEach(([k, v]) => p.append(k, String(v))); return p; };
-  // 1) JSON (FormSubmit's documented way)
-  try { const r = await read(await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) })); return save(r.ok, r.msg); } catch (e) { }
-  // 2) Plain form data: no browser pre-check (some browsers block the JSON way)
-  try { const r = await read(await fetch(FORM_URL, { method: 'POST', headers: { Accept: 'application/json' }, body: form() })); return save(r.ok, r.msg); } catch (e) { }
-  // 3) Last resort: send without reading the reply. The page can't confirm it, so it says so.
+  const payload = JSON.stringify({ subject: body._subject || 'Spelling Helper', rows: Object.entries(body).filter(([k]) => !k.startsWith('_')).map(([k, v]) => [k, String(v)]), attachments });
+  const withTimeout = (opts) => { const c = new AbortController(); const t = setTimeout(() => c.abort(), 20000); return fetch(MAILER_URL, { ...opts, signal: c.signal }).finally(() => clearTimeout(t)); };
   try {
-    await fetch('https://formsubmit.co/' + RESULTS_EMAIL, { method: 'POST', mode: 'no-cors', body: form() });
-    return save(true, 'Sent, but FormSubmit’s reply couldn’t be read, so this one is unconfirmed. Check your inbox (and spam). The first time, look for FormSubmit’s “Activate Form” email.');
-  } catch (e) { }
-  return save(false, 'Couldn’t reach FormSubmit at all. Something on this device or network may be blocking formsubmit.co (an ad blocker, a privacy setting, or a network filter).');
+    // text/plain keeps it a "simple" request, so the browser sends it straight to Google with no pre-check
+    const res = await withTimeout({ method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: payload, redirect: 'follow' });
+    let j = {}; try { j = await res.json(); } catch (e) { }
+    if (res.ok && (j.success === 'true' || j.success === true)) return save(true, '');
+    return save(false, j.message ? `The mailer said: ${j.message}` : `The mailer answered with error ${res.status}`);
+  } catch (e) {
+    if (e && e.name === 'AbortError') return save(false, 'The mailer didn’t answer within 20 seconds. It will try again later.');
+    // The reply couldn't be read (some browsers block reading it). Send it anyway and say it's unconfirmed.
+    try { await withTimeout({ method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: payload }); return save(true, 'Sent, but the reply couldn’t be read, so this one is unconfirmed. Check your inbox.'); }
+    catch (e2) { return save(false, 'Couldn’t reach the mailer (no internet?). It will try again later.'); }
+  }
 }
 const SENTENCES = {
   // Dolch pre-primer
@@ -1496,7 +1499,7 @@ function emailBody(rec) {
   body['Look & Listen'] = !rec.looked3 ? 'Skipped'
     : `Done: saw and heard each word 3 times. ` + (!lk || !lk.micWanted ? 'Microphone check was off.'
       : !lk.micOk ? 'The microphone wasn’t available, so it couldn’t check that he said them.'
-      : `Said out loud: ${lk.heard} of ${lk.total} (the microphone heard him).${lk.kept ? ' Listen to his recordings in Parent Review on that device.' : ''}`);
+      : `Said out loud: ${lk.heard} of ${lk.total} (the microphone heard him).${lk.kept ? ' His recordings are attached (round1-word, round2-word…), and also in Parent Review on that device.' : ''}`);
   body['Practice first'] = rec.practiced
     ? rec.results.map(r => { const p = rec.practice[r.word]; return p ? `${r.word}: ${p.tricky ? `${p.tricky} tricky letter${p.tricky > 1 ? 's' : ''}` : 'no trouble'}${p.helps ? `, Help ${p.helps}x` : ''}` : `${r.word}: skipped`; }).join(' · ')
     : 'Skipped';
@@ -1505,6 +1508,19 @@ function emailBody(rec) {
   body['Parent Review (recordings + results)'] = location.origin + location.pathname.replace(/[^/]*$/, '') + 'spell.html#review   (open it on the device he used: his recordings are saved there)';
   return body;
 }
+/* His Look & Listen recordings for this check, as email attachments ("round1-first.webm"). Looked up when sending, so the queue stays small. */
+function clipAttachments(rec) {
+  if (!rec.session) return [];
+  const sess = lookLog().find(x => x.session === rec.session);
+  if (!sess || !sess.clips) return [];
+  let total = 0;
+  return sess.clips.map(c => {
+    const m = /^data:([^;,]+)[^,]*,(.*)$/.exec(c.url || ''); if (!m) return null;
+    const type = m[1], ext = /mp4|m4a|aac/.test(type) ? 'm4a' : /ogg/.test(type) ? 'ogg' : 'webm';
+    total += m[2].length; if (total > 18e6) return null;   // stay well under Gmail's 25 MB
+    return { name: `round${c.round}-${c.word.replace(/[^a-z0-9]+/gi, '-')}.${ext}`, type, data: m[2] };
+  }).filter(Boolean);
+}
 let sending = false;
 async function sendOutbox() {
   if (sending) return; sending = true;
@@ -1512,7 +1528,7 @@ async function sendOutbox() {
     let box = store('spell-check-outbox') || [];
     for (const rec of [...box]) {
       try {
-        if (!(await postForm(emailBody(rec)))) break;
+        if (!(await postForm(emailBody(rec), clipAttachments(rec)))) break;
         box = box.filter(x => x.id !== rec.id); store('spell-check-outbox', box);
         const l = store('spell-check-latest'); if (l && l.id === rec.id) { l.sent = true; store('spell-check-latest', l); }
       } catch (e) { break; }
@@ -1524,11 +1540,11 @@ function renderMailStatus() {
   if (!st) { el.textContent = ''; return; }
   el.style.color = st.ok && !st.msg ? 'var(--good)' : 'var(--try)';
   el.textContent = st.ok ? (st.msg ? `Last email (${timeOf(st.t)}): ${st.msg}` : `Last email sent ✓ (${timeOf(st.t)})`)
-    : `Last email didn’t send (${timeOf(st.t)}): ${st.msg || 'no reply'}${/activat/i.test(st.msg || '') ? ' → Check your inbox (and spam) for “Activate Form” from FormSubmit, click it, then tap “Send a test email” again.' : ''}`;
+    : `Last email didn’t send (${timeOf(st.t)}): ${st.msg || 'no reply'}`;
 }
 $('testMail').onclick = async () => {
   $('mailStatus').style.color = 'var(--muted)'; $('mailStatus').textContent = 'Sending a test email…';
-  await postForm({ _subject: 'Spelling Helper: test email', _template: 'table', _captcha: 'false', Message: 'If you got this, the daily sight word results emails are working.', Sent: new Date().toLocaleString() });
+  await postForm({ _subject: 'Spelling Helper: test email', Message: 'If you got this, the daily sight word results emails are working.', Sent: new Date().toLocaleString() });
   renderMailStatus();
   if ((store('spell-check-outbox') || []).length) sendOutbox();
 };
