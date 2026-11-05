@@ -21,7 +21,8 @@ a { color: var(--accent); }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid #F59E0B; outline-offset: 3px; }
 [hidden] { display: none !important; }
-body.playing .app-header { display: none; }   /* more room for the letters while he spells */
+body.playing .app-header { display: none; }
+body.playing .daily-bar { margin-top: 6px; }   /* more room for the letters while he spells */
 
 .app-header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .app-header h1 { margin: 0; font: 700 26px Fredoka, sans-serif; color: var(--navy); }
@@ -40,7 +41,7 @@ body.playing .app-header { display: none; }   /* more room for the letters while
 .card h2 { margin: 0 0 4px; font: 700 24px Fredoka, sans-serif; color: var(--navy); }
 .card p.help { margin: 0 0 16px; color: var(--muted); line-height: 1.45; }
 label.lbl { display: block; font-weight: 700; margin: 14px 0 6px; }
-input[type=text] { font: 22px Andika, sans-serif; width: 100%; border: 2px solid var(--field-line); border-radius: 12px; padding: 10px 14px; background: var(--field); color: var(--ink); }
+input[type=text], textarea.big { font: 22px Andika, sans-serif; width: 100%; border: 2px solid var(--field-line); border-radius: 12px; padding: 10px 14px; background: var(--field); color: var(--ink); }
 small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6px; line-height: 1.4; }
 .parts-edit { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .pe { display: flex; flex-direction: column; gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
@@ -71,6 +72,71 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
 .how summary { cursor: pointer; font-weight: 700; color: var(--navy); }
 .how ol { margin: 10px 0 0; padding-left: 22px; line-height: 1.5; color: var(--ink); }
 .voice-warn { margin-top: 14px; background: var(--try-bg); border: 1px solid var(--try); color: var(--try); border-radius: 12px; padding: 10px 14px; font-size: 15px; }
+
+/* ---------- Daily sight words ---------- */
+.setup .card + .card { margin-top: 18px; }
+textarea.big { resize: vertical; min-height: 64px; }
+.check-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 16px; }
+.check-row input { width: 22px; height: 22px; }
+.linkbtn { border: 0; background: none; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+.last-check { margin-top: 14px; font-size: 15px; color: var(--muted); line-height: 1.5; }
+.last-check b { color: var(--ink); }
+.daily-bar { max-width: 980px; margin: 10px auto 0; padding: 0 16px; display: flex; justify-content: center; }
+.daily-bar span { background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px; font: 600 15px Fredoka, sans-serif; color: var(--navy); }
+.answer { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; min-height: 86px; align-items: center; }
+.answer .lbox { border-style: solid; border-color: var(--study); background: var(--surface-2); color: #fff; }
+.answer .lbox.cursor { border-style: dashed; border-color: var(--field-line); background: var(--field); animation: pulse 1.4s ease-in-out infinite; }
+.answer .lbox.sp { width: 28px; border: 0; background: none; }
+.keys.quiz .key { height: clamp(52px, 8.5vh, 72px); min-height: 52px; }
+.btn.space { min-width: 160px; }
+.res-list { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 560px; }
+.res { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 2px solid var(--line); border-radius: 16px; padding: 10px 16px; text-align: left; }
+.res .mark { font: 700 28px Fredoka, sans-serif; width: 34px; text-align: center; }
+.res.ok { border-color: var(--good); } .res.ok .mark { color: var(--good); }
+.res.no { border-color: var(--try); } .res.no .mark { color: var(--try); }
+.res .w { font: 700 30px Andika, sans-serif; letter-spacing: 1px; }
+.res .his { font-size: 16px; color: var(--muted); }
+.res .his s { color: #FCA5A5; }
+button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
+.res .look { margin-left: auto; font: 600 14px Fredoka, sans-serif; color: var(--try); white-space: nowrap; }
+.res.looked .look { color: var(--good); }
+.review-note { font: 600 18px Fredoka, sans-serif !important; color: var(--try) !important; }
+.sent-note { font-size: 14px !important; }
+.confirm { position: fixed; inset: 0; background: rgba(5, 9, 14, .78); display: grid; place-items: center; z-index: 50; padding: 16px; }
+.confirm .box { background: var(--surface); border: 2px solid var(--study); border-radius: 22px; padding: 22px 26px; max-width: 560px; width: 100%; text-align: center; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.confirm h3 { margin: 0; font: 700 28px Fredoka, sans-serif; color: var(--ink); }
+.confirm p { margin: 0; color: var(--muted); font-size: 18px; }
+.confirm .row { justify-content: center; margin-top: 4px; }
+.grade { display: flex; align-items: center; gap: 18px; justify-content: center; }
+.grade .letter { width: 110px; height: 110px; border-radius: 26px; display: grid; place-items: center; font: 700 72px Fredoka, sans-serif; color: #0E151D; }
+.grade .pct { font: 700 46px Fredoka, sans-serif; color: var(--ink); text-align: left; line-height: 1; }
+.grade .pct small { display: block; font: 600 18px Fredoka, sans-serif; color: var(--muted); margin-top: 6px; }
+.grade-msg { font: 600 22px Fredoka, sans-serif !important; color: var(--ink) !important; max-width: 32ch; }
+
+.look-word { font: 700 clamp(64px, 14vw, 128px) Andika, sans-serif; letter-spacing: 6px; background: #fff; color: #1F2937; border-radius: 26px; padding: 10px 44px; margin: 10px 0; }
+.look-prompt { font: 700 30px Fredoka, sans-serif; color: var(--try); margin: 0; }
+.meter { width: min(420px, 80vw); height: 16px; border-radius: 999px; background: var(--field); border: 1px solid var(--line); overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--good); transition: width .08s linear; }
+.mic-hint { font-size: 16px; color: var(--muted); margin: 0; }
+.clips { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.clips .cw { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; }
+.clips .cw b { min-width: 90px; }
+.clips button { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 4px 12px; cursor: pointer; font: 600 14px Fredoka, sans-serif; }
+.clips .none { color: var(--try); font-size: 14px; }
+.app-header .review-btn { font: 600 16px Fredoka, sans-serif; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer; position: relative; overflow: hidden; }
+.app-header .review-btn::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--try); }
+.app-header .review-btn.holding::after { width: 100%; transition: width 2s linear; }
+.app-header .review-btn + .back { margin-left: 0; }
+.app-header .review-btn { margin-left: auto; }
+.rv-day { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 14px; }
+.rv-day h3 { margin: 0 0 8px; font: 700 21px Fredoka, sans-serif; color: var(--navy); }
+.rv-sec { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+.rv-sec h4 { margin: 0 0 6px; font: 700 17px Fredoka, sans-serif; }
+.rv-sec h4 span { font: 500 14px Andika, sans-serif; color: var(--muted); margin-left: 6px; }
+.rv-sec .ln { font-size: 15px; line-height: 1.5; }
+.rv-sec .ok { color: var(--good); } .rv-sec .no { color: var(--try); }
+.rv-sec .del { margin-top: 8px; border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 13px; padding: 0; }
+.rv-empty { color: var(--muted); }
 
 /* ---------- Child's screen ---------- */
 .play { max-width: 980px; margin: 0 auto; padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
@@ -166,13 +232,32 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
 <body>
 <header class="app-header">
   <h1>Spelling Helper</h1>
+  <button class="review-btn" id="reviewBtn" title="Hold for 2 seconds">Parent Review</button>
   <a class="back" href="./">← Back to Worksheets</a>
 </header>
 
+<div class="daily-bar" id="dailyBar" hidden><span id="dailyBarText"></span></div>
+
 <!-- Grown-up: type the word -->
 <main class="setup" id="setup">
+  <div class="card" id="dailyCard">
+    <h2>Daily sight words</h2>
+    <p class="help">Type today’s words. First <b>Look &amp; Listen</b>: he sees each word, says it out loud, then hears it, 3 times through. Then he practices each one with the Spelling Helper, then takes a <b>check</b>: the page says each word and a sentence without showing it, and he spells it from memory with no help. The results are emailed to you, and the words he missed go into Spelling Fix-Up.</p>
+    <label class="lbl" for="dailyIn">Today’s words</label>
+    <textarea class="big" id="dailyIn" rows="2" placeholder="first, while, more, against" autocapitalize="off" spellcheck="false"></textarea>
+    <small class="note">Separate with commas. <button class="linkbtn" id="useSight" hidden></button></small>
+    <label class="check-row"><input type="checkbox" id="dailyLook" checked> Look &amp; Listen first: he sees each word, says it, then hears it (3 rounds)</label>
+    <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyMic" checked> Make sure he says each word out loud (uses the microphone)</label>
+    <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyKeep" checked> Save his voice so I can listen later</label>
+    <label class="check-row"><input type="checkbox" id="dailyPractice" checked> Then practice each word with the Spelling Helper</label>
+    <small class="note">Results are emailed to <b id="mailTo"></b>.</small>
+    <div class="row"><button class="btn primary big" id="dailyStart" disabled>Start today’s words</button></div>
+    <div class="last-check" id="lastCheck"></div>
+    <div class="clips" id="lookClips"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="openReview">Open Parent Review: his recordings and results</button></div>
+  </div>
   <div class="card">
-    <h2>What word does he want to spell?</h2>
+    <h2>Spell one word: what does he want to spell?</h2>
     <p class="help">Type it here, then hand him the screen. He spells it one letter at a time, and the helper says the word and its parts out loud, as slowly and as often as he needs. It never fills in a letter for him.</p>
     <label class="lbl" for="wordIn">Word</label>
     <input type="text" id="wordIn" placeholder="vitamin D" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -249,6 +334,85 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
       <button class="btn big primary" id="hearDone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>Hear it</button>
       <button class="btn big" id="again">Spell it again</button>
       <button class="btn big" id="newWord">New word</button>
+      <button class="btn big primary" id="nextWord" hidden>Next word →</button>
+    </div>
+  </div>
+</main>
+
+<!-- Grown-up: Parent Review (recordings + results, by day) -->
+<main class="setup" id="review" hidden>
+  <div class="card">
+    <h2>Parent Review</h2>
+    <p class="help">Everything from the daily sight words, newest first: hear how he said each word in Look &amp; Listen, and see how he spelled each word on the check and the Spelling Fix-Up. Recordings are kept on this device for 7 days.</p>
+    <div id="reviewList"></div>
+    <div class="row"><button class="btn primary" id="reviewDone">Done</button></div>
+  </div>
+</main>
+
+<!-- Daily Look & Listen: see it, say it, hear it (3 rounds) -->
+<main class="play" id="look" hidden>
+  <div class="done-wrap">
+    <p class="look-prompt" id="lookPrompt">Read it out loud!</p>
+    <div class="look-word" id="lookWord"></div>
+    <div class="meter" id="meter" hidden><i id="meterFill"></i></div>
+    <p class="mic-hint" id="micHint" hidden>🎤 I’m listening…</p>
+    <div class="row" style="justify-content:center">
+      <button class="btn big primary" id="saidIt" hidden>🗣 I said it!</button>
+      <button class="btn big" id="lookAgain" hidden>Hear it again</button>
+      <button class="btn big primary" id="lookNext" hidden>Next word →</button>
+    </div>
+  </div>
+  <button class="grownup" id="toSetup3">Grown-up: hold to stop</button>
+</main>
+
+<!-- Daily check: the word is said, never shown -->
+<main class="play" id="check" hidden>
+  <div class="done-wrap" id="checkReady">
+    <h2 id="readyTitle">Practice done!</h2>
+    <p>Now the check. I’ll say each word. You spell it all by yourself, with no help. Do your best!</p>
+    <button class="btn big primary" id="checkGo">Start the check</button>
+  </div>
+  <div id="checkRun" class="play" style="padding:0;width:100%" hidden>
+    <div class="hear">
+      <button class="btn big primary" id="cHearWord"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>Hear the word</button>
+      <button class="btn big" id="cHearSent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>Hear it in a sentence</button>
+    </div>
+    <div class="message" id="cmsg" aria-live="polite"></div>
+    <div class="answer" id="answer" aria-label="Your spelling"></div>
+    <div class="keys quiz" id="ckeys" role="group" aria-label="Letters"></div>
+    <div class="tools">
+      <button class="btn big space" id="spaceBtn" hidden>space</button>
+      <button class="btn big" id="backBtn">⌫ Back</button>
+      <button class="btn big primary" id="doneBtn" disabled>Done ✓</button>
+    </div>
+  </div>
+  <div class="confirm" id="confirm" hidden role="dialog" aria-modal="true" aria-labelledby="confirmQ">
+    <div class="box">
+      <h3 id="confirmQ">Are you sure?</h3>
+      <div class="answer" id="confirmWord"></div>
+      <p>Once you say yes, you can’t change it.</p>
+      <div class="row">
+        <button class="btn big" id="confirmNo">Let me look again</button>
+        <button class="btn big primary" id="confirmYes">Yes, I’m sure</button>
+      </div>
+    </div>
+  </div>
+  <button class="grownup" id="toSetup2">Grown-up: hold to stop the check</button>
+</main>
+
+<!-- Daily check results -->
+<main class="play" id="results" hidden>
+  <div class="done-wrap">
+    <h2 id="resTitle">All done!</h2>
+    <div class="grade" id="grade"></div>
+    <p class="grade-msg" id="gradeMsg"></p>
+    <p class="compare" id="resScore"></p>
+    <div class="res-list" id="resList"></div>
+    <p class="review-note" id="reviewNote" hidden>Tap each word you missed to see and hear how it’s spelled.</p>
+    <p class="summary sent-note" id="resSent"></p>
+    <div class="row" style="justify-content:center">
+      <button class="btn big primary" id="reviewedBtn" hidden disabled>I looked at my mistakes →</button>
+      <button class="btn big primary" id="resDone">Finished</button>
     </div>
   </div>
 </main>
@@ -645,18 +809,21 @@ renderNeed();
 function renderWin() { document.querySelectorAll('#winSeg [data-win]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.win === settings.win)); }
 $('winSeg').addEventListener('click', e => { const b = e.target.closest('[data-win]'); if (!b) return; settings.win = +b.dataset.win; store('spell-settings', settings); renderWin(); });
 renderWin();
-(function holdToOpen(btn, ms) {
+function holdToOpen(btn, ms, target = 'setup') {
   let t = null;
   const cancel = () => { clearTimeout(t); t = null; btn.classList.remove('holding'); };
-  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.classList.add('holding'); t = setTimeout(() => { cancel(); show('setup'); }, ms); });
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.classList.add('holding'); t = setTimeout(() => { cancel(); show(target); }, ms); });
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, cancel));
   btn.addEventListener('contextmenu', e => e.preventDefault());
-})($('toSetup'), 2000);
+}
+holdToOpen($('toSetup'), 2000);
+holdToOpen($('toSetup2'), 2000);
+holdToOpen($('toSetup3'), 2000);
 $('newWord').onclick = () => { $('wordIn').value = ''; renderSetup(); show('setup'); $('wordIn').focus(); };
 $('again').onclick = () => begin();
 if (!canTalk) $('voiceWarn').hidden = false;
 
-function show(id) { if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('playing', id === 'play'); if (canTalk) speechSynthesis.cancel(); }
+function show(id) { if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review'].forEach(x => $(x).hidden = x !== id); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
 
 function start() {
   stopRecord();
@@ -672,7 +839,7 @@ function begin() {
   const last = (loadHist()[plan.text.toLowerCase()] || []).at(-1);
   remember = last && Date.now() - last.t <= settings.win * 60000 ? { last, ago: agoText(Date.now() - last.t), hard: new Set(last.hard) } : null;
   resetLetterHelp();
-  buildKeys(); renderWord(); show('play');
+  buildKeys(); renderWord(); show('play'); renderDailyBar();
   $('remBanner').hidden = !remember;
   if (remember) $('remBanner').innerHTML = `<b>Remember it!</b> You spelled this ${esc(remember.ago)}.${remember.hard.size ? ' ★ = tricky last time.' : ''}`;
   setMsg(remember ? 'You know this word! Try to remember it.' : 'Listen to the word.', remember ? 'part' : '');
@@ -858,11 +1025,545 @@ function finish() {
   const cheer = voices[wordKey(plan.text)] ? say('You spelled it!', 0.95).then(() => playWord(plan.text)) : say('You spelled ' + plan.text + '!', 0.95);
   if (cmpSay) cheer.then(() => say(cmpSay, 0.95));
   renderRecent();
+  dailyAfterWord();
 }
 $('hearDone').onclick = () => playWord(plan.text, 0.85);
 
+/* ================= Daily sight words: practice → check → results (emailed) ================= */
+const RESULTS_EMAIL = 'dylan.l.cosmos+maverick@gmail.com';
+const FORM_URL = 'https://formsubmit.co/ajax/' + RESULTS_EMAIL;   // FormSubmit: free form-to-email (first email asks you to confirm once)
+const SENTENCES = {
+  // Dolch pre-primer
+  a: ['I have ___ red ball.', 'ball'], and: ['I like cats ___ dogs.', 'cat'], away: ['The bird flew ___.', 'bird'],
+  big: ['An elephant is very ___.', 'elephant'], blue: ['The sky is ___.', 'blue'], can: ['I ___ jump high.', ''],
+  come: ['Can you ___ to my house?', 'house'], down: ['The ball rolled ___ the hill.', 'ball'], find: ['Can you ___ my shoe?', ''],
+  for: ['This gift is ___ you.', 'gift'], funny: ['The clown is so ___!', ''], go: ['It is time to ___ to bed.', 'moon'],
+  help: ['Can you ___ me lift this box?', ''], here: ['Come over ___, please.', ''], i: ['Mom and ___ like to read.', 'book'],
+  in: ['The cat is ___ the box.', 'cat'], is: ['The dog ___ happy.', 'dog'], it: ['I threw the ball and he caught ___.', 'ball'],
+  jump: ['Frogs can ___ high.', ''], little: ['A mouse is very ___.', ''], look: ['I ___ at the sky.', 'eyes'],
+  make: ["Let's ___ a cake.", ''], me: ['Please give the ball to ___.', 'ball'], my: ['This is ___ dog.', 'dog'],
+  not: ['A cat is ___ a dog.', 'cat'], one: ['I have ___ nose.', ''], play: ["Let's ___ outside!", 'ball'],
+  red: ['An apple can be ___.', 'apple'], run: ['I like to ___ fast.', ''], said: ['Mom ___ it is time to eat.', 'talk'],
+  see: ['I can ___ the moon.', 'moon'], the: ['I love ___ sun.', 'sun'], three: ['A triangle has ___ sides.', 'three'],
+  to: ['We walk ___ school.', ''], two: ['I have ___ hands.', 'hand'], up: ['The balloon went ___ in the sky.', ''],
+  we: ['My friend and ___ play tag.', ''], where: ['Do you know ___ my hat is?', ''], yellow: ['The sun is ___.', 'sun'],
+  you: ['I like ___!', 'heart'],
+  // Dolch primer
+  all: ['We ate ___ the cookies.', ''], am: ['I ___ six years old.', ''], are: ['You ___ my best friend.', 'heart'],
+  at: ['Look ___ the bird!', 'bird'], ate: ['The dog ___ his food.', 'dog'], be: ['I want to ___ a doctor.', ''],
+  black: ['My cat is ___.', 'cat'], brown: ['A bear is ___.', ''], but: ['I am small, ___ I am strong.', ''],
+  came: ['Grandma ___ to visit.', 'house'], did: ['I ___ my homework.', 'book'], do: ['I can ___ it!', ''],
+  eat: ['I like to ___ apples.', 'apple'], four: ['A dog has ___ legs.', 'dog'], get: ['Please ___ your shoes.', ''],
+  good: ['This cake is so ___!', ''], have: ['I ___ a pet dog.', 'dog'], he: ['Dad says ___ loves me.', 'heart'],
+  into: ['The frog jumped ___ the pond.', ''], like: ['I ___ to read books.', 'book'], must: ['You ___ wash your hands.', 'hand'],
+  new: ['I got a ___ book.', 'book'], no: ['I said ___, thank you.', ''], now: ['Time for bed ___!', 'clock'],
+  on: ['The cat sat ___ the mat.', 'cat'], our: ['This is ___ house.', 'house'], out: ['The dog went ___ to play.', 'dog'],
+  please: ['May I have a cookie, ___?', ''], pretty: ['The flower is so ___.', 'flower'], ran: ['The dog ___ fast.', 'dog'],
+  ride: ['I like to ___ my bike.', ''], saw: ['I ___ a bird in the tree.', 'bird'], say: ['What did you ___?', 'talk'],
+  she: ['Mom said ___ is proud of me.', 'heart'], so: ['I am ___ happy!', ''], soon: ['We will eat lunch ___.', 'clock'],
+  that: ['I want ___ toy.', ''], there: ['The ball is over ___.', 'ball'], they: ['My friends said ___ want to play.', ''],
+  this: ['I like ___ book.', 'book'], too: ['I want to play ___!', ''], under: ['The cat is ___ the bed.', 'cat'],
+  want: ['I ___ a drink of water.', 'water'], was: ['The cake ___ yummy.', ''], well: ['She sings very ___.', 'music'],
+  went: ['We ___ to the park.', 'tree'], what: ['Do you know ___ time it is?', 'clock'], white: ['Snow is ___.', 'snow'],
+  who: ['Do you know ___ is at the door?', 'house'], will: ['I ___ help you.', ''], with: ['Come and play ___ me.', 'ball'],
+  yes: ['I said ___, please!', ''],
+  // Dolch first grade
+  after: ['We play ___ lunch.', ''], again: ['Read it ___, please!', 'book'], an: ['I ate ___ apple.', 'apple'],
+  any: ['Do you have ___ milk?', ''], as: ['He is as tall ___ his dad.', ''], ask: ['I can ___ for help.', 'talk'],
+  by: ['The cat sat ___ the door.', 'cat'], could: ['I ___ not find my shoe.', ''], every: ['I brush my teeth ___ day.', ''],
+  fly: ['Birds can ___.', 'bird'], from: ['I got a gift ___ Grandma.', 'gift'], give: ['I will ___ you a hug.', 'heart'],
+  going: ['We are ___ to the park.', 'tree'], had: ['I ___ fun today.', ''], has: ['The dog ___ a bone.', 'dog'],
+  her: ['I gave ___ a flower.', 'flower'], him: ['I gave ___ a ball.', 'ball'], his: ['The boy lost ___ hat.', ''],
+  how: ['Do you know ___ to swim?', ''], just: ['I ___ want one cookie.', ''], know: ['I ___ my ABCs.', 'book'],
+  let: ['Please ___ me play.', 'ball'], live: ['I ___ in a house.', 'house'], may: ['You ___ go outside now.', 'tree'],
+  of: ['I ate a bowl ___ soup.', ''], old: ['My dog is very ___.', 'dog'], once: ['I have been to the zoo ___.', ''],
+  open: ['Please ___ the door.', 'house'], over: ['The cow jumped ___ the moon.', 'moon'], put: ['Please ___ your toys away.', ''],
+  round: ['A ball is ___.', 'ball'], some: ['May I have ___ juice?', 'juice'], stop: ['Red means ___.', ''],
+  take: ['Please ___ one cookie.', ''], thank: ['I say ___ you.', 'heart'], them: ['I play with my friends. I like ___.', 'heart'],
+  then: ['First we eat, ___ we play.', ''], think: ['I ___ it will rain.', ''], walk: ['I ___ my dog every day.', 'dog'], more: ['Can I have ___ milk, please?', 'juice'],
+  were: ['We ___ at the park.', 'tree'], when: ['Do you know ___ lunch is?', 'clock'],
+  // Other words we've used
+  even: ['2, 4, and 6 are ___ numbers.', ''], first: ['I came in ___ place in the race.', 'star'],
+  against: ['I leaned my bike ___ the wall.', ''], while: ['Mom read a book ___ I took a nap.', 'book'],
+  follow: ['Please ___ me to the park.', 'tree'], baby: ['The ___ is crying.', 'baby'], love: ['I ___ my mom.', 'heart'],
+  very: ['An elephant is ___ big.', 'elephant'], talk: ['I like to ___ to Dad.', 'talk']
+};
+let daily = null;   // { words, i, phase: 'practice' | 'check' | 'review', practiced, practice: {word: {tricky, helps}}, order, results }
+
+function parseList(text) {
+  const raw = /[,\n;]/.test(text) ? text.split(/[,\n;]+/) : text.split(/\s+/);
+  const seen = new Set();
+  return raw.map(w => w.trim().replace(/[^A-Za-z' ]/g, '').replace(/\s+/g, ' ')).filter(w => w && !seen.has(w.toLowerCase()) && seen.add(w.toLowerCase())).slice(0, 15);
+}
+function sightPracticeWords() {   // this week's list on the worksheets page (same site, same browser)
+  try { const st = JSON.parse(localStorage.getItem('fgfw-state') || '{}'); return st.sight && st.sight.words ? parseList(st.sight.words.replace(/\s+/g, ', ')) : []; } catch (e) { return []; }
+}
+function renderDailySetup() {
+  $('mailTo').textContent = RESULTS_EMAIL;
+  const saved = store('spell-daily');
+  if (saved && !$('dailyIn').value) $('dailyIn').value = saved.words || '';
+  if (saved && typeof saved.practice === 'boolean') $('dailyPractice').checked = saved.practice;
+  if (saved && typeof saved.look === 'boolean') $('dailyLook').checked = saved.look;
+  if (saved && typeof saved.mic === 'boolean') $('dailyMic').checked = saved.mic;
+  if (saved && typeof saved.keep === 'boolean') $('dailyKeep').checked = saved.keep;
+  renderClips();
+  const sw = sightPracticeWords();
+  $('useSight').hidden = !sw.length;
+  $('useSight').textContent = sw.length ? `Use this week’s Sight Word Practice words (${sw.slice(0, 4).join(', ')}${sw.length > 4 ? '…' : ''})` : '';
+  $('dailyStart').disabled = !parseList($('dailyIn').value).length;
+  renderLastCheck();
+}
+function saveDailySetup() { store('spell-daily', { words: $('dailyIn').value, practice: $('dailyPractice').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked }); }
+$('dailyIn').addEventListener('input', () => { $('dailyStart').disabled = !parseList($('dailyIn').value).length; saveDailySetup(); });
+$('dailyPractice').addEventListener('change', saveDailySetup);
+['dailyLook', 'dailyMic', 'dailyKeep'].forEach(id => $(id).addEventListener('change', saveDailySetup));
+$('useSight').onclick = () => { $('dailyIn').value = sightPracticeWords().join(', '); saveDailySetup(); renderDailySetup(); };
+$('dailyStart').onclick = () => {
+  const words = parseList($('dailyIn').value); if (!words.length) return;
+  stopRecord(); saveDailySetup();
+  daily = { words, i: 0, phase: 'practice', practiced: $('dailyPractice').checked, looked3: $('dailyLook').checked, micWanted: $('dailyMic').checked, keepVoice: $('dailyKeep').checked, practice: {}, results: [] };
+  if (daily.looked3) startLook(); else afterLook();
+};
+
+function renderDailyBar() {
+  if (!daily) { $('dailyBar').hidden = true; return; }
+  const n = daily.phase === 'check' ? daily.order.length : daily.words.length;
+  const label = daily.phase === 'look' ? `Look & Listen · round ${daily.round} of 3` : daily.phase === 'check' ? 'Check' : daily.phase === 'review' ? 'Practice the tricky ones' : 'Practice';
+  $('dailyBar').hidden = false;
+  $('dailyBarText').textContent = `${label} · word ${Math.min(daily.i + 1, n)} of ${n}`;
+}
+/* ---- Look & Listen: like doing it at the table. He sees the word, says it, then hears how it's said. 3 rounds. ---- */
+function mixed(list) {
+  const o = [...list];
+  for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; }
+  return o;
+}
+let lookTimer = null;
+/* ---- Making sure he says it: the microphone listens for his voice (it can't tell WHICH word, only that he said
+   something out loud, louder than the room). Nothing leaves the device; his clips are kept here for the grown-up. ---- */
+let mic = null, listenToken = 0;
+async function getMic() {
+  if (mic) return mic;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !AC) return null;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } });
+    const ctx = new AC(), an = ctx.createAnalyser(); an.fftSize = 1024;
+    ctx.createMediaStreamSource(stream).connect(an);
+    mic = { stream, ctx, an, buf: new Float32Array(an.fftSize) };
+    return mic;
+  } catch (e) { return null; }
+}
+function micLevel() { mic.an.getFloatTimeDomainData(mic.buf); let t = 0; for (const v of mic.buf) t += v * v; return Math.sqrt(t / mic.buf.length); }
+function stopMic() { listenToken++; if (!mic) return; mic.stream.getTracks().forEach(t => t.stop()); try { mic.ctx.close(); } catch (e) { } mic = null; }
+async function quietNow() { let n = 0; while (n++ < 80 && ((canTalk && speechSynthesis.speaking) || (nowAudio && !nowAudio.paused && !nowAudio.ended))) await wait(100); await wait(250); }
+/* Resolves { clip } once he has said something for a moment, or null if cancelled. */
+function listenForVoice(onLevel, onNudge, keep) {
+  const my = ++listenToken;
+  return new Promise(async res => {
+    if (mic.ctx.state === 'suspended') { try { await mic.ctx.resume(); } catch (e) { } }
+    let floor = 0, n = 0; const t0 = performance.now();   // measure the room first
+    while (performance.now() - t0 < 450) { floor += micLevel(); n++; await wait(30); if (my !== listenToken) return res(null); }
+    const th = Math.max(0.012, (floor / Math.max(1, n)) * 3.2);
+    let mr = null, chunks = [];
+    if (keep && window.MediaRecorder) { try { mr = new MediaRecorder(mic.stream, { audioBitsPerSecond: 24000 }); mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); }; mr.start(); } catch (e) { mr = null; } }
+    let voiced = 0, gap = 0, heardAt = 0, nudged = false, last = performance.now(); const start = last;
+    const finish = (heard) => {
+      clearInterval(timer);
+      if (!heard) { try { mr && mr.state !== 'inactive' && mr.stop(); } catch (e) { } return res(null); }
+      if (!mr) return res({ clip: null });
+      mr.onstop = () => { const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' }); if (!blob.size) return res({ clip: null }); const fr = new FileReader(); fr.onload = () => res({ clip: fr.result }); fr.onerror = () => res({ clip: null }); fr.readAsDataURL(blob); };
+      try { mr.stop(); } catch (e) { res({ clip: null }); }
+    };
+    const timer = setInterval(() => {
+      if (my !== listenToken) return finish(false);
+      const now = performance.now(), dt = now - last; last = now;
+      const lvl = micLevel(); onLevel(Math.min(1, lvl / (th * 2.5)));
+      if (lvl > th) { voiced += dt; gap = 0; } else { gap += dt; if (!heardAt && gap > 300) voiced = 0; }
+      if (!heardAt && voiced >= 320) heardAt = now;                              // a real moment of voice, not a click or a bump
+      if (heardAt && (gap >= 650 || now - heardAt > 3000)) return finish(true);  // let him finish the word
+      if (!heardAt && !nudged && now - start > 8000) { nudged = true; onNudge(); }
+    }, 40);
+  });
+}
+/* Look & Listen log (localStorage "spell-look-log"): last 7 sessions, each { session, t, words, heard, total, micOk, clips: [{word, round, url}] } */
+function lookLog() {
+  let log = store('spell-look-log') || [];
+  const old = store('spell-look-clips');   // one-time move from the first version (one session only)
+  if (old && old.clips) { if (!log.some(x => x.session === old.session)) log.push({ session: old.session, t: old.t, clips: old.clips }); try { localStorage.removeItem('spell-look-clips'); } catch (e) { } saveLookLog(log); }
+  return log;
+}
+function saveLookLog(log) {
+  log = log.slice(-7);
+  for (;;) {
+    try { localStorage.setItem('spell-look-log', JSON.stringify(log)); return true; }
+    catch (e) { if (log.length > 1) log.shift(); else return false; }   // out of room: drop the oldest day's recordings
+  }
+}
+function lookSession(create) {
+  const log = lookLog();
+  let sess = log.find(x => x.session === daily.session);
+  if (!sess && create) { sess = { session: daily.session, t: daily.session, words: daily.words, clips: [] }; log.push(sess); }
+  return { log, sess };
+}
+function saveClip(word, round, url) {
+  if (!url) return;
+  const { log, sess } = lookSession(true);
+  sess.clips.push({ word, round, url });
+  if (!saveLookLog(log)) { sess.clips.pop(); saveLookLog(log); }
+}
+function saveLookStats() {
+  if (!daily || !daily.session) return;
+  const { log, sess } = lookSession(true);
+  Object.assign(sess, { heard: daily.heard, total: daily.lookTotal, micOk: daily.micOk, micWanted: daily.micWanted, words: daily.words });
+  saveLookLog(log);
+}
+function clipButtons(sess) {
+  const words = [...new Set(sess.clips.map(c => c.word))];
+  return words.map(w => `<div class="cw"><b>${esc(w)}</b>${sess.clips.map((c, k) => c.word === w ? `<button data-clip="${sess.session}:${k}">▶ round ${c.round}</button>` : '').join('')}</div>`).join('');
+}
+function renderClips() {   // the latest session, right on the setup card
+  const log = lookLog(), sess = [...log].reverse().find(x => x.clips && x.clips.length), el = $('lookClips');
+  el.innerHTML = sess ? `<b>Listen to his latest Look &amp; Listen (${esc(shortDate(sess.t))}):</b>` + clipButtons(sess) : '';
+}
+function playLogClip(ref) {
+  const [sid, k] = ref.split(':'); const sess = lookLog().find(x => String(x.session) === sid);
+  const c = sess && sess.clips[+k]; if (c) playClip(c.url);
+}
+$('lookClips').addEventListener('click', e => { const b = e.target.closest('[data-clip]'); if (b) playLogClip(b.dataset.clip); });
+
+async function startLook() {
+  daily.phase = 'look'; daily.round = 1; daily.i = 0; daily.lookOrder = [...daily.words];
+  daily.session = Date.now(); daily.heard = 0; daily.lookTotal = 0; daily.micOk = false;
+  if (daily.micWanted) daily.micOk = !!(await getMic());
+  show('look'); lookWord();
+}
+async function lookWord() {
+  clearTimeout(lookTimer); listenToken++;
+  const w = daily.lookOrder[daily.i];
+  renderDailyBar();
+  $('lookWord').textContent = w;
+  $('saidIt').hidden = true; $('lookAgain').hidden = true; $('lookNext').hidden = true;
+  $('meterFill').style.width = '0';
+  const useMic = daily.micOk && mic;
+  $('meter').hidden = !useMic; $('micHint').hidden = !useMic;
+  $('micHint').textContent = '🎤 I’m listening…';
+  $('lookPrompt').textContent = useMic ? 'Read it out loud! 🎤' : 'Read it out loud!';
+  if (daily.round === 1 && daily.i === 0) say(useMic ? 'Look at the word. Read it out loud, so I can hear you.' : 'Look at the word. Read it out loud.', 0.95);
+  daily.lookTotal++;
+  if (!useMic) { lookTimer = setTimeout(() => { if (!$('look').hidden) $('saidIt').hidden = false; }, 1500); return; }   // no mic: the button, after a moment to read
+  const my = listenToken;
+  await quietNow();                                     // don't let the computer's own voice count
+  if (my !== listenToken || $('look').hidden) return;
+  const r = await listenForVoice(
+    lvl => { $('meterFill').style.width = Math.round(lvl * 100) + '%'; },
+    () => { $('lookPrompt').textContent = 'I can’t hear you. Say it nice and loud!'; $('micHint').textContent = '🎤 Still listening…'; },
+    daily.keepVoice);
+  if (!r || my + 1 !== listenToken || $('look').hidden) return;
+  daily.heard++;
+  if (daily.keepVoice) saveClip(w, daily.round, r.clip);
+  heardIt();
+}
+async function heardIt() {
+  const w = daily.lookOrder[daily.i];
+  $('saidIt').hidden = true; $('meter').hidden = true; $('micHint').hidden = true;
+  $('lookPrompt').textContent = daily.micOk && mic ? 'I heard you! Now listen: this is how it sounds.' : 'Listen: this is how it sounds.';
+  await playWord(w, 0.85);
+  if ($('look').hidden) return;
+  $('lookAgain').hidden = false; $('lookNext').hidden = false;
+  $('lookNext').textContent = daily.i < daily.lookOrder.length - 1 ? 'Next word →' : daily.round < 3 ? `Round ${daily.round + 1} →` : 'Done looking →';
+  $('lookNext').focus();
+}
+$('saidIt').onclick = () => heardIt();
+$('lookAgain').onclick = () => playWord(daily.lookOrder[daily.i], 0.85);
+$('lookNext').onclick = () => {
+  if (daily.i < daily.lookOrder.length - 1) { daily.i++; return lookWord(); }
+  if (daily.round < 3) {
+    daily.round++; daily.i = 0;
+    let o = mixed(daily.words); if (o.length > 2 && o.every((w, k) => w === daily.lookOrder[k])) o.push(o.shift());   // mixed up, so he reads instead of remembering the order
+    daily.lookOrder = o;
+    say(`Round ${daily.round}!`, 1); return lookWord();
+  }
+  say('Great reading!', 1);
+  afterLook();
+};
+function afterLook() { stopMic(); saveLookStats(); renderClips(); daily.i = 0; daily.phase = 'practice'; if (daily.practiced) practiceWord(); else readyForCheck(); }
+
+function practiceWord() {
+  $('wordIn').value = daily.words[daily.i];
+  begin();
+}
+// Called at the end of finish(): during the daily routine, the done screen gets a Next button
+function dailyAfterWord() {
+  const inDaily = daily && (daily.phase === 'practice' || daily.phase === 'review');
+  $('again').hidden = $('newWord').hidden = !!inDaily;
+  $('nextWord').hidden = !inDaily;
+  if (!inDaily) return;
+  if (daily.phase === 'practice') daily.practice[daily.words[daily.i]] = { tricky: helpedAt.size, helps: stats.helps };
+  const last = daily.i >= daily.words.length - 1;
+  $('nextWord').textContent = !last ? 'Next word →' : daily.phase === 'practice' ? 'On to the check →' : 'All done →';
+}
+$('nextWord').onclick = () => {
+  if (!daily) return show('setup');
+  if (daily.i < daily.words.length - 1) { daily.i++; return practiceWord(); }
+  if (daily.phase === 'practice') return readyForCheck();
+  show('setup');
+};
+
+/* ---- The check: the word is said (and used in a sentence), never shown; no help, no right/wrong until the end ---- */
+let typed = '';
+function readyForCheck() {
+  daily.phase = 'check'; daily.i = 0; daily.results = [];
+  const o = [...daily.words];   // mixed up, like a real test
+  for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; }
+  if (o.length > 2 && o.every((w, i) => w === daily.words[i])) o.push(o.shift());   // never exactly the practice order
+  daily.order = o;
+  $('readyTitle').textContent = daily.practiced ? 'Practice done!' : daily.looked3 ? 'Great reading!' : 'Sight word check!';
+  $('checkReady').hidden = false; $('checkRun').hidden = true;
+  show('check'); renderDailyBar();
+  say(daily.practiced ? 'Great practicing! Now the check. Spell each word all by yourself.' : 'Time for the check. Spell each word all by yourself.', 0.95);
+}
+$('checkGo').onclick = () => { $('checkReady').hidden = true; $('checkRun').hidden = false; buildCheckKeys(); checkWord(); };
+function buildCheckKeys() {
+  $('ckeys').innerHTML = 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<div class="key" data-k="${ch}"><button class="kpick" aria-label="${ch.toUpperCase()}">${ch}</button></div>`).join('');
+  $('spaceBtn').hidden = !daily.words.some(w => w.includes(' '));
+}
+const sentenceFor = w => { const x = SENTENCES[w.toLowerCase()]; return x && x[0].includes('___') ? x[0].replace('___', w) : ''; };
+function sayCheckWord(withSentence) {
+  const w = daily.order[daily.i], sent = sentenceFor(w);
+  return playWord(w, 0.85).then(() => withSentence && sent ? wait(300).then(() => say(sent, 0.85)).then(() => wait(300)).then(() => playWord(w, 0.85)) : null);
+}
+function checkWord() {
+  if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();   // so Enter can't press a hidden button
+  typed = ''; renderAnswer(); renderDailyBar();
+  $('cmsg').className = 'message'; $('cmsg').textContent = 'Listen, then spell the word. Tap Done when you’re finished.';
+  sayCheckWord(true);
+}
+function renderAnswer() {
+  $('answer').innerHTML = [...typed].map(ch => ch === ' ' ? '<span class="lbox sp"></span>' : `<span class="lbox">${esc(ch)}</span>`).join('') + '<span class="lbox cursor"></span>';
+  $('doneBtn').disabled = !typed.trim();
+}
+function typeLetter(ch) { if (!$('confirm').hidden) return; if (typed.length < 24) { typed += ch; renderAnswer(); } }
+$('ckeys').addEventListener('click', e => { const k = e.target.closest('[data-k]'); if (k) typeLetter(k.dataset.k); });
+$('spaceBtn').onclick = () => { if (typed && !typed.endsWith(' ')) typeLetter(' '); };
+$('backBtn').onclick = () => { typed = typed.slice(0, -1); renderAnswer(); };
+$('cHearWord').onclick = () => sayCheckWord(false);
+$('cHearSent').onclick = () => sayCheckWord(true);
+$('doneBtn').onclick = () => askSure();
+document.addEventListener('keydown', e => {
+  if ($('check').hidden || $('checkRun').hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (/^[a-z]$/i.test(e.key)) typeLetter(e.key.toLowerCase());
+  else if (e.key === 'Backspace') { e.preventDefault(); $('backBtn').click(); }
+  else if (e.key === ' ' && !$('spaceBtn').hidden) { e.preventDefault(); $('spaceBtn').click(); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (!$('doneBtn').disabled) askSure(); }
+});
+/* Every word gets an "Are you sure?" before it's locked in. Once he says yes, it can't be changed. */
+function askSure() {
+  if (!typed.trim()) return;
+  $('confirmWord').innerHTML = [...typed.trim()].map(ch => ch === ' ' ? '<span class="lbox sp"></span>' : `<span class="lbox">${esc(ch)}</span>`).join('');
+  $('confirm').hidden = false;
+  say('Are you sure? Once you say yes, you can’t change it.', 0.95);
+  $('confirmNo').focus();
+}
+$('confirmNo').onclick = () => { $('confirm').hidden = true; $('cmsg').className = 'message'; $('cmsg').textContent = 'Take your time. Look at each letter. Tap Done when you’re sure.'; };
+$('confirmYes').onclick = () => { $('confirm').hidden = true; checkDone(); };
+document.addEventListener('keydown', e => {   // while the question is up, letters and Enter don't sneak through
+  if ($('confirm').hidden) return;
+  if (e.key === 'Escape') $('confirmNo').click();
+  e.stopImmediatePropagation();
+}, true);
+const norm = t => t.toLowerCase().replace(/\s+/g, ' ').trim();
+function checkDone() {
+  if (!typed.trim()) return;
+  const w = daily.order[daily.i];
+  daily.results.push({ word: w, typed: typed.trim(), ok: norm(typed) === norm(w) });
+  $('doneBtn').disabled = true;
+  if (daily.i < daily.order.length - 1) {
+    $('cmsg').className = 'message good'; $('cmsg').textContent = 'Got it! Here comes the next word.';
+    daily.i++; setTimeout(() => { if (!$('check').hidden) checkWord(); }, 900);
+  } else showResults();
+}
+
+/* ---- Grade: percent + letter, with a message about practice, taking your time and trying your best ---- */
+function gradeFor(right, n) {
+  const pct = n ? Math.round(right / n * 100) : 0;
+  const letter = pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F';
+  const color = { A: '#34D399', B: '#7FB0F0', C: '#FBBF24', D: '#FB923C', F: '#F87171' }[letter];
+  const msg = {
+    A: pct === 100 ? 'Perfect! Your practice and hard work paid off!' : 'Amazing work! Your practice is paying off!',
+    B: 'Great job! A little more practice and you’ll get them all.',
+    C: 'Good try! Practice the tricky ones and take your time next time.',
+    D: 'Keep practicing! Slow down, listen carefully, and try your best.',
+    F: 'This one was hard. Practice every day, take your time, and try your best. You can do it!'
+  }[letter];
+  return { pct, letter, color, msg };
+}
+
+/* ---- Results: shown to him, saved for Spelling Fix-Up, and emailed ---- */
+function fixupLink(rec) {
+  const missed = rec.results.filter(r => !r.ok).slice(0, 6);
+  if (!missed.length) return '';
+  const base = location.origin + location.pathname.replace(/spell\.html$/, '');
+  return `${base}?fixup=${encodeURIComponent(missed.map(r => `${r.word}:${r.typed}`).join('|'))}&fxl=${encodeURIComponent('Sight word check · ' + shortDate(rec.t))}#fixup`;
+}
+const shortDate = t => new Date(t).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+function showResults() {
+  // put results back in the list's order
+  const byWord = Object.fromEntries(daily.results.map(r => [r.word, r]));
+  const results = daily.words.map(w => byWord[w]).filter(Boolean);
+  const right = results.filter(r => r.ok).length, n = results.length;
+  const rec = { id: Date.now().toString(36), t: Date.now(), results, looked3: !!daily.looked3, look: daily.looked3 ? { micWanted: daily.micWanted, micOk: daily.micOk, heard: daily.heard, total: daily.lookTotal, kept: daily.keepVoice } : null, practiced: daily.practiced, practice: daily.practice, sent: false };
+  rec.session = daily.session || null;
+  store('spell-check-latest', rec);
+  const outbox = store('spell-check-outbox') || []; outbox.push(rec); store('spell-check-outbox', outbox.slice(-20));
+  daily.phase = 'results'; daily.missed = results.filter(r => !r.ok).map(r => r.word);
+  show('results'); renderDailyBar(); $('dailyBar').hidden = true;
+  const g = gradeFor(right, n);
+  rec.grade = { pct: g.pct, letter: g.letter }; store('spell-check-latest', rec);
+  const clog = store('spell-check-log') || []; clog.push(rec); store('spell-check-log', clog.slice(-30));
+  const ob = store('spell-check-outbox') || []; const me = ob.find(x => x.id === rec.id); if (me) { me.grade = rec.grade; store('spell-check-outbox', ob); }
+  $('resTitle').textContent = 'All done!';
+  $('grade').innerHTML = `<span class="letter" style="background:${g.color}">${g.letter}</span><span class="pct">${g.pct}%<small>${right} of ${n} right</small></span>`;
+  $('gradeMsg').textContent = g.msg;
+  $('resScore').hidden = true;
+  $('resList').innerHTML = results.map(r => r.ok
+    ? `<div class="res ok"><span class="mark">✓</span><span class="w">${esc(r.word)}</span></div>`
+    : `<button class="res no" data-miss="${esc(r.word)}"><span class="mark">✗</span><div><div class="w">${esc(r.word)}</div><div class="his">You wrote <s>${esc(r.typed)}</s></div></div><span class="look">tap to hear it</span></button>`).join('');
+  // Under 100%: he has to look at every mistake before he can go on to the Fix-Up practice
+  daily.looked = new Set(); daily.lastRec = rec;
+  const anyMissed = daily.missed.length > 0;
+  $('reviewedBtn').hidden = !anyMissed; $('reviewedBtn').disabled = true;
+  $('resDone').hidden = anyMissed;
+  $('reviewNote').hidden = !anyMissed;
+  say(`You got ${right} out of ${n}. That’s ${g.pct} percent, a${'AF'.includes(g.letter) ? 'n' : ''} ${g.letter}. ${g.msg}`, 0.95);
+  const confettiOn = right === n;
+  if (confettiOn) { const conf = document.createElement('div'); conf.className = 'confetti'; const cols = ['#3C7DD9', '#F59E0B', '#34D399', '#C4B5FD', '#F87171', '#FACC15']; conf.innerHTML = Array.from({ length: 60 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-delay:${Math.random() * 0.8}s"></i>`).join(''); document.body.appendChild(conf); setTimeout(() => conf.remove(), 3600); }
+  $('resSent').textContent = 'Sending the results to your grown-up…';
+  sendOutbox().then(() => { const l = store('spell-check-latest'); $('resSent').textContent = l && l.sent ? `For the grown-up: results emailed to ${RESULTS_EMAIL}.` : 'For the grown-up: the email couldn’t send right now (no internet?). It will try again the next time this page opens.'; });
+}
+$('resList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-miss]'); if (!b || !daily) return;
+  const w = b.dataset.miss;
+  b.classList.add('looked'); b.querySelector('.look').textContent = '✓ looked';
+  daily.looked.add(w);
+  const done = daily.missed.every(m => daily.looked.has(m));
+  $('reviewedBtn').disabled = !done;
+  $('reviewNote').textContent = done ? 'Great looking! Now let’s practice them.' : 'Tap each word you missed to see and hear how it’s spelled.';
+  await playWord(w, 0.85); await wait(250);
+  await say([...w.replace(/\s+/g, '')].map(letterName).join(', '), 0.7); await wait(250);   // "w, h, i, l, e"
+  await playWord(w, 0.85);
+});
+$('reviewedBtn').onclick = () => {
+  if (!daily || !daily.lastRec) return;
+  const missed = daily.lastRec.results.filter(r => !r.ok).slice(0, 6);
+  location.href = 'fixup.html?w=' + encodeURIComponent(missed.map(r => `${r.word}:${r.typed}`).join('|')) + '&from=' + encodeURIComponent('Sight word check · ' + shortDate(daily.lastRec.t)) + '&cid=' + encodeURIComponent(daily.lastRec.id);
+};
+$('resDone').onclick = () => show('setup');
+
+function emailBody(rec) {
+  const right = rec.results.filter(r => r.ok).length, n = rec.results.length;
+  const missed = rec.results.filter(r => !r.ok);
+  const body = {
+    _subject: `Sight word check: ${(rec.grade || gradeFor(right, n)).pct}% ${(rec.grade || gradeFor(right, n)).letter}, ${right} of ${n} right (${shortDate(rec.t)})`,
+    _template: 'table',
+    _captcha: 'false',
+    'Date': new Date(rec.t).toLocaleString(undefined, { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+    'Grade': `${(rec.grade || gradeFor(right, n)).pct}% (${(rec.grade || gradeFor(right, n)).letter})`,
+    'Score': `${right} of ${n} right`,
+    'Missed words': missed.length ? missed.map(r => `${r.word} (he wrote "${r.typed}")`).join(', ') : 'None!'
+  };
+  rec.results.forEach((r, i) => { body[`${i + 1}. ${r.word}`] = r.ok ? 'right' : `wrong: he wrote "${r.typed}"`; });
+  const lk = rec.look;
+  body['Look & Listen'] = !rec.looked3 ? 'Skipped'
+    : `Done: saw and heard each word 3 times. ` + (!lk || !lk.micWanted ? 'Microphone check was off.'
+      : !lk.micOk ? 'The microphone wasn’t available, so it couldn’t check that he said them.'
+      : `Said out loud: ${lk.heard} of ${lk.total} (the microphone heard him).${lk.kept ? ' Listen to his recordings in Parent Review on that device.' : ''}`);
+  body['Practice first'] = rec.practiced
+    ? rec.results.map(r => { const p = rec.practice[r.word]; return p ? `${r.word}: ${p.tricky ? `${p.tricky} tricky letter${p.tricky > 1 ? 's' : ''}` : 'no trouble'}${p.helps ? `, Help ${p.helps}x` : ''}` : `${r.word}: skipped`; }).join(' · ')
+    : 'Skipped';
+  const link = fixupLink(rec);
+  if (link) body['Make a Spelling Fix-Up sheet'] = link;
+  body['Parent Review (recordings + results)'] = location.origin + location.pathname.replace(/[^/]*$/, '') + 'spell.html#review   (open it on the device he used: his recordings are saved there)';
+  return body;
+}
+let sending = false;
+async function sendOutbox() {
+  if (sending) return; sending = true;
+  try {
+    let box = store('spell-check-outbox') || [];
+    for (const rec of [...box]) {
+      try {
+        const res = await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(emailBody(rec)) });
+        if (!res.ok) break;
+        box = box.filter(x => x.id !== rec.id); store('spell-check-outbox', box);
+        const l = store('spell-check-latest'); if (l && l.id === rec.id) { l.sent = true; store('spell-check-latest', l); }
+      } catch (e) { break; }
+    }
+  } finally { sending = false; renderLastCheck(); }
+}
+function renderLastCheck() {
+  const l = store('spell-check-latest'), box = store('spell-check-outbox') || [];
+  if (!l) { $('lastCheck').innerHTML = ''; return; }
+  const right = l.results.filter(r => r.ok).length, missed = l.results.filter(r => !r.ok);
+  const lg = l.grade || gradeFor(right, l.results.length);
+  $('lastCheck').innerHTML = `<b>Last check (${esc(shortDate(l.t))}):</b> ${lg.pct}% ${lg.letter} · ${right} of ${l.results.length} right${missed.length ? ` · missed ${missed.map(r => `${esc(r.word)} (“${esc(r.typed)}”)`).join(', ')}` : ''} · ${l.sent ? 'emailed ✓' : 'not emailed yet'}`
+    + (box.length ? ` <button class="linkbtn" id="retrySend">Try sending again</button>` : '')
+    + (missed.length ? ` · <a href="${esc(fixupLink(l))}">Make a Spelling Fix-Up sheet</a>` : '');
+  const r = document.getElementById('retrySend'); if (r) r.onclick = () => sendOutbox();
+}
+
+/* ---- Parent Review: by day, newest first ---- */
+const dayKey = t => new Date(t).toDateString();
+const timeOf = t => new Date(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+function renderReview() {
+  const looks = lookLog(), checks = store('spell-check-log') || [], fixes = store('fixup-log') || [];
+  const days = {};
+  const add = (t, item) => { (days[dayKey(t)] = days[dayKey(t)] || { t, items: [] }).items.push(item); };
+  looks.forEach(x => add(x.t, { t: x.t, kind: 'look', x }));
+  checks.forEach(x => add(x.t, { t: x.t, kind: 'check', x }));
+  fixes.forEach(x => add(x.t, { t: x.t, kind: 'fix', x }));
+  const order = Object.values(days).sort((a, b) => b.t - a.t);
+  if (!order.length) { $('reviewList').innerHTML = '<p class="rv-empty">Nothing yet. Results show up here after he does the daily sight words.</p>'; return; }
+  const wordList = rs => rs.map(r => r.ok ? `<span class="ok">✓ ${esc(r.word)}</span>` : `<span class="no">✗ ${esc(r.word)} (wrote “${esc(r.typed)}”)</span>`).join(' · ');
+  $('reviewList').innerHTML = order.map(d => `<div class="rv-day"><h3>${esc(new Date(d.t).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }))}</h3>`
+    + d.items.sort((a, b) => a.t - b.t).map(it => {
+      const x = it.x;
+      if (it.kind === 'look') return `<div class="rv-sec"><h4>Look &amp; Listen<span>${esc(timeOf(x.t))}</span></h4>
+        <div class="ln">${x.micOk === false && x.micWanted ? 'The microphone wasn’t available, so it couldn’t check.' : x.total ? `Said out loud: ${x.heard} of ${x.total}` : ''}</div>
+        ${x.clips && x.clips.length ? `<div class="clips">${clipButtons(x)}</div><button class="del" data-delsess="${x.session}">Delete these recordings</button>` : '<div class="ln rv-empty">No recordings saved.</div>'}</div>`;
+      if (it.kind === 'check') { const right = x.results.filter(r => r.ok).length, g = x.grade || gradeFor(right, x.results.length);
+        return `<div class="rv-sec"><h4>Sight word check<span>${esc(timeOf(x.t))} · ${g.pct}% ${g.letter} · ${right} of ${x.results.length} right${x.sent ? ' · emailed ✓' : ''}</span></h4><div class="ln">${wordList(x.results)}</div></div>`; }
+      const right = x.test.filter(r => r.ok).length;
+      return `<div class="rv-sec"><h4>Spelling Fix-Up<span>${esc(timeOf(x.t))} · Practice Test ${x.grade.pct}% ${x.grade.letter} · ${right} of ${x.test.length} right</span></h4>
+        <div class="ln">${wordList(x.test)}</div><div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div></div>`;
+    }).join('') + '</div>').join('');
+}
+$('reviewList').addEventListener('click', e => {
+  const c = e.target.closest('[data-clip]'); if (c) return playLogClip(c.dataset.clip);
+  const d = e.target.closest('[data-delsess]');
+  if (d) { const log = lookLog(); const sess = log.find(x => String(x.session) === d.dataset.delsess); if (sess) { sess.clips = []; saveLookLog(log); } renderReview(); renderClips(); }
+});
+holdToOpen($('reviewBtn'), 2000, 'review');
+$('openReview').onclick = () => show('review');
+$('reviewDone').onclick = () => show('setup');
+
 renderRecent();
 renderSetup();
+renderDailySetup();
+if (location.hash === '#review') show('review');
+if ((store('spell-check-outbox') || []).length) sendOutbox();   // send anything that didn't go out last time
+(async () => {   // also resend on-screen Fix-Up results that didn't go out (they're saved with their finished email)
+  let box = store('fixup-outbox') || [];
+  for (const rec of [...box]) {
+    if (!rec.body) continue;
+    try {
+      const res = await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(rec.body) });
+      if (!res.ok) break;
+      box = box.filter(x => x.id !== rec.id); store('fixup-outbox', box);
+      const l = store('fixup-latest'); if (l && l.id === rec.id) { l.sent = true; store('fixup-latest', l); }
+    } catch (e) { break; }
+  }
+})();
 const q = new URLSearchParams(location.search).get('word');
 if (q) { $('wordIn').value = q; renderSetup(); }
 </script>

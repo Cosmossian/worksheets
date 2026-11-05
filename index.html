@@ -907,9 +907,22 @@ function panelMaster() {
   <div id="cards">${wordCards('master')}</div>
   ${printBlock(true)}`;
 }
+/* Latest daily sight word check from the Spelling Helper (spell.html saves it in this browser) */
+function latestCheck() { try { return JSON.parse(localStorage.getItem('spell-check-latest') || 'null'); } catch (e) { return null; } }
+const checkDate = t => new Date(t).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+function useCheck(missed, label) {   // missed: [{word, typed}]
+  const m = missed.slice(0, MAX_WORDS);
+  state.fixup.words = m.map(r => r.word).join(', ');
+  state.fixup.wrote = Object.fromEntries(m.filter(r => r.typed).map(r => [r.word.toLowerCase().replace(/[^a-z']/g, ''), r.typed]));
+  state.fixup.label = label;
+  save();
+}
 function panelFixup() {
-  const st = state.fixup;
-  return `<h2>Spelling Fix-Up</h2><p class="help">For words he got wrong on a spelling test. The front has Pick the Right One, Chunk It and Rainbow Write. The back has Fix the Sentence, a word search and a practice test.</p>
+  const st = state.fixup, lc = latestCheck();
+  const missed = lc ? lc.results.filter(r => !r.ok) : [];
+  const offer = missed.length && st.label !== 'Sight word check · ' + checkDate(lc.t)
+    ? `<div class="warn" style="border-color:var(--study);background:var(--surface-2);color:var(--ink)"><b>Sight word check (${esc(checkDate(lc.t))}):</b> he missed ${missed.map(r => `${esc(r.word)} (wrote “${esc(r.typed)}”)`).join(', ')}.<br><button class="btn btn-small" id="fUseCheck" style="margin-top:8px">Use these words</button></div>` : '';
+  return `<h2>Spelling Fix-Up</h2><p class="help">For words he got wrong on a spelling test. The front has Pick the Right One, Chunk It and Rainbow Write. The back has Fix the Sentence, a word search and a practice test.</p>${offer}
   <div class="field"><label for="fLabel">Label</label><input type="text" id="fLabel" value="${esc(st.label)}" placeholder="Week 3 spelling test"><small>Shows under the title. Leave blank for “Let’s fix the tricky words from my spelling test!”</small></div>
   <div class="field"><label for="fWords">Words he missed</label><textarea id="fWords" rows="2">${esc(st.words)}</textarea><small>Separate with commas or spaces. Up to 6.</small></div>
   <div class="field"><span class="lbl">How he spelled it, and a sentence</span><small>Type what he actually wrote (optional). His spelling shows up in “Pick the Right One” and “Oops!” so he fixes his own mistake.</small></div>
@@ -1031,6 +1044,7 @@ $panel.addEventListener('change', e => {
 
 $panel.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
+  if (el.id === 'fUseCheck') { const lc = latestCheck(); if (lc) useCheck(lc.results.filter(r => !r.ok), 'Sight word check · ' + checkDate(lc.t)); renderPanel(); return; }
   const st = state.steps;
   if (el.id === 'qShuffle') { state.question.picked = shuffle(state.question.picked, Date.now() % 9973); }
   else if (el.id === 'cAdd') {
@@ -1054,6 +1068,12 @@ $panel.addEventListener('click', e => {
 });
 
 window.addEventListener('resize', scheduleRender);
+const fromLink = new URLSearchParams(location.search);
+if (fromLink.get('fixup')) {
+  useCheck(fromLink.get('fixup').split('|').map(p => { const [word, typed] = p.split(':'); return { word, typed: typed || '' }; }).filter(r => r.word), fromLink.get('fxl') || 'Sight word check');
+  state.tool = 'fixup'; save();
+  history.replaceState(null, '', location.pathname + '#fixup');
+}
 const fromHash = location.hash.slice(1);
 if (['sight', 'master', 'fixup', 'question', 'steps', 'eagles'].includes(fromHash)) state.tool = fromHash;
 renderPanel();

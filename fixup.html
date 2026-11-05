@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spelling Fix-Up · The Study</title>
+<meta name="description" content="Practice the words from a spelling check on screen: six activities and a practice test.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='14' width='56' height='40' rx='8' fill='%233C7DD9' stroke='%2317201A' stroke-width='4'/%3E%3Crect x='22' y='30' width='20' height='7' rx='3.5' fill='%2317201A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* On-screen Spelling Fix-Up: the same six parts as the printed sheet, done on the computer.
+   Same dark look as the Spelling Helper. One thing on screen at a time, big targets. */
+:root { color-scheme: dark; --navy: #8DB8F2; --ink: #E5ECF4; --muted: #9AABBF; --line: #2B3A4D; --bg: #0E151D; --accent: #7FB0F0;
+  --study: #3C7DD9; --surface: #16202B; --surface-2: #1C2836; --field: #0F1822; --field-line: #3A4B60;
+  --good: #34D399; --good-bg: #0F2E25; --try: #FBBF24; --try-bg: #33270C; --bad: #F87171; --bad-bg: #3A1717; --part: #C4B5FD; --part-bg: #241C3D; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: Andika, system-ui, sans-serif; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid #F59E0B; outline-offset: 3px; }
+[hidden] { display: none !important; }
+
+.app-header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 8px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.app-header h1 { margin: 0; font: 700 24px Fredoka, sans-serif; color: var(--navy); }
+.prog { margin-left: auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.prog span { font: 600 14px Fredoka, sans-serif; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; }
+.prog span.now { background: var(--study); border-color: var(--study); color: #fff; }
+.prog span.done { color: var(--good); border-color: var(--good); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 18px Fredoka, sans-serif; border: 2px solid var(--line); border-radius: 14px; padding: 10px 18px; min-height: 48px; cursor: pointer; background: var(--surface-2); color: var(--ink); }
+.btn.primary { background: var(--study); border-color: var(--study); color: #fff; }
+.btn.big { font-size: 22px; padding: 14px 24px; min-height: 60px; border-radius: 18px; }
+.btn[disabled] { opacity: .45; cursor: default; }
+.btn svg { width: 24px; height: 24px; flex: none; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+main { max-width: 980px; margin: 0 auto; padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.part-title { text-align: center; }
+.part-title h2 { margin: 0; font: 700 28px Fredoka, sans-serif; }
+.part-title p { margin: 2px 0 0; color: var(--muted); font-size: 17px; }
+.message { min-height: 34px; text-align: center; font: 600 24px Fredoka, sans-serif; display: flex; align-items: center; justify-content: center; padding: 0 10px; }
+.message.good { color: var(--good); } .message.try { color: var(--try); }
+.count { font: 600 16px Fredoka, sans-serif; color: var(--muted); }
+
+.big-word { font: 700 clamp(40px, 7vw, 60px) Andika, sans-serif; letter-spacing: 4px; background: #fff; color: #1F2937; border-radius: 18px; padding: 2px 24px; }
+.big-word .t { text-decoration: underline; text-decoration-thickness: 5px; text-underline-offset: 8px; }
+.hidden-word { font: 700 28px Fredoka, sans-serif; padding: 10px 24px !important; color: var(--muted); border: 3px dashed var(--field-line); border-radius: 20px; padding: 16px 30px; }
+
+.lbox { width: 58px; height: 72px; border-radius: 13px; border: 3px dashed var(--field-line); background: var(--field); display: grid; place-items: center; font: 700 46px Andika, sans-serif; position: relative; }
+.lbox.done { border-style: solid; border-color: var(--good); background: var(--good-bg); color: #fff; }
+.lbox.cur { border-style: solid; border-color: #F59E0B; animation: pulse 1.4s ease-in-out infinite; }
+.lbox.typed { border-style: solid; border-color: var(--study); background: var(--surface-2); color: #fff; }
+.lbox.sp { width: 26px; border: 0; background: none; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(245, 158, 11, .25); } }
+.shake { animation: shake .4s; }
+@keyframes shake { 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } }
+.boxes { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center; min-height: 76px; }
+.chunks { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+.chunk { display: flex; gap: 4px; padding: 5px; border-radius: 16px; border: 2px dashed var(--line); }
+.chunk.t { border: 3px solid var(--part); background: var(--part-bg); }
+
+.keys { display: grid; grid-template-columns: repeat(9, 1fr); gap: 8px; width: 100%; max-width: 820px; }
+body.inpart .app-header h1 { display: none; }
+body.inpart .prog { margin: 0 auto; }
+.key { height: clamp(46px, 7.4vh, 64px); border: 2px solid var(--line); background: var(--surface-2); border-radius: 14px; font: 700 32px Andika, sans-serif; cursor: pointer; display: grid; place-items: center; touch-action: manipulation; }
+.key:active { transform: scale(.95); }
+.keys.cool .key { pointer-events: none; opacity: .55; }
+
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 640px; }
+.opt { border: 3px solid var(--line); background: var(--surface-2); border-radius: 18px; font: 700 40px Andika, sans-serif; padding: 14px 10px; cursor: pointer; letter-spacing: 1px; }
+.opt.right { border-color: var(--good); background: var(--good-bg); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-bg); color: #FCA5A5; text-decoration: line-through; }
+
+.rw { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.rw .lbox { width: 44px; height: 50px; font-size: 34px; border-radius: 11px; }
+.rw-row { display: flex; align-items: center; gap: 10px; }
+.rw-row .n { font: 700 22px Fredoka, sans-serif; width: 26px; }
+
+.sentence { font-size: 27px; line-height: 1.4; text-align: center; max-width: 30ch; }
+.sentence .bad { text-decoration: underline wavy var(--bad); text-underline-offset: 7px; font-weight: 700; color: #FCA5A5; }
+
+.ws { display: flex; gap: 24px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.grid { display: grid; gap: 4px; }
+.cell { width: 44px; height: 44px; border-radius: 10px; border: 2px solid var(--line); background: var(--surface-2); font: 700 26px Andika, sans-serif; display: grid; place-items: center; cursor: pointer; touch-action: manipulation; }
+.cell.first { border-color: #F59E0B; background: var(--try-bg); }
+.cell.found { color: #0E151D; border-color: transparent; }
+.find { display: flex; flex-direction: column; gap: 10px; }
+.find div { display: flex; align-items: center; gap: 10px; font: 700 26px Andika, sans-serif; }
+.find i { width: 26px; height: 26px; border: 3px solid var(--field-line); border-radius: 8px; display: grid; place-items: center; font-style: normal; font-size: 18px; }
+.find .got { color: var(--good); text-decoration: line-through; }
+.find .got i { border-color: var(--good); background: var(--good); color: #0E151D; }
+.find button { border: 0; background: none; cursor: pointer; color: var(--muted); }
+
+.confirm { position: fixed; inset: 0; background: rgba(5, 9, 14, .78); display: grid; place-items: center; z-index: 50; padding: 16px; }
+.confirm .box { background: var(--surface); border: 2px solid var(--study); border-radius: 22px; padding: 22px 26px; max-width: 560px; width: 100%; text-align: center; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.confirm h3 { margin: 0; font: 700 28px Fredoka, sans-serif; }
+.confirm p { margin: 0; color: var(--muted); font-size: 18px; }
+
+.grade { display: flex; align-items: center; gap: 18px; justify-content: center; }
+.grade .letter { width: 110px; height: 110px; border-radius: 26px; display: grid; place-items: center; font: 700 72px Fredoka, sans-serif; color: #0E151D; }
+.grade .pct { font: 700 46px Fredoka, sans-serif; line-height: 1; }
+.grade .pct small { display: block; font: 600 18px Fredoka, sans-serif; color: var(--muted); margin-top: 6px; }
+.grade-msg { font: 600 22px Fredoka, sans-serif; text-align: center; max-width: 32ch; margin: 0; }
+.sumlist { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 8px; }
+.sum { display: flex; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 16px; font-size: 18px; }
+.sum b { font-family: Fredoka, sans-serif; }
+.res { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 2px solid var(--line); border-radius: 16px; padding: 10px 16px; }
+.res .mark { font: 700 28px Fredoka, sans-serif; width: 34px; text-align: center; }
+.res.ok { border-color: var(--good); } .res.ok .mark { color: var(--good); }
+.res.no { border-color: var(--try); } .res.no .mark { color: var(--try); }
+.res .w { font: 700 28px Andika, sans-serif; }
+.res .his { font-size: 16px; color: var(--muted); } .res .his s { color: #FCA5A5; }
+.note { font-size: 14px; color: var(--muted); text-align: center; max-width: 46ch; line-height: 1.4; }
+.grownup { font-size: 14px; color: var(--muted); background: none; border: 0; text-decoration: underline; cursor: pointer; position: relative; padding: 6px 4px; }
+.grownup::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--try); }
+.grownup.holding::after { width: 100%; transition: width 2s linear; }
+.confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.confetti i { position: absolute; top: -20px; width: 12px; height: 16px; border-radius: 3px; animation: fall 2.6s linear forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(540deg); } }
+
+@media (max-width: 640px) {
+  .lbox { width: 42px; height: 56px; font-size: 34px; }
+  .keys { gap: 6px; grid-template-columns: repeat(7, 1fr); } .key { font-size: 26px; }
+  body.inpart .app-header h1 { display: block; }
+  .opt { font-size: 30px; }
+  .cell { width: 34px; height: 34px; font-size: 20px; }
+  .sentence { font-size: 24px; }
+  .prog { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <h1>Spelling Fix-Up</h1>
+  <div class="prog" id="prog"></div>
+</header>
+<main id="app"></main>
+<div class="confirm" id="confirm" hidden role="dialog" aria-modal="true" aria-labelledby="confirmQ">
+  <div class="box">
+    <h3 id="confirmQ">Are you sure?</h3>
+    <div class="boxes" id="confirmWord"></div>
+    <p>Once you say yes, you can’t change it.</p>
+    <div class="row">
+      <button class="btn big" id="confirmNo">Let me look again</button>
+      <button class="btn big primary" id="confirmYes">Yes, I’m sure</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ Shared word logic: copied from the printed Spelling Fix-Up (worksheets/index.html) so screen and paper match ============ */
+const SENTENCES = {
+  // Dolch pre-primer
+  a: ['I have ___ red ball.', 'ball'], and: ['I like cats ___ dogs.', 'cat'], away: ['The bird flew ___.', 'bird'],
+  big: ['An elephant is very ___.', 'elephant'], blue: ['The sky is ___.', 'blue'], can: ['I ___ jump high.', ''],
+  come: ['Can you ___ to my house?', 'house'], down: ['The ball rolled ___ the hill.', 'ball'], find: ['Can you ___ my shoe?', ''],
+  for: ['This gift is ___ you.', 'gift'], funny: ['The clown is so ___!', ''], go: ['It is time to ___ to bed.', 'moon'],
+  help: ['Can you ___ me lift this box?', ''], here: ['Come over ___, please.', ''], i: ['Mom and ___ like to read.', 'book'],
+  in: ['The cat is ___ the box.', 'cat'], is: ['The dog ___ happy.', 'dog'], it: ['I threw the ball and he caught ___.', 'ball'],
+  jump: ['Frogs can ___ high.', ''], little: ['A mouse is very ___.', ''], look: ['I ___ at the sky.', 'eyes'],
+  make: ["Let's ___ a cake.", ''], me: ['Please give the ball to ___.', 'ball'], my: ['This is ___ dog.', 'dog'],
+  not: ['A cat is ___ a dog.', 'cat'], one: ['I have ___ nose.', ''], play: ["Let's ___ outside!", 'ball'],
+  red: ['An apple can be ___.', 'apple'], run: ['I like to ___ fast.', ''], said: ['Mom ___ it is time to eat.', 'talk'],
+  see: ['I can ___ the moon.', 'moon'], the: ['I love ___ sun.', 'sun'], three: ['A triangle has ___ sides.', 'three'],
+  to: ['We walk ___ school.', ''], two: ['I have ___ hands.', 'hand'], up: ['The balloon went ___ in the sky.', ''],
+  we: ['My friend and ___ play tag.', ''], where: ['Do you know ___ my hat is?', ''], yellow: ['The sun is ___.', 'sun'],
+  you: ['I like ___!', 'heart'],
+  // Dolch primer
+  all: ['We ate ___ the cookies.', ''], am: ['I ___ six years old.', ''], are: ['You ___ my best friend.', 'heart'],
+  at: ['Look ___ the bird!', 'bird'], ate: ['The dog ___ his food.', 'dog'], be: ['I want to ___ a doctor.', ''],
+  black: ['My cat is ___.', 'cat'], brown: ['A bear is ___.', ''], but: ['I am small, ___ I am strong.', ''],
+  came: ['Grandma ___ to visit.', 'house'], did: ['I ___ my homework.', 'book'], do: ['I can ___ it!', ''],
+  eat: ['I like to ___ apples.', 'apple'], four: ['A dog has ___ legs.', 'dog'], get: ['Please ___ your shoes.', ''],
+  good: ['This cake is so ___!', ''], have: ['I ___ a pet dog.', 'dog'], he: ['Dad says ___ loves me.', 'heart'],
+  into: ['The frog jumped ___ the pond.', ''], like: ['I ___ to read books.', 'book'], must: ['You ___ wash your hands.', 'hand'],
+  new: ['I got a ___ book.', 'book'], no: ['I said ___, thank you.', ''], now: ['Time for bed ___!', 'clock'],
+  on: ['The cat sat ___ the mat.', 'cat'], our: ['This is ___ house.', 'house'], out: ['The dog went ___ to play.', 'dog'],
+  please: ['May I have a cookie, ___?', ''], pretty: ['The flower is so ___.', 'flower'], ran: ['The dog ___ fast.', 'dog'],
+  ride: ['I like to ___ my bike.', ''], saw: ['I ___ a bird in the tree.', 'bird'], say: ['What did you ___?', 'talk'],
+  she: ['Mom said ___ is proud of me.', 'heart'], so: ['I am ___ happy!', ''], soon: ['We will eat lunch ___.', 'clock'],
+  that: ['I want ___ toy.', ''], there: ['The ball is over ___.', 'ball'], they: ['My friends said ___ want to play.', ''],
+  this: ['I like ___ book.', 'book'], too: ['I want to play ___!', ''], under: ['The cat is ___ the bed.', 'cat'],
+  want: ['I ___ a drink of water.', 'water'], was: ['The cake ___ yummy.', ''], well: ['She sings very ___.', 'music'],
+  went: ['We ___ to the park.', 'tree'], what: ['Do you know ___ time it is?', 'clock'], white: ['Snow is ___.', 'snow'],
+  who: ['Do you know ___ is at the door?', 'house'], will: ['I ___ help you.', ''], with: ['Come and play ___ me.', 'ball'],
+  yes: ['I said ___, please!', ''],
+  // Dolch first grade
+  after: ['We play ___ lunch.', ''], again: ['Read it ___, please!', 'book'], an: ['I ate ___ apple.', 'apple'],
+  any: ['Do you have ___ milk?', ''], as: ['He is as tall ___ his dad.', ''], ask: ['I can ___ for help.', 'talk'],
+  by: ['The cat sat ___ the door.', 'cat'], could: ['I ___ not find my shoe.', ''], every: ['I brush my teeth ___ day.', ''],
+  fly: ['Birds can ___.', 'bird'], from: ['I got a gift ___ Grandma.', 'gift'], give: ['I will ___ you a hug.', 'heart'],
+  going: ['We are ___ to the park.', 'tree'], had: ['I ___ fun today.', ''], has: ['The dog ___ a bone.', 'dog'],
+  her: ['I gave ___ a flower.', 'flower'], him: ['I gave ___ a ball.', 'ball'], his: ['The boy lost ___ hat.', ''],
+  how: ['Do you know ___ to swim?', ''], just: ['I ___ want one cookie.', ''], know: ['I ___ my ABCs.', 'book'],
+  let: ['Please ___ me play.', 'ball'], live: ['I ___ in a house.', 'house'], may: ['You ___ go outside now.', 'tree'],
+  of: ['I ate a bowl ___ soup.', ''], old: ['My dog is very ___.', 'dog'], once: ['I have been to the zoo ___.', ''],
+  open: ['Please ___ the door.', 'house'], over: ['The cow jumped ___ the moon.', 'moon'], put: ['Please ___ your toys away.', ''],
+  round: ['A ball is ___.', 'ball'], some: ['May I have ___ juice?', 'juice'], stop: ['Red means ___.', ''],
+  take: ['Please ___ one cookie.', ''], thank: ['I say ___ you.', 'heart'], them: ['I play with my friends. I like ___.', 'heart'],
+  then: ['First we eat, ___ we play.', ''], think: ['I ___ it will rain.', ''], walk: ['I ___ my dog every day.', 'dog'], more: ['Can I have ___ milk, please?', 'juice'],
+  were: ['We ___ at the park.', 'tree'], when: ['Do you know ___ lunch is?', 'clock'],
+  // Other words we've used
+  even: ['2, 4, and 6 are ___ numbers.', ''], first: ['I came in ___ place in the race.', 'star'],
+  against: ['I leaned my bike ___ the wall.', ''], while: ['Mom read a book ___ I took a nap.', 'book'],
+  follow: ['Please ___ me to the park.', 'tree'], baby: ['The ___ is crying.', 'baby'], love: ['I ___ my mom.', 'heart'],
+  very: ['An elephant is ___ big.', 'elephant'], talk: ['I like to ___ to Dad.', 'talk']
+};
+const TRICKY = {
+  even: [[0, 2], 'Two e’s: e-v-e-n'], down: [[1, 2], 'ow, like “ow!”'], first: [[1, 2], 'ir says “er”'],
+  against: [[2, 3], 'a · gain · st'], while: [[0, 1, 4], 'wh at the start, quiet e at the end'],
+  follow: [[2, 3, 4, 5], 'two l’s, then ow says “oh”'], said: [[1, 2], 'ai says “e” here'], of: [[1], 'f says “v” here'],
+  one: [[0, 1, 2], 'sounds like “won”'], once: [[0, 1, 2, 3], 'sounds like “wunss”'], the: [[0, 1], 'th together'],
+  was: [[1, 2], 'a says “u”, s says “z”'], are: [[2], 'quiet e at the end'], do: [[1], 'o says “oo”'],
+  to: [[1], 'o says “oo”'], two: [[1], 'quiet w'], who: [[0, 1], 'wh says “h” here'], could: [[1, 2, 3], 'ou says “oo”, quiet l'],
+  know: [[0], 'quiet k at the start'], any: [[0], 'a says “e”'], every: [[0, 2], 'e-v-e-r-y'], they: [[2, 3], 'ey says “ay”'],
+  where: [[0, 1], 'wh at the start'], what: [[0, 1], 'wh at the start'],
+  more: [[1, 2, 3], 'or, then a quiet e'], very: [[3], 'y says “ee”'], baby: [[3], 'y says “ee”'], talk: [[1, 2], 'al says “aw”, quiet l'], walk: [[1, 2], 'al says “aw”, quiet l'],
+  love: [[1, 3], 'o says “u”, quiet e'], look: [[1, 2], 'two o’s say “oo”'], now: [[1, 2], 'ow, like “ow!”'],
+  friend: [[2, 3], 'ie says “e”'], because: [[3, 4], 'au says “o”'], there: [[2, 3, 4], 'ere at the end'], people: [[2], 'quiet o'], pretty: [[3, 4], 'two t’s']
+};
+const PATTERNS = [
+  ['igh', 'igh says “i”'], ['tch', 'tch together'], ['wh', 'wh at the start'], ['th', 'th together'], ['sh', 'sh together'],
+  ['ch', 'ch together'], ['ck', 'ck together'], ['ph', 'ph says “f”'], ['kn', 'quiet k'], ['wr', 'quiet w'],
+  ['ai', 'ai says “ay”'], ['ay', 'ay says “ay”'], ['ee', 'ee says “ee”'], ['ea', 'ea together'], ['oa', 'oa says “oh”'],
+  ['oo', 'oo together'], ['ou', 'ou together'], ['ow', 'ow together'], ['oi', 'oi says “oy”'], ['oy', 'oy says “oy”'],
+  ['ir', 'ir says “er”'], ['ur', 'ur says “er”'], ['er', 'er together'], ['ar', 'ar together'], ['or', 'or together'],
+  ['al', 'al together'], ['ll', 'two l’s'], ['ss', 'two s’s'], ['ff', 'two f’s'], ['tt', 'two t’s'], ['pp', 'two p’s'], ['nn', 'two n’s']
+];
+function trickyFor(word) {
+  if (TRICKY[word]) return { idx: TRICKY[word][0], tip: TRICKY[word][1] };
+  for (const [p, tip] of PATTERNS) {
+    const i = word.indexOf(p);
+    if (i >= 0) return { idx: [...Array(p.length).keys()].map(k => k + i), tip };
+  }
+  if (word.length > 2 && /[^aeiou]e$/.test(word)) return { idx: [word.length - 1], tip: 'quiet e at the end' };
+  if (word.length > 1 && word.endsWith('y')) return { idx: [word.length - 1], tip: 'y at the end' };
+  return { idx: [], tip: '' };
+}
+const REAL_WORDS = new Set(('her here were where well will wall now know knew new note not nut net one on won ate at eight rid red read ride rode ' +
+  'run ran thin then than them theme the they their there fat sea see sun son soon butt but bot pot put most must fur fore for four ' +
+  'hem him ham hum hut hot hat hit bit bet bat cut cat cot mat met man men mad mud bed bad bud bid sit sat set pin pen pan pun fin fan fun ' +
+  'tin ten tan top tip tap mop map sip sap lot lit let got get gut wet wit hug hog dog dig dug pet pit pat bye by buy to too two toe no ' +
+  'so sew sow be bee eye inn in is as us use an and it up am are any ant ask give live love move have hive came come cam same some sum ' +
+  'son sin song all awl ill tall talk walk what when ever even over oven open hi he me my we wee she shoe who how hoe do doe due go goo ' +
+  'was wise wish wash his hiss off of if fly flee free three tree there play pay say sea saw sew slow show snow blow blue glue ' +
+  'came cane can cone one bone done gone tone lone line lane like lake lick luck look lock took take tuck tick ' +
+  'find fond fund fine five dive done down dawn town tone torn turn first fast fist burst black block brown crown drown ' +
+  'little lot loft far fir fern yes yet yell yellow fellow follow hollow eat at ate meat seat sat heat hat beat bat out our hour').split(' '));
+function misspellings(word) {
+  const out = [];
+  const add = w => { if (w && w !== word && !out.includes(w) && !REAL_WORDS.has(w) && !SENTENCES[w]) out.push(w); };
+  const swaps = [['ow', 'ou'], ['ou', 'ow'], ['al', 'aw'], ['ai', 'a'], ['ay', 'a'], ['ee', 'ea'], ['ea', 'ee'], ['oo', 'u'],
+    ['ir', 'ur'], ['ur', 'er'], ['er', 'ur'], ['wh', 'w'], ['ck', 'k'], ['ph', 'f'], ['kn', 'n'], ['wr', 'r'], ['igh', 'i'],
+    ['ll', 'l'], ['ss', 's'], ['tt', 't'], ['ff', 'f'], ['pp', 'p'], ['ch', 'sh'], ['ey', 'ay'], ['ie', 'ee']];
+  for (const [a, b] of swaps) if (word.includes(a)) add(word.replace(a, b));
+  if (/[^aeiou]y$/.test(word) && word.length > 2) { add(word.slice(0, -1) + 'ee'); add(word.slice(0, -1) + 'ey'); }
+  if (/[^aeiou]e$/.test(word) && word.length > 2) add(word.slice(0, -1));
+  const vowelSwap = { a: 'u', e: 'i', i: 'e', o: 'u', u: 'o' };
+  for (let i = 0; i < word.length; i++) {
+    const c = word[i];
+    if (vowelSwap[c]) add(word.slice(0, i) + vowelSwap[c] + word.slice(i + 1));
+  }
+  for (let i = word.length - 1; i >= 1; i--) {
+    const c = word[i];
+    if (!'aeiouy'.includes(c) && word[i - 1] !== c && word[i + 1] !== c) add(word.slice(0, i) + c + word.slice(i));
+  }
+  if (word.length > 3 && /[aeiouy]/.test(word.slice(0, 1) + word.slice(2))) add(word.slice(0, 1) + word.slice(2));
+  if (!/e$/.test(word)) add(word + 'e');
+  if (word.length <= 2) { add(word + word.slice(-1)); add(word.split('').reverse().join('')); add(word + 'h'); }
+  // Still short of three? Try every other vowel in each vowel spot.
+  for (let i = 0; out.length < 3 && i < word.length; i++) {
+    if ('aeiou'.includes(word[i])) for (const v of 'aeiou') add(word.slice(0, i) + v + word.slice(i + 1));
+  }
+  if (out.length < 3) add(word + 'h');
+  if (out.length < 3) add(word[0] + word);
+  return out;
+}
+const displayWord = w => (w === 'i' ? 'I' : w);
+function shuffle(arr, seed) {
+  const a = [...arr]; let s = seed || 1;
+  for (let i = a.length - 1; i > 0; i--) { s = (s * 9301 + 49297) % 233280; const j = Math.floor(s / 233280 * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const seedOf = words => words.join('').split('').reduce((a, c) => a + c.charCodeAt(0), 7);
+function chunksFor(w) {
+  const { idx } = trickyFor(w);
+  const segs = [];
+  [...w].forEach((ch, i) => {
+    const t = idx.includes(i), last = segs[segs.length - 1];
+    if (last && last.t === t) last.s += ch; else segs.push({ s: ch, t });
+  });
+  const out = [];
+  for (const g of segs) {
+    if (g.t || g.s.length <= 3) { out.push(g); continue; }
+    let s = g.s; while (s.length > 3) { out.push({ s: s.slice(0, 2), t: false }); s = s.slice(2); }
+    out.push({ s, t: false });
+  }
+  return out;
+}
+function wordSearch(words, seed) {
+  let s = seed || 1; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  const longest = Math.max(...words.map(w => w.length));
+  for (let N = Math.min(10, Math.max(7, longest + 1, 6 + Math.ceil(words.length / 2))); N <= 12; N++) {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const g = Array.from({ length: N }, () => Array(N).fill(''));
+      let ok = true;
+      for (const w of [...words].sort((a, b) => b.length - a.length)) {
+        if (w.length > N) { ok = false; break; }
+        let placed = false;
+        for (let t = 0; t < 150 && !placed; t++) {
+          const down = rnd() < 0.5, r = Math.floor(rnd() * (down ? N - w.length + 1 : N)), c = Math.floor(rnd() * (down ? N : N - w.length + 1));
+          let fits = true;
+          for (let k = 0; k < w.length; k++) { const ch = g[down ? r + k : r][down ? c : c + k]; if (ch && ch !== w[k]) { fits = false; break; } }
+          if (!fits) continue;
+          for (let k = 0; k < w.length; k++) g[down ? r + k : r][down ? c : c + k] = w[k];
+          placed = true;
+        }
+        if (!placed) { ok = false; break; }
+      }
+      if (!ok) continue;
+      const fill = 'abcdeghklmnoprtuwy';
+      return { N, grid: g.map(row => row.map(ch => ch || fill[Math.floor(rnd() * fill.length)])) };
+    }
+  }
+  return null;
+}
+
+/* ============ Talking (same as the Spelling Helper, including the grown-up's recorded words) ============ */
+const canTalk = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+let voice = null;
+function pickVoice() {
+  if (!canTalk) return;
+  const vs = speechSynthesis.getVoices().filter(v => /^en(-|_|$)/i.test(v.lang));
+  const prefer = [/samantha/i, /google us english/i, /aria/i, /jenny/i, /allison/i, /ava/i, /zira/i, /en-us/i];
+  voice = null;
+  for (const re of prefer) { voice = vs.find(v => re.test(v.name) || re.test(v.lang)); if (voice) break; }
+  voice = voice || vs[0] || null;
+}
+if (canTalk) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function say(text, rate = 0.9) {
+  if (!canTalk || !text) return Promise.resolve();
+  speechSynthesis.cancel();
+  return new Promise(res => {
+    const u = new SpeechSynthesisUtterance(text);
+    if (voice) u.voice = voice;
+    u.lang = (voice && voice.lang) || 'en-US'; u.rate = rate; u.pitch = 1.05;
+    u.onend = u.onerror = () => res();
+    speechSynthesis.speak(u);
+    setTimeout(res, 7000);
+  });
+}
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const letterName = ch => ({ a: 'ay', e: 'ee', i: 'eye', o: 'oh', u: 'you', y: 'why', z: 'zee' }[ch] || ch.toUpperCase());
+function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+const voices = store('spell-voice') || {};
+function playClip(url) {
+  if (canTalk) speechSynthesis.cancel();
+  return new Promise(res => { const a = new Audio(url); a.onended = a.onerror = () => res(); a.play().catch(() => res()); setTimeout(res, 8000); });
+}
+const playWord = (w, rate = 0.85) => voices['w:' + w.toLowerCase()] ? playClip(voices['w:' + w.toLowerCase()]) : say(w, rate);
+const sentenceFor = w => { const x = SENTENCES[w.toLowerCase()]; return x && x[0].includes('___') ? x[0] : ''; };
+function sayWordAndSentence(w) {
+  const s = sentenceFor(w);
+  return playWord(w).then(() => s ? wait(300).then(() => say(s.replace('___', w), 0.85)).then(() => wait(300)).then(() => playWord(w)) : null);
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const SPK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>`;
+const $ = id => document.getElementById(id);
+const app = $('app');
+
+/* ============ The words: from the sight word check (link), or the latest check on this device ============ */
+const RESULTS_EMAIL = 'dylan.l.cosmos+maverick@gmail.com';
+const FORM_URL = 'https://formsubmit.co/ajax/' + RESULTS_EMAIL;
+const params = new URLSearchParams(location.search);
+let WORDS = [];   // [{ w, his }]
+if (params.get('w')) WORDS = params.get('w').split('|').map(p => { const [w, his] = p.split(':'); return { w: (w || '').trim(), his: (his || '').trim() }; }).filter(x => x.w);
+else { const l = store('spell-check-latest'); if (l) WORDS = l.results.filter(r => !r.ok).map(r => ({ w: r.word, his: r.typed })); }
+WORDS = WORDS.slice(0, 6);
+const FROM = params.get('from') || 'Sight word check';
+const seed = seedOf(WORDS.map(x => x.w));
+
+/* ============ Parts, scores, progress ============ */
+const PARTS = [
+  { id: 'pick', name: 'Pick the Right One', run: partPick },
+  { id: 'chunk', name: 'Chunk It', run: partChunk },
+  { id: 'rainbow', name: 'Rainbow Write', run: partRainbow },
+  { id: 'fix', name: 'Fix the Sentence', run: partFix },
+  { id: 'search', name: 'Word Search', run: partSearch },
+  { id: 'test', name: 'Practice Test', run: partTest }
+];
+const score = { pick: { first: 0, of: 0, misses: 0 }, chunk: { mistakes: 0 }, rainbow: { clean: 0, of: 0 }, fix: { first: 0, of: 0 }, search: { found: 0, of: 0, wrongTaps: 0 }, test: [] };
+let partIdx = 0;
+function renderProg() {
+  $('prog').innerHTML = PARTS.map((p, i) => `<span class="${i === partIdx ? 'now' : i < partIdx ? 'done' : ''}">${i + 1}. ${p.name}</span>`).join('');
+}
+function startPart(i) {
+  partIdx = i; renderProg(); window.scrollTo(0, 0); document.body.classList.add('inpart');
+  if (canTalk) speechSynthesis.cancel();
+  PARTS[i].run();
+}
+function nextPart() { if (partIdx < PARTS.length - 1) startPart(partIdx + 1); else showResults(); }
+function partDone(msg) {
+  app.innerHTML = `<div class="part-title"><h2>${esc(PARTS[partIdx].name)}: done!</h2><p>${esc(msg)}</p></div>
+    <button class="btn big primary" id="go">${partIdx < PARTS.length - 1 ? `Next: ${esc(PARTS[partIdx + 1].name)} →` : 'See how I did →'}</button>`;
+  say(`${PARTS[partIdx].name}, done! ${msg}`, 0.95);
+  $('go').onclick = nextPart;
+}
+const title = (sub) => `<div class="part-title"><h2>${partIdx + 1}. ${esc(PARTS[partIdx].name)}</h2><p>${sub}</p></div>`;
+function setMsg(t, kind = '') { const m = $('msg'); if (m) { m.textContent = t; m.className = 'message' + (kind ? ' ' + kind : ''); } }
+function shakeEl(el) { if (!el) return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+const keysHtml = () => `<div class="keys" id="keys">${'abcdefghijklmnopqrstuvwxyz'.split('').map(c => `<button class="key" data-k="${c}" aria-label="${c.toUpperCase()}">${c}</button>`).join('')}</div>`;
+let onKey = null;   // the current part's letter handler
+document.addEventListener('click', e => { const k = e.target.closest('#keys [data-k]'); if (k && onKey) onKey(k.dataset.k, k); });
+document.addEventListener('keydown', e => {
+  if (!$('confirm').hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (/^[a-z]$/i.test(e.key) && onKey) onKey(e.key.toLowerCase(), document.querySelector(`#keys [data-k="${e.key.toLowerCase()}"]`));
+  else if (e.key === 'Backspace' && $('backBtn')) { e.preventDefault(); $('backBtn').click(); }
+  else if (e.key === 'Enter' && $('doneBtn')) { e.preventDefault(); if (!$('doneBtn').disabled) $('doneBtn').click(); }
+});
+function cool() { const k = $('keys'); if (!k) return; k.classList.add('cool'); setTimeout(() => k.classList.remove('cool'), 700); }   // a pause after a wrong letter, so he stops and looks
+
+/* ---------- 1. Pick the Right One: tap the correct spelling (his own mistake is one of the choices) ---------- */
+function partPick() {
+  let i = 0; score.pick = { first: 0, of: WORDS.length, misses: 0 };
+  const show = () => {
+    const { w, his } = WORDS[i];
+    const wrong = [...new Set([his, ...misspellings(w.toLowerCase())].filter(x => x && x.toLowerCase() !== w.toLowerCase()))].slice(0, 3);
+    const opts = shuffle([w, ...wrong], seed + i * 3);
+    let missed = false;
+    app.innerHTML = title('Listen, then tap the word that is spelled right.') + `<div class="count">Word ${i + 1} of ${WORDS.length}</div>
+      <button class="btn big primary" id="hear">${SPK}Hear the word</button>
+      <div class="opts">${opts.map(o => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <div class="message" id="msg"></div>`;
+    $('hear').onclick = () => playWord(w);
+    playWord(w);
+    app.querySelector('.opts').onclick = e => {
+      const b = e.target.closest('[data-o]'); if (!b || b.disabled) return;
+      if (b.dataset.o === w) {
+        b.classList.add('right'); app.querySelectorAll('.opt').forEach(x => x.disabled = true);
+        if (!missed) score.pick.first++;
+        setMsg(missed ? 'Yes! That’s the right spelling.' : 'Yes! You got it right away!', 'good');
+        say('Yes!', 1).then(() => wait(500)).then(() => { i++; i < WORDS.length ? show() : partDone(`You picked ${score.pick.first} of ${WORDS.length} right on the first try.`); });
+      } else {
+        missed = true; score.pick.misses++; b.classList.add('wrong'); b.disabled = true;
+        setMsg('Not that one. Look closely and try again.', 'try'); shakeEl(b);
+      }
+    };
+  };
+  show();
+}
+
+/* ---------- 2. Chunk It: type the word part by part (the tricky part is marked) ---------- */
+function partChunk() {
+  let i = 0; score.chunk = { mistakes: 0 };
+  const show = () => {
+    const { w } = WORDS[i], dw = displayWord(w), chunks = chunksFor(dw);
+    const letters = [...dw].filter(c => c !== ' ');
+    let pos = 0;
+    const { tip } = trickyFor(w.toLowerCase());
+    const draw = () => {
+      let k = 0;
+      $('chunks').innerHTML = chunks.map(g => `<div class="chunk${g.t ? ' t' : ''}">${[...g.s].map(() => { const n = k++; return `<span class="lbox${n < pos ? ' done' : n === pos ? ' cur' : ''}">${n < pos ? esc(letters[n]) : ''}</span>`; }).join('')}</div>`).join('');
+    };
+    app.innerHTML = title('Say each part. Type the letters into the boxes.') + `<div class="count">Word ${i + 1} of ${WORDS.length}${tip ? ` · Tricky part: ${esc(tip)}` : ''}</div>
+      <div class="big-word">${chunks.map(g => g.t ? `<span class="t" style="color:#7E22CE">${esc(g.s)}</span>` : esc(g.s)).join('<span style="color:#CBD5E1"> · </span>')}</div>
+      <div class="row"><button class="btn" id="hear">${SPK}Hear the word</button></div>
+      <div class="chunks" id="chunks"></div>
+      <div class="message" id="msg"></div>${keysHtml()}`;
+    $('hear').onclick = () => playWord(w);
+    draw(); playWord(w);
+    onKey = (c, el) => {
+      if (pos >= letters.length) return;
+      if (c === letters[pos].toLowerCase()) {
+        pos++; draw();
+        if (pos >= letters.length) { onKey = null; setMsg('You chunked it!', 'good'); say(dw, 0.85).then(() => wait(400)).then(() => { i++; i < WORDS.length ? show() : partDone(score.chunk.mistakes ? `Only ${score.chunk.mistakes} wrong letter${score.chunk.mistakes > 1 ? 's' : ''}. Nice work!` : 'Every letter right!'); }); }
+        else setMsg('');
+      } else { score.chunk.mistakes++; shakeEl(document.querySelector('#chunks .cur')); setMsg('Look at the word again. Which letter comes next?', 'try'); cool(); }
+    };
+  };
+  show();
+}
+
+/* ---------- 3. Rainbow Write: type it twice looking at it, then once without looking ---------- */
+function partRainbow() {
+  let i = 0; score.rainbow = { clean: 0, of: WORDS.length * 3 };
+  const COLORS = ['#F87171', '#FBBF24', '#34D399'];
+  const show = () => {
+    const { w } = WORDS[i], dw = displayWord(w), letters = [...dw].filter(c => c !== ' ');
+    let row = 0, pos = 0, rowMiss = false;
+    const draw = () => {
+      $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${COLORS[r]}">${r + 1}</span>${letters.map((ch, n) => {
+        const done = r < row || (r === row && n < pos);
+        return `<span class="lbox${done ? ' done' : r === row && n === pos ? ' cur' : ''}" style="${done ? `border-color:${COLORS[r]};color:${COLORS[r]};background:var(--surface-2)` : ''}">${done ? esc(ch) : ''}</span>`;
+      }).join('')}</div>`).join('');
+      $('wordShow').innerHTML = row < 2 ? `<div class="big-word">${esc(dw)}</div>` : `<div class="hidden-word">Now without looking!</div>`;
+    };
+    app.innerHTML = title('Type the word 3 times. The last time, the word hides!') + `<div class="count">Word ${i + 1} of ${WORDS.length}</div>
+      <div id="wordShow"></div>
+      <div class="row"><button class="btn" id="hear">${SPK}Hear the word</button></div>
+      <div class="rw" id="rw"></div><div class="message" id="msg"></div>${keysHtml()}`;
+    $('hear').onclick = () => playWord(w);
+    draw(); playWord(w);
+    onKey = (c) => {
+      if (row > 2) return;
+      if (c === letters[pos].toLowerCase()) {
+        pos++;
+        if (pos >= letters.length) {
+          if (!rowMiss) score.rainbow.clean++;
+          row++; pos = 0; rowMiss = false;
+          if (row === 2) { setMsg('Now try it without looking!', 'good'); say('Now try it without looking!', 0.95); }
+          else if (row > 2) { onKey = null; draw(); setMsg('Rainbow done!', 'good'); say(dw, 0.85).then(() => wait(400)).then(() => { i++; i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes.`); }); return; }
+          else setMsg('Great! Again.', 'good');
+        }
+        draw();
+      } else {
+        rowMiss = true; shakeEl(document.querySelector('#rw .cur'));
+        setMsg(row === 2 ? 'Think about how it looked. Try another letter.' : 'Look at the word. Which letter comes next?', 'try'); cool();
+      }
+    };
+  };
+  show();
+}
+
+/* ---------- 4. Oops! Fix the Sentence: his own misspelling is in the sentence; he types it the right way ---------- */
+function partFix() {
+  let i = 0; score.fix = { first: 0, of: WORDS.length };
+  const show = () => {
+    const { w, his } = WORDS[i], dw = displayWord(w);
+    const bad = his && his.toLowerCase() !== w.toLowerCase() ? his : (misspellings(w.toLowerCase())[0] || w + 'e');
+    const s = sentenceFor(w);
+    const sent = s ? esc(s).replace('___', `<span class="bad">${esc(bad)}</span>`) : `<span class="bad">${esc(bad)}</span>`;
+    let typed = '', tries = 0;
+    const draw = () => { $('ans').innerHTML = [...typed].map(c => `<span class="lbox typed">${esc(c)}</span>`).join('') + '<span class="lbox cur"></span>'; $('doneBtn').disabled = !typed; };
+    app.innerHTML = title('One word is spelled wrong. Type it the right way.') + `<div class="count">Sentence ${i + 1} of ${WORDS.length}</div>
+      <div class="sentence">${sent}</div>
+      <div class="row"><button class="btn" id="hear">${SPK}Hear the sentence</button></div>
+      <div class="boxes" id="ans"></div><div class="message" id="msg"></div>${keysHtml()}
+      <div class="row"><button class="btn big" id="backBtn">⌫ Back</button><button class="btn big primary" id="doneBtn" disabled>Check ✓</button></div>`;
+    const hear = () => s ? say(s.replace('___', w), 0.85) : playWord(w);
+    $('hear').onclick = hear; hear();
+    draw();
+    onKey = c => { if (typed.length < 20) { typed += c; draw(); } };
+    $('backBtn').onclick = () => { typed = typed.slice(0, -1); draw(); };
+    $('doneBtn').onclick = () => {
+      if (typed.toLowerCase() === w.toLowerCase().replace(/\s+/g, '')) {
+        if (!tries) score.fix.first++;
+        onKey = null; setMsg('Fixed it!', 'good');
+        $('ans').innerHTML = [...dw].map(c => c === ' ' ? '<span class="lbox sp"></span>' : `<span class="lbox done">${esc(c)}</span>`).join('');
+        say('Fixed it!', 1).then(() => wait(500)).then(() => { i++; i < WORDS.length ? show() : partDone(`You fixed ${score.fix.first} of ${WORDS.length} on the first try.`); });
+      } else {
+        tries++; typed = ''; draw(); shakeEl($('ans'));
+        if (tries >= 2) { setMsg(`It’s spelled: ${[...dw].join(' ')}. Now you type it.`, 'try'); say(`It's spelled ${[...dw.replace(/\s+/g, '')].map(letterName).join(', ')}.`, 0.75); }
+        else { setMsg('Not quite. Think about the tricky part and try again.', 'try'); }
+      }
+    };
+  };
+  show();
+}
+
+/* ---------- 5. Word Search: tap the first letter, then the last letter ---------- */
+function partSearch() {
+  const targets = WORDS.map(x => x.w.toLowerCase().replace(/[^a-z]/g, '')).filter(Boolean);
+  const ws = wordSearch(targets, seed + 3);
+  if (!ws) return nextPart();
+  const { N, grid } = ws, found = new Map(), FOUND_COLORS = ['#34D399', '#7FB0F0', '#FBBF24', '#C4B5FD', '#F9A8D4', '#FDBA74'];
+  score.search = { found: 0, of: targets.length, wrongTaps: 0 };
+  let first = null;
+  const draw = () => {
+    const color = {};
+    [...found.entries()].forEach(([w, cells], k) => cells.forEach(c => color[c] = FOUND_COLORS[targets.indexOf(w) % FOUND_COLORS.length]));
+    $('grid').innerHTML = grid.flat().map((ch, n) => `<button class="cell${color[n] ? ' found' : ''}${first === n ? ' first' : ''}" data-n="${n}" style="${color[n] ? `background:${color[n]}` : ''}" aria-label="${ch}">${ch}</button>`).join('');
+    $('find').innerHTML = targets.map(w => `<div class="${found.has(w) ? 'got' : ''}"><i>${found.has(w) ? '✓' : ''}</i>${esc(w)}<button data-say="${esc(w)}" aria-label="Hear ${esc(w)}">${SPK}</button></div>`).join('');
+  };
+  app.innerHTML = title('Find each word. Tap its first letter, then its last letter. Words go across → or down ↓.') +
+    `<div class="ws"><div class="grid" id="grid" style="grid-template-columns:repeat(${N},auto)"></div><div class="find" id="find"></div></div><div class="message" id="msg"></div>`;
+  draw();
+  $('find').onclick = e => { const b = e.target.closest('[data-say]'); if (b) playWord(b.dataset.say); };
+  $('grid').onclick = e => {
+    const b = e.target.closest('[data-n]'); if (!b) return;
+    const n = +b.dataset.n;
+    if (first === null) { first = n; draw(); setMsg('Now tap the last letter of the word.'); return; }
+    if (n === first) { first = null; draw(); setMsg(''); return; }
+    const r1 = Math.floor(first / N), c1 = first % N, r2 = Math.floor(n / N), c2 = n % N;
+    let cells = [];
+    if (r1 === r2 && c2 > c1) for (let c = c1; c <= c2; c++) cells.push(r1 * N + c);
+    else if (c1 === c2 && r2 > r1) for (let r = r1; r <= r2; r++) cells.push(r * N + c1);
+    const str = cells.map(x => grid[Math.floor(x / N)][x % N]).join('');
+    const hit = targets.find(w => w === str && !found.has(w));
+    first = null;
+    if (hit) {
+      found.set(hit, cells); score.search.found = found.size; draw();
+      setMsg(`You found “${hit}”!`, 'good'); playWord(hit);
+      if (found.size === targets.length) setTimeout(() => partDone(score.search.wrongTaps ? `You found all ${targets.length}!` : `You found all ${targets.length} with no wrong taps!`), 1200);
+    } else { score.search.wrongTaps++; draw(); setMsg('That’s not one of the words. Try again!', 'try'); }
+  };
+  say('Find each word. Tap its first letter, then its last letter.', 0.95);
+}
+
+/* ---------- 6. Practice Test: the words are hidden; he hears each one and spells it. Are you sure? Then a grade. ---------- */
+function partTest() {
+  const order = shuffle(WORDS.map(x => x.w), seed + 9);
+  if (order.length > 2 && order.every((w, k) => w === WORDS[k].w)) order.push(order.shift());
+  let i = 0, typed = ''; score.test = [];
+  app.innerHTML = title('Time for the test! I’ll say each word. Spell it all by yourself.') +
+    `<button class="btn big primary" id="start">Start the test</button>`;
+  say('Time for the practice test! I’ll say each word. Spell it all by yourself.', 0.95);
+  $('start').onclick = () => show();
+  const draw = () => { $('ans').innerHTML = [...typed].map(c => c === ' ' ? '<span class="lbox sp"></span>' : `<span class="lbox typed">${esc(c)}</span>`).join('') + '<span class="lbox cur"></span>'; $('doneBtn').disabled = !typed.trim(); };
+  const show = () => {
+    typed = '';
+    app.innerHTML = title('Listen, then spell the word. No peeking, no help!') + `<div class="count">Word ${i + 1} of ${order.length}</div>
+      <div class="row"><button class="btn big primary" id="hear">${SPK}Hear the word</button><button class="btn big" id="hearS">${SPK}Hear it in a sentence</button></div>
+      <div class="boxes" id="ans"></div>${keysHtml()}
+      <div class="row">${order.some(w => w.includes(' ')) ? '<button class="btn big" id="spaceBtn">space</button>' : ''}<button class="btn big" id="backBtn">⌫ Back</button><button class="btn big primary" id="doneBtn" disabled>Done ✓</button></div>`;
+    const w = order[i];
+    $('hear').onclick = () => playWord(w);
+    $('hearS').onclick = () => sayWordAndSentence(w);
+    sayWordAndSentence(w); draw();
+    onKey = c => { if ($('confirm').hidden && typed.length < 24) { typed += c; draw(); } };
+    if ($('spaceBtn')) $('spaceBtn').onclick = () => { if (typed && !typed.endsWith(' ')) { typed += ' '; draw(); } };
+    $('backBtn').onclick = () => { typed = typed.slice(0, -1); draw(); };
+    $('doneBtn').onclick = () => {
+      $('confirmWord').innerHTML = [...typed.trim()].map(c => c === ' ' ? '<span class="lbox sp"></span>' : `<span class="lbox typed">${esc(c)}</span>`).join('');
+      $('confirm').hidden = false; say('Are you sure? Once you say yes, you can’t change it.', 0.95); $('confirmNo').focus();
+    };
+  };
+  $('confirmNo').onclick = () => { $('confirm').hidden = true; };
+  $('confirmYes').onclick = () => {
+    $('confirm').hidden = true;
+    const w = order[i];
+    score.test.push({ word: w, typed: typed.trim(), ok: typed.trim().toLowerCase().replace(/\s+/g, ' ') === w.toLowerCase() });
+    onKey = null; i++;
+    if (i < order.length) { app.querySelector('.count').textContent = 'Got it! Here comes the next word.'; setTimeout(show, 800); }
+    else showResults();
+  };
+}
+document.addEventListener('keydown', e => { if ($('confirm').hidden) return; if (e.key === 'Escape') $('confirmNo').click(); e.stopImmediatePropagation(); }, true);
+
+/* ============ Results: grade for the Practice Test, how each part went, and the email ============ */
+function gradeFor(right, n) {
+  const pct = n ? Math.round(right / n * 100) : 0;
+  const letter = pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F';
+  const color = { A: '#34D399', B: '#7FB0F0', C: '#FBBF24', D: '#FB923C', F: '#F87171' }[letter];
+  const msg = {
+    A: pct === 100 ? 'Perfect! Your practice and hard work paid off!' : 'Amazing work! Your practice is paying off!',
+    B: 'Great job! A little more practice and you’ll get them all.',
+    C: 'Good try! Practice the tricky ones and take your time next time.',
+    D: 'Keep practicing! Slow down, listen carefully, and try your best.',
+    F: 'These are hard. Practice every day, take your time, and try your best. You can do it!'
+  }[letter];
+  return { pct, letter, color, msg };
+}
+const shortDate = t => new Date(t).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+function partLines() {
+  const s = score;
+  return [
+    ['Pick the Right One', `${s.pick.first} of ${s.pick.of} right on the first try`],
+    ['Chunk It', s.chunk.mistakes ? `${s.chunk.mistakes} wrong letter${s.chunk.mistakes > 1 ? 's' : ''}` : 'no wrong letters'],
+    ['Rainbow Write', `${s.rainbow.clean} of ${s.rainbow.of} with no mistakes (last one without looking)`],
+    ['Fix the Sentence', `${s.fix.first} of ${s.fix.of} fixed on the first try`],
+    ['Word Search', `found ${s.search.found} of ${s.search.of}${s.search.wrongTaps ? `, ${s.search.wrongTaps} wrong tap${s.search.wrongTaps > 1 ? 's' : ''}` : ''}`]
+  ];
+}
+function showResults() {
+  onKey = null; partIdx = PARTS.length; renderProg(); document.body.classList.remove('inpart');
+  const byWord = Object.fromEntries(score.test.map(r => [r.word, r]));
+  const test = WORDS.map(x => byWord[x.w]).filter(Boolean);
+  const right = test.filter(r => r.ok).length, g = gradeFor(right, test.length);
+  const rec = { id: Date.now().toString(36), t: Date.now(), from: FROM, words: WORDS, test, grade: { pct: g.pct, letter: g.letter }, parts: partLines(), sent: false };
+  rec.cid = params.get('cid') || null;
+  store('fixup-latest', rec);
+  const flog = store('fixup-log') || []; flog.push(rec); store('fixup-log', flog.slice(-30));
+  rec.body = emailBody(rec);
+  const box = store('fixup-outbox') || []; box.push(rec); store('fixup-outbox', box.slice(-20));
+  app.innerHTML = `<div class="part-title"><h2>You finished the Fix-Up!</h2><p>Practice Test</p></div>
+    <div class="grade"><span class="letter" style="background:${g.color}">${g.letter}</span><span class="pct">${g.pct}%<small>${right} of ${test.length} right</small></span></div>
+    <p class="grade-msg">${esc(g.msg)}</p>
+    <div class="sumlist">${test.map(r => r.ok ? `<div class="res ok"><span class="mark">✓</span><span class="w">${esc(r.word)}</span></div>`
+      : `<div class="res no"><span class="mark">✗</span><div><div class="w">${esc(r.word)}</div><div class="his">You wrote <s>${esc(r.typed)}</s></div></div></div>`).join('')}</div>
+    <div class="sumlist">${partLines().map(([n, v]) => `<div class="sum"><b>${esc(n)}</b><span>${esc(v)}</span></div>`).join('')}</div>
+    <p class="note" id="sent">Sending the results to your grown-up…</p>
+    <a class="btn big primary" href="spell.html" style="text-decoration:none">Finished</a>`;
+  say(`You got ${right} out of ${test.length} on the practice test. That’s ${g.pct} percent, a${'AF'.includes(g.letter) ? 'n' : ''} ${g.letter}. ${g.msg}`, 0.95);
+  if (right === test.length) { const c = document.createElement('div'); c.className = 'confetti'; const cols = ['#3C7DD9', '#F59E0B', '#34D399', '#C4B5FD', '#F87171', '#FACC15']; c.innerHTML = Array.from({ length: 60 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-delay:${Math.random() * 0.8}s"></i>`).join(''); document.body.appendChild(c); setTimeout(() => c.remove(), 3600); }
+  sendOutbox().then(() => { const l = store('fixup-latest'); const el = $('sent'); if (el) el.textContent = l && l.sent ? `For the grown-up: results emailed to ${RESULTS_EMAIL}.` : 'For the grown-up: the email couldn’t send right now. It will try again the next time this page or the Spelling Helper opens.'; });
+}
+function emailBody(rec) {
+  const right = rec.test.filter(r => r.ok).length, n = rec.test.length;
+  const body = {
+    _subject: `Spelling Fix-Up: Practice Test ${rec.grade.pct}% ${rec.grade.letter}, ${right} of ${n} right (${shortDate(rec.t)})`,
+    _template: 'table', _captcha: 'false',
+    'Date': new Date(rec.t).toLocaleString(undefined, { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+    'Words': rec.words.map(x => x.w).join(', '),
+    'From': rec.from,
+    'Practice Test grade': `${rec.grade.pct}% (${rec.grade.letter}), ${right} of ${n} right`
+  };
+  rec.test.forEach((r, i) => { body[`Test ${i + 1}. ${r.word}`] = r.ok ? 'right' : `wrong: he wrote "${r.typed}"`; });
+  rec.parts.forEach(([k, v]) => { body[k] = v; });
+  const still = rec.test.filter(r => !r.ok).map(r => r.word);
+  body['Still tricky'] = still.length ? still.join(', ') : 'None! He got them all on the practice test.';
+  body['Parent Review (recordings + results)'] = location.origin + location.pathname.replace(/[^/]*$/, '') + 'spell.html#review   (open it on the device he used)';
+  return body;
+}
+let sending = false;
+async function sendOutbox() {
+  if (sending) return; sending = true;
+  try {
+    let box = store('fixup-outbox') || [];
+    for (const rec of [...box]) {
+      try {
+        const res = await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(rec.body || emailBody(rec)) });
+        if (!res.ok) break;
+        box = box.filter(x => x.id !== rec.id); store('fixup-outbox', box);
+        const l = store('fixup-latest'); if (l && l.id === rec.id) { l.sent = true; store('fixup-latest', l); }
+      } catch (e) { break; }
+    }
+  } finally { sending = false; }
+}
+
+/* ============ Start ============ */
+if (!WORDS.length) {
+  app.innerHTML = `<div class="part-title"><h2>No words to fix yet</h2><p>This page uses the words he missed on the daily sight word check.</p></div><a class="btn big primary" href="spell.html" style="text-decoration:none">Go to the Spelling Helper</a>`;
+} else {
+  app.innerHTML = `<div class="part-title"><h2>Let’s fix ${WORDS.length === 1 ? 'this word' : `these ${WORDS.length} words`}!</h2><p>Six fun parts, then a practice test. Take your time and try your best.</p></div>
+    <div class="row">${WORDS.map(x => `<span class="big-word" style="font-size:36px;padding:4px 18px">${esc(displayWord(x.w))}</span>`).join('')}</div>
+    <button class="btn big primary" id="begin">Let’s go →</button>`;
+  $('begin').onclick = () => startPart(0);
+  renderProg();
+}
+if ((store('fixup-outbox') || []).length) sendOutbox();
+</script>
+<script src="/nav.js" defer></script>
+</body>
+</html>
