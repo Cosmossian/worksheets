@@ -289,7 +289,8 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
     <small class="note">Separate with commas. <button class="linkbtn" id="useSight" hidden></button></small>
     <label class="check-row"><input type="checkbox" id="dailyLook" checked> Look &amp; Listen first: he sees each word, says it, then hears it (3 rounds)</label>
     <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyMic" checked> Make sure he says each word out loud (uses the microphone)</label>
-    <div class="mic-test">
+    <div id="setupMicSlot"></div>
+    <div class="mic-test" id="micTestPanel">
       <span class="lbl" style="margin:4px 0 0">Microphone sensitivity</span>
       <div class="seg" id="sensSeg" role="group" aria-label="Microphone sensitivity">
         <button data-sens="1">Normal</button><button data-sens="2">Sensitive</button><button data-sens="3">Very sensitive</button><button data-sens="4">Most sensitive</button>
@@ -398,6 +399,7 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
   <h2 id="kidHi">Hi! 👋</h2>
   <p id="kidMsg">Today’s words are ready.</p>
   <div class="done-today" id="kidDone" hidden></div>
+  <div id="kidMicSlot" style="max-width:520px;margin:0 auto 14px;text-align:left"></div>
   <button class="btn big primary" id="kidStart">Start today’s words</button>
   <button class="grownup" id="kidGrown">Grown-up: hold for the grown-up screen</button>
 </main>
@@ -891,7 +893,13 @@ $('again').onclick = () => begin();
 if (!canTalk) $('voiceWarn').hidden = false;
 
 let grownMode = false;
-function show(id) { if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome'].forEach(x => $(x).hidden = x !== id); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
+function placeMicTest(id) {   // his start screen gets the same mic test (sensitivity is per device), when Look & Listen uses the mic
+  const d = store('spell-daily') || {}, onKid = id === 'kidhome' && d.look !== false && d.mic !== false;
+  const target = onKid ? $('kidMicSlot') : $('setupMicSlot');
+  if ($('micTestPanel').previousElementSibling !== target && $('micTestPanel').parentNode !== target) { if (testing) stopMicTest(); onKid ? target.appendChild($('micTestPanel')) : target.after($('micTestPanel')); }
+  $('micTestPanel').hidden = id === 'kidhome' && !onKid;
+}
+function show(id) { if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome'].forEach(x => $(x).hidden = x !== id); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
 
 function start() {
   stopRecord();
@@ -1619,7 +1627,7 @@ async function sendOutbox() {
 }
 function renderSens() { document.querySelectorAll('#sensSeg [data-sens]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.sens === settings.sens)); }
 $('sensSeg').addEventListener('click', e => { const b = e.target.closest('[data-sens]'); if (!b) return; settings.sens = +b.dataset.sens; store('spell-settings', settings); renderSens(); if (testing) { stopMicTest(); startMicTest(); } });
-let testing = false;
+var testing = false;
 async function startMicTest() {
   if (!(await getMic())) { $('micTestBox').hidden = false; $('tHit').style.color = 'var(--try)'; $('tHit').textContent = 'The microphone isn’t available. Allow it in the browser (the icon in the address bar), then try again.'; return; }
   testing = true; $('micTestBox').hidden = false; $('micTest').textContent = '■ Stop the test'; $('tHit').textContent = 'Listening… have him say a word.'; $('tHit').style.color = 'var(--muted)';
@@ -1694,7 +1702,7 @@ $('reviewList').addEventListener('click', e => {
 holdToOpen($('reviewBtn'), 2000, 'review');
 $('openReview').onclick = () => show('review');
 $('reviewDone').onclick = () => show('setup');
-$('kidStart').onclick = () => { const d = store('spell-daily') || {}; const words = parseList(d.words || ''); if (!words.length) return renderKidHome(); startDaily(words, d); };
+$('kidStart').onclick = () => { if (testing) stopMicTest(); const d = store('spell-daily') || {}; const words = parseList(d.words || ''); if (!words.length) return renderKidHome(); startDaily(words, d); };
 holdToOpen($('kidGrown'), 2000, 'grown');
 
 /* ================= Shared across devices: the Recipe Box's Supabase database =================
