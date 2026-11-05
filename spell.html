@@ -1169,7 +1169,7 @@ async function getMic() {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !AC) return null;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: true } });
     const ctx = new AC(), an = ctx.createAnalyser(); an.fftSize = 1024;
     ctx.createMediaStreamSource(stream).connect(an);
     mic = { stream, ctx, an, buf: new Float32Array(an.fftSize) };
@@ -1184,9 +1184,12 @@ function listenForVoice(onLevel, onNudge, keep) {
   const my = ++listenToken;
   return new Promise(async res => {
     if (mic.ctx.state === 'suspended') { try { await mic.ctx.resume(); } catch (e) { } }
-    let floor = 0, n = 0; const t0 = performance.now();   // measure the room first
-    while (performance.now() - t0 < 450) { floor += micLevel(); n++; await wait(30); if (my !== listenToken) return res(null); }
-    const th = Math.max(0.012, (floor / Math.max(1, n)) * 3.2);
+    // Measure the room. Use only the quietest moments, so if he starts reading right away his voice doesn't count as "room noise".
+    const samples = []; const t0 = performance.now();
+    while (performance.now() - t0 < 350) { samples.push(micLevel()); await wait(25); if (my !== listenToken) return res(null); }
+    samples.sort((a, b) => a - b);
+    const floor = samples[Math.floor(samples.length * 0.2)] || 0;
+    const th = Math.max(0.006, floor * 2);   // a little louder than the room is enough (Dylan checks the recordings)
     let mr = null, chunks = [];
     if (keep && window.MediaRecorder) { try { mr = new MediaRecorder(mic.stream, { audioBitsPerSecond: 24000 }); mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); }; mr.start(); } catch (e) { mr = null; } }
     let voiced = 0, gap = 0, heardAt = 0, nudged = false, last = performance.now(); const start = last;
@@ -1201,8 +1204,8 @@ function listenForVoice(onLevel, onNudge, keep) {
       if (my !== listenToken) return finish(false);
       const now = performance.now(), dt = now - last; last = now;
       const lvl = micLevel(); onLevel(Math.min(1, lvl / (th * 2.5)));
-      if (lvl > th) { voiced += dt; gap = 0; } else { gap += dt; if (!heardAt && gap > 300) voiced = 0; }
-      if (!heardAt && voiced >= 320) heardAt = now;                              // a real moment of voice, not a click or a bump
+      if (lvl > th) { voiced += dt; gap = 0; } else { gap += dt; if (!heardAt && gap > 450) voiced = 0; }
+      if (!heardAt && voiced >= 180) heardAt = now;                              // a short moment of voice is enough; a single click still isn't
       if (heardAt && (gap >= 650 || now - heardAt > 3000)) return finish(true);  // let him finish the word
       if (!heardAt && !nudged && now - start > 8000) { nudged = true; onNudge(); }
     }, 40);
