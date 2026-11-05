@@ -261,6 +261,12 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
   .hear { gap: 8px; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+/* "hold" controls look like the other buttons; the fill shows how long to keep holding */
+.grownup { font: 600 16px Fredoka, sans-serif; color: var(--ink); background: var(--surface-2); border: 2px solid var(--line); border-radius: 14px; padding: 10px 18px; min-height: 46px; cursor: pointer; text-decoration: none; position: relative; overflow: hidden; isolation: isolate; margin-top: 8px; -webkit-user-select: none; user-select: none; touch-action: none; }
+.grownup small { font-size: 13px; color: var(--muted); }
+.grownup::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; height: auto; width: 0; background: rgba(251, 191, 36, .28); border-radius: 0; z-index: -1; }
+.grownup.holding { color: var(--ink); border-color: var(--try); }
+.grownup.holding::after { width: 100%; transition: width 2s linear; }
 </style>
 </head>
 <body class="authwait">
@@ -388,7 +394,7 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
   <div class="message" id="msg" aria-live="polite"></div>
   <div class="word" id="word"></div>
   <div class="keys" id="keys" role="group" aria-label="Letters"></div>
-  <button class="grownup" id="toSetup">Grown-up: hold to change the word</button>
+  <button class="grownup" id="toSetup">🔒 Grown-up: change the word <small>(hold)</small></button>
 </main>
 
 <!-- Finished -->
@@ -432,7 +438,7 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
   <div class="kid-sheets" id="kidSheets" hidden></div>
   <div id="kidMicSlot" style="max-width:520px;margin:0 auto 14px;text-align:left"></div>
   <button class="btn big primary" id="kidStart">Start today’s words</button>
-  <div class="kid-hold"><button class="grownup" id="kidGrown">Grown-up: hold for the grown-up screen</button><button class="grownup" id="kidSwitch">Switch user (hold)</button></div>
+  <div class="kid-hold"><button class="grownup" id="kidGrown">🔒 Grown-up screen <small>(hold)</small></button><button class="grownup" id="kidSwitch">↺ Switch user <small>(hold)</small></button></div>
 </main>
 
 <!-- Grown-up: Parent Review (recordings + results, by day) -->
@@ -458,7 +464,7 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
       <button class="btn big primary" id="lookNext" hidden>Next word →</button>
     </div>
   </div>
-  <button class="grownup" id="toSetup3">Grown-up: hold to stop</button>
+  <button class="grownup" id="toSetup3">■ Grown-up: stop <small>(hold)</small></button>
 </main>
 
 <!-- Daily check: the word is said, never shown -->
@@ -493,7 +499,7 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
       </div>
     </div>
   </div>
-  <button class="grownup" id="toSetup2">Grown-up: hold to stop the check</button>
+  <button class="grownup" id="toSetup2">■ Grown-up: stop the check <small>(hold)</small></button>
 </main>
 
 <!-- Daily check results -->
@@ -1956,7 +1962,8 @@ $('gateIn').onclick = async () => {
   err(''); $('gatePass').value = '';
   const next = new URLSearchParams(location.search).get('next');
   if (next && cloud.role === 'grownup' && /^[\w.-]+\.html(#\w+)?$/.test(next)) { location.href = next; return; }
-  show(cloud.role === 'kid' ? 'kidhome' : 'setup');
+  if (cloud.role === 'grownup' && location.hash !== '#review') { location.href = 'index.html'; return; }   // a parent lands on the main Study page
+  show(cloud.role === 'kid' ? 'kidhome' : location.hash === '#review' ? 'review' : 'setup');
 };
 // Make his login without signing you out: a throwaway client makes the account, then your session adds him to the Study as "kid"
 $('acctMakeKid').onclick = async () => {

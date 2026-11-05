@@ -19,8 +19,17 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: Andika,
 a { color: var(--accent); }
 .sheet { --navy: #1E3A5F; --ink: #1F2937; --muted: #475569; --line: #E2E8F0; --accent: #1D4ED8; }
 .app-header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.app-header .speller-link { margin-left: auto; font: 600 16px Fredoka, sans-serif; color: #FFFFFF; background: var(--study); border-radius: 999px; padding: 8px 16px; text-decoration: none; }
-.app-header .speller-link:hover { filter: brightness(1.1); }
+.hdr-btns { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.hdr-btn { font: 600 16px Fredoka, sans-serif; color: var(--ink); background: var(--surface-2); border: 2px solid var(--line); border-radius: 999px; padding: 8px 16px; text-decoration: none; cursor: pointer; }
+.hdr-btn:hover { border-color: var(--field-line); }
+.classes { display: flex; gap: 10px; flex-wrap: wrap; padding: 16px 24px 0; }
+.classes button { font: 700 17px Fredoka, sans-serif; border: 2px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 16px; padding: 10px 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; min-height: 50px; }
+.classes button small { font: 600 13px Fredoka, sans-serif; color: var(--muted); background: var(--bg); border-radius: 999px; padding: 1px 8px; }
+.classes button[aria-pressed="true"] { border-color: var(--study); background: #1B2D47; box-shadow: inset 0 -4px 0 var(--study); }
+.tablink { font: 600 16px Fredoka, sans-serif; border: 2px solid #0F9F8F; background: #0E2A28; color: #FFFFFF; border-radius: 999px; padding: 8px 16px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
+.tablink:hover { background: #12403B; }
+.tablink[hidden], .tabs button[hidden] { display: none; }
+.empty-class { grid-column: 1 / -1; background: var(--surface); border: 1px dashed var(--field-line); border-radius: 16px; padding: 30px; text-align: center; color: var(--muted); font-size: 18px; }
 .app-header h1 { margin: 0; font-family: Fredoka, sans-serif; font-weight: 700; font-size: 26px; color: var(--navy); }
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 24px 0; }
 .tabs button { font: 600 16px Fredoka, sans-serif; border: 2px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 8px 16px; cursor: pointer; min-height: 44px; }
@@ -49,7 +58,7 @@ textarea { resize: vertical; min-height: 44px; }
 .btn-small { font-size: 14px; padding: 6px 12px; min-height: 36px; background: #2A3A4E; color: var(--ink); }
 .btn-small:hover { background: #34475E; } .btn-print:hover { background: #4A8BE6; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
-body.authwait .tabs, body.authwait .workspace { visibility: hidden; }
+body.authwait .tabs, body.authwait .classes, body.authwait .workspace, body.authwait .hdr-btns { visibility: hidden; }
 .onscreen { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
 .onscreen h3 { margin: 0 0 4px; font: 700 18px Fredoka, sans-serif; color: var(--navy); }
 .btn-assign { background: #0F9F8F; color: #FFFFFF; } .btn-assign:hover { background: #12B5A3; }
@@ -244,7 +253,7 @@ body.authwait .tabs, body.authwait .workspace { visibility: hidden; }
 @page { size: letter; margin: 0; }
 @media print {
   body { background: #FFFFFF; }
-  #tod-nav, .app-header, .tabs, .panel, .page-label { display: none !important; }
+  #tod-nav, .app-header, .classes, .tabs, .panel, .page-label { display: none !important; }
   .workspace { display: block; padding: 0; }
   .preview { display: block; }
   .scaler { width: auto; height: auto; }
@@ -252,16 +261,18 @@ body.authwait .tabs, body.authwait .workspace { visibility: hidden; }
   .sheet { width: 8.5in; height: 11in; break-after: page; page-break-after: always; }
   .scaler:last-child .sheet { break-after: auto; page-break-after: auto; }
 }
-@media (max-width: 600px) { .tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; } .tabs button { flex: none; } .app-header h1 { font-size: 22px; } }
+@media (max-width: 600px) { .classes { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; } .classes button { flex: none; } .tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; } .tabs button { flex: none; } .app-header h1 { font-size: 22px; } }
 
 </style>
 </head>
 <body class="authwait">
 <header class="app-header">
-  <h1>First Grade Fun Worksheets</h1>
-  <a class="speller-link" href="spell.html">Spelling Helper: spell any word together →</a>
+  <h1>The Study</h1>
+  <div class="hdr-btns"><a class="hdr-btn" href="spell.html#review">Parent Review</a><button class="hdr-btn" id="switchUser">↺ Switch user</button></div>
 </header>
-<nav class="tabs" role="tablist" aria-label="Worksheet makers">
+<nav class="classes" id="classes" aria-label="Classes"></nav>
+<nav class="tabs" role="tablist" aria-label="Worksheets in this class">
+  <a class="tablink" data-cls="phonics" href="spell.html">✏️ Spelling Helper &amp; daily sight words →</a>
   <button role="tab" data-tool="sight">Sight Word Practice</button>
   <button role="tab" data-tool="master">Word Master Challenge</button>
   <button role="tab" data-tool="fixup">Spelling Fix-Up</button>
@@ -913,6 +924,7 @@ function buildSheets() {
 }
 
 function renderPreview() {
+  if (typeof CLASSES !== 'undefined') { const c = CLASSES.find(x => x.id === (state.cls || classOf(state.tool))); if (c && !c.tools.length) return; }
   const html = buildSheets();
   if (!html) { $preview.innerHTML = '<p class="help">Add some words or questions to see your worksheet here.</p>'; return; }
   const tmp = document.createElement('div'); tmp.innerHTML = html;
@@ -1063,7 +1075,40 @@ async function findPlace(q) {
   return { q, name: `${hit.name}${hit.admin1 ? ', ' + hit.admin1 : ''}`, lat: hit.latitude, lon: hit.longitude };
 }
 
+/* ---------- Classes: the worksheets grouped like his school subjects ---------- */
+const CLASSES = [
+  { id: 'ela', name: 'ELA', icon: '📖', tools: ['question'] },
+  { id: 'math', name: 'Math', icon: '🔢', tools: ['eagles'] },
+  { id: 'music', name: 'Music', icon: '🎵', tools: [] },
+  { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['sight', 'master', 'fixup'], extra: 1 },
+  { id: 'pe', name: 'PE', icon: '🏃', tools: [] },
+  { id: 'science', name: 'Science', icon: '🔬', tools: ['weather'] },
+  { id: 'social', name: 'Social Studies', icon: '🌎', tools: [] },
+  { id: 'every', name: 'Every Day', icon: '📋', tools: ['steps'] }
+];
+const classOf = t => (CLASSES.find(c => c.tools.includes(t)) || CLASSES[3]).id;
+function renderClasses() {
+  const cls = state.cls || classOf(state.tool);
+  document.getElementById('classes').innerHTML = CLASSES.map(c => `<button data-cls="${c.id}" aria-pressed="${c.id === cls}"><span aria-hidden="true">${c.icon}</span>${esc(c.name)}<small>${c.tools.length + (c.extra || 0)}</small></button>`).join('');
+  document.querySelectorAll('.tabs [data-tool]').forEach(b => { b.hidden = classOf(b.dataset.tool) !== cls; });
+  document.querySelectorAll('.tabs .tablink').forEach(a => { a.hidden = a.dataset.cls !== cls; });
+}
+document.getElementById('classes').addEventListener('click', e => {
+  const b = e.target.closest('[data-cls]'); if (!b) return;
+  const c = CLASSES.find(x => x.id === b.dataset.cls);
+  state.cls = c.id; if (c.tools.length && !c.tools.includes(state.tool)) state.tool = c.tools[0];
+  save(); history.replaceState(null, '', '#' + (c.tools.length ? state.tool : c.id)); renderPanel();
+});
+document.getElementById('switchUser').onclick = async () => { try { const sb = sbClient(); if (sb) await sb.auth.signOut(); } catch (e) { } location.href = 'spell.html'; };
+
 function renderPanel() {
+  renderClasses();
+  const cls = CLASSES.find(c => c.id === (state.cls || classOf(state.tool)));
+  if (!cls.tools.length) {   // a class with nothing in it yet
+    $panel.innerHTML = `<h2>${cls.icon} ${esc(cls.name)}</h2><p class="help">No worksheets for ${esc(cls.name)} yet.</p>`;
+    $preview.innerHTML = `<div class="empty-class">Nothing in ${esc(cls.name)} yet. As he works on new things in ${esc(cls.name)}, worksheets for them will show up here.</div>`;
+    return;
+  }
   const t = state.tool;
   $panel.innerHTML = { sight: panelSight, master: panelMaster, fixup: panelFixup, question: panelQuestion, steps: panelSteps, eagles: panelEagles, weather: panelWeather }[t]() + onScreenBlock();
   if (t === 'weather') wireWeather();
@@ -1179,7 +1224,7 @@ function wireOnScreen() {
 /* ---------- events ---------- */
 document.querySelector('.tabs').addEventListener('click', e => {
   const b = e.target.closest('button[data-tool]'); if (!b) return;
-  state.tool = b.dataset.tool; save(); history.replaceState(null, '', '#' + state.tool); renderPanel();
+  state.tool = b.dataset.tool; state.cls = classOf(state.tool); save(); history.replaceState(null, '', '#' + state.tool); renderPanel();
 });
 
 let cardsTimer;
@@ -1270,7 +1315,8 @@ if (fromLink.get('fixup')) {
   history.replaceState(null, '', location.pathname + '#fixup');
 }
 const fromHash = location.hash.slice(1);
-if (['sight', 'master', 'fixup', 'question', 'steps', 'eagles', 'weather'].includes(fromHash)) state.tool = fromHash;
+if (['sight', 'master', 'fixup', 'question', 'steps', 'eagles', 'weather'].includes(fromHash)) { state.tool = fromHash; state.cls = classOf(fromHash); }
+else if (CLASSES.some(c => c.id === fromHash)) state.cls = fromHash;
 renderPanel();
 // The Worksheets page is for grown-ups: nobody signed in → the Parent / Child screen; his login → his start screen.
 (async () => {
