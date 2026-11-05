@@ -270,7 +270,6 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
     </div>
     <div id="acctIn2" hidden>
       <div class="who" id="acctWho"></div>
-      <div class="sync-note" id="syncNote"></div>
       <div id="kidMaker" hidden>
         <span class="lbl" style="margin:8px 0 0">His login (a username, not an email)</span>
         <input type="text" id="kidUser" placeholder="Username, like mharris0624" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -287,6 +286,7 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
     <label class="lbl" for="dailyIn">Today’s words</label>
     <textarea class="big" id="dailyIn" rows="2" placeholder="first, while, more, against" autocapitalize="off" spellcheck="false"></textarea>
     <small class="note">Separate with commas. <button class="linkbtn" id="useSight" hidden></button></small>
+    <div class="row" id="syncRow" hidden style="align-items:center;margin-top:6px"><button class="btn" id="syncNow">⟳ Sync to his device</button><span class="sync-note" id="syncNote"></span></div>
     <label class="check-row"><input type="checkbox" id="dailyLook" checked> Look &amp; Listen first: he sees each word, says it, then hears it (3 rounds)</label>
     <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyMic" checked> Make sure he says each word out loud (uses the microphone)</label>
     <div id="setupMicSlot"></div>
@@ -1724,7 +1724,21 @@ function cloudClient() {
   cloud.sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } });
   return cloud.sb;
 }
-function syncNote(t) { const el = $('syncNote'); if (el) el.textContent = t || ''; }
+function syncNote(t, bad) { const el = $('syncNote'); if (el) { el.textContent = t || ''; el.style.color = bad ? 'var(--try)' : ''; } }
+// Sync button under today's words: send the words now, then pull, and say what his device will see
+$('syncNow').onclick = async () => {
+  if (!cloudMember() || cloud.role !== 'grownup') return;
+  const btn = $('syncNow'); btn.disabled = true; syncNote('Syncing…');
+  clearTimeout(cloud.timers['spell-daily']); saveDailySetup();
+  try {
+    await cloudFlush();
+    const ok = await cloudRun('state', { key: SYNC['spell-daily'], data: store('spell-daily') }, false);
+    if (!ok) { syncNote('Couldn’t sync right now. Check the internet and try again.', true); return; }
+    await cloudPull(); clearTimeout(cloud.timers['spell-daily']);   // already sent; don't overwrite this note
+    const n = parseList((store('spell-daily') || {}).words || '').length;
+    syncNote(`Synced ✓ (${timeOf(Date.now())}). His device will show ${n} word${n === 1 ? '' : 's'}.`);
+  } finally { btn.disabled = false; }
+};
 /* Offline queue: [{op, args}] in localStorage "study-cloud-queue", retried on open and when the network comes back */
 function cloudQueue(op, args) { const q = store('study-cloud-queue') || []; q.push({ op, args }); localStorage.setItem('study-cloud-queue', JSON.stringify(q.slice(-200))); }
 async function cloudRun(op, args, queueOnFail = true) {
@@ -1795,7 +1809,7 @@ async function cloudPull() {
     // his recordings are only kept 7 days (here and in the cloud)
     cloud.sb.from('study_audio').delete().eq('kind', 'clip').lt('created_at', new Date(Date.now() - 7 * 864e5).toISOString()).then(() => { });
     syncNote(`Up to date ✓ (${timeOf(Date.now())})`);
-  } catch (e) { syncNote('Couldn’t reach the database right now. This device is using its own copy.'); }
+  } catch (e) { syncNote('Couldn’t reach the database right now. This device is using its own copy.', true); }
   finally { cloud.pulling = false; }
   trimOldClips();
   renderAll(true);
@@ -1848,6 +1862,7 @@ function renderAccount() {
   $('acctOut').hidden = inside; $('acctIn2').hidden = !inside;
   if (!inside) return;
   $('kidMaker').hidden = cloud.role !== 'grownup';
+  $('syncRow').hidden = cloud.role !== 'grownup';
   $('acctWho').innerHTML = cloud.role === 'grownup' ? `Signed in as <b>${esc(cloud.user.email)}</b> (grown-up). Today’s words, results and recordings are shared with his device.`
     : cloud.role === 'kid' ? `This is <b>his device</b> (signed in as ${esc(shownName(cloud.user.email))}). It shows him “Start today’s words”. Set the words from your own device.`
     : `Signed in as ${esc(cloud.user.email)}, but this account isn’t set up for the Study. (Run study-setup.sql in Supabase, or check the email.)${cloud.roleErr ? `<br><small>Supabase said: ${esc(cloud.roleErr)}</small>` : ''}`;
