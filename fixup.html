@@ -378,14 +378,19 @@ const FORM_URL = 'https://formsubmit.co/ajax/' + RESULTS_EMAIL;
 /* FormSubmit replies {"success":"true"} when it sent the email. Anything else (like "This form needs Activation") is not sent yet:
    the results stay queued and are tried again, and the reply is shown on the grown-up screen. */
 async function postForm(body) {
+  const save = (ok, msg) => { store('spell-send-status', { t: Date.now(), ok, msg }); return ok; };
+  const read = async res => { let j = {}; try { j = await res.json(); } catch (e) { } return { ok: res.ok && (j.success === true || j.success === 'true'), msg: j.message || (res.ok ? '' : `FormSubmit answered with error ${res.status}`) }; };
+  const form = () => { const p = new URLSearchParams(); Object.entries(body).forEach(([k, v]) => p.append(k, String(v))); return p; };
+  // 1) JSON (FormSubmit's documented way)
+  try { const r = await read(await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) })); return save(r.ok, r.msg); } catch (e) { }
+  // 2) Plain form data: no browser pre-check (some browsers block the JSON way)
+  try { const r = await read(await fetch(FORM_URL, { method: 'POST', headers: { Accept: 'application/json' }, body: form() })); return save(r.ok, r.msg); } catch (e) { }
+  // 3) Last resort: send without reading the reply. The page can't confirm it, so it says so.
   try {
-    const res = await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) });
-    let j = {}; try { j = await res.json(); } catch (e) { }
-    const ok = res.ok && (j.success === true || j.success === 'true');
-    const msg = j.message || (res.ok ? '' : `FormSubmit answered with error ${res.status}`);
-    store('spell-send-status', { t: Date.now(), ok, msg });
-    return ok;
-  } catch (e) { store('spell-send-status', { t: Date.now(), ok: false, msg: 'Couldn’t reach FormSubmit (no internet, or it was blocked).' }); return false; }
+    await fetch('https://formsubmit.co/' + RESULTS_EMAIL, { method: 'POST', mode: 'no-cors', body: form() });
+    return save(true, 'Sent, but FormSubmit’s reply couldn’t be read, so this one is unconfirmed. Check your inbox (and spam). The first time, look for FormSubmit’s “Activate Form” email.');
+  } catch (e) { }
+  return save(false, 'Couldn’t reach FormSubmit at all. Something on this device or network may be blocking formsubmit.co (an ad blocker, a privacy setting, or a network filter).');
 }
 const params = new URLSearchParams(location.search);
 let WORDS = [];   // [{ w, his }]
