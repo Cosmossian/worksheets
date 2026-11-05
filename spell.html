@@ -47,7 +47,19 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
 .pe-top b { font-size: 22px; letter-spacing: 1px; }
 .pe-top button { border: 0; background: var(--field); border-radius: 8px; width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer; }
 .pe-top button svg { width: 20px; height: 20px; }
-.pe input { font-size: 15px; padding: 5px 8px; width: 130px; border-radius: 8px; }
+.pe input { font-size: 15px; padding: 5px 8px; width: 170px; border-radius: 8px; }
+.pe-top .rec { width: auto; padding: 0 10px; gap: 6px; font: 600 14px Fredoka, sans-serif; display: inline-flex; align-items: center; color: #FCA5A5; }
+.pe-top .rec::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #F87171; }
+.pe-top .rec.on { background: #7F1D1D; color: #fff; animation: recpulse 1s ease-in-out infinite; }
+.pe-top .rec.on::before { border-radius: 2px; background: #fff; }
+@keyframes recpulse { 50% { opacity: .65; } }
+.pe .mine { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--good); }
+.pe .mine button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 13px; text-decoration: underline; padding: 0; }
+.pe.team b { background: rgba(196, 181, 253, .14); outline: 2px solid rgba(196, 181, 253, .45); border-radius: 8px; padding: 0 6px; }
+.pe.wholeword { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.rec-note { color: var(--try); }
+/* letter teams on the child screen: boxes joined in one band = one sound */
+.part.team .boxes { gap: 3px; padding: 4px; border-radius: 17px; background: rgba(196, 181, 253, .12); outline: 2px solid rgba(196, 181, 253, .4); }
 .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
 .recent { margin-top: 18px; }
 .recent b { display: block; font-size: 15px; color: var(--muted); margin-bottom: 6px; }
@@ -157,8 +169,9 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
     <label class="lbl" for="wordIn">Word</label>
     <input type="text" id="wordIn" placeholder="vitamin D" autocomplete="off" autocapitalize="off" spellcheck="false">
     <div id="partsArea" hidden>
-      <label class="lbl">Sound parts</label>
-      <small class="note" style="margin-top:0">Tap a speaker to hear a part. If a part is split oddly, type the word with dashes (like <b>vi-ta-min</b>). If a part sounds wrong, type how it should sound (like “vy” or “tuh”).</small>
+      <label class="lbl" id="partsLbl">Sound parts</label>
+      <small class="note" style="margin-top:0" id="partsHelp"></small>
+      <small class="note rec-note" id="recNote" hidden></small>
       <div class="parts-edit" id="partsEdit"></div>
     </div>
     <label class="lbl">Help me unlocks after</label>
@@ -177,6 +190,8 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
       <ol>
         <li>He hears the word, normal and slow, and can tap each part to hear just that part.</li>
         <li>The part he’s working on lights up, so he knows which sound to listen for.</li>
+        <li><b>One-syllable words</b> (like “Earth”) are split into sounds instead: <b>ear · th</b>. Letters that make one sound together are shaded as one band, so he can see that one sound can take 2 or 3 letters. Each sound plays a clue word (“er, like her”), since the computer voice can’t say a sound like “th” by itself.</li>
+        <li><b>Your voice:</b> tap Record next to the whole word or any part and say it. He’ll hear you instead of the computer voice, everywhere: the hear buttons, Say it slow and Help me. Recordings are saved on this device.</li>
         <li>He taps a letter. Right letters stay in the box. A wrong letter wiggles, doesn’t stay, and its button turns red with an ✕ so he doesn’t pick it again. The red clears when he gets that letter.</li>
         <li><b>Help me is locked until he tries.</b> It unlocks after the number of tries you pick (2 to start). Dots on the button show how many tries are left. If he taps it early, it tells him to try his best first and replays the sound.</li>
         <li>Tries only count if they’re real: after a wrong letter the keys pause for a second, taps that come too fast don’t count, and tapping a letter he already tried doesn’t count.</li>
@@ -294,6 +309,82 @@ function quietSet(word) {
   return q;
 }
 
+/* ---- One-syllable words get split into SOUNDS instead of syllables (Earth = ear · th).
+   Each sound has a clue: an optional sayable sound plus a word that has it ("er, like her").
+   The computer voice can't say a lone "th", so the clue word does the work. A grown-up can
+   change any clue, or record their own voice for it. ---- */
+const TEAMS = {   // letter teams that make one sound: [sayable sound or '', clue word]
+  tch: ['', 'match'], igh: ['eye', 'night'], air: ['air', 'chair'], eer: ['ear', 'deer'], dge: ['', 'badge'],
+  th: ['', 'thumb'], sh: ['shh', 'ship'], ch: ['', 'chip'], wh: ['', 'whale'], ph: ['', 'phone'], ck: ['', 'duck'],
+  ng: ['', 'ring'], kn: ['', 'knee'], wr: ['', 'write'], qu: ['', 'queen'],
+  ee: ['ee', 'tree'], ea: ['ee', 'eat'], ai: ['ay', 'rain'], ay: ['ay', 'play'], oa: ['oh', 'boat'], oo: ['oo', 'moon'],
+  ou: ['ow', 'out'], oi: ['oy', 'coin'], oy: ['oy', 'boy'], au: ['aw', 'sauce'], aw: ['aw', 'saw'], ew: ['oo', 'new'], ue: ['oo', 'blue'],
+  ar: ['ar', 'car'], or: ['or', 'corn'], er: ['er', 'her'], ir: ['er', 'bird'], ur: ['er', 'turn']
+};
+const LONG = { a: ['ay', 'cake'], e: ['ee', 'these'], i: ['eye', 'bike'], o: ['oh', 'home'], u: ['you', 'cube'] };
+const OPEN = { a: ['ah', 'pa'], e: ['ee', 'me'], i: ['eye', 'hi'], o: ['oh', 'go'], u: ['oo', 'flu'] };
+const DOUBLE_WORD = { l: 'bell', s: 'kiss', f: 'puff', z: 'buzz', t: 'mitt', p: 'happy', d: 'add', b: 'bubble', g: 'egg', m: 'summer', n: 'funny', r: 'carrot', c: 'raccoon' };
+/* Sight words that break the rules: [letters, sayable sound, clue word, quiet?] for each sound. */
+const Q = [1, '', '', true];
+const EXCEPT = {
+  said: [[1, '', 'sun'], [2, '', 'egg'], [1, '', 'dog']], what: [[2, '', 'whale'], [1, '', 'up'], [1, '', 'top']],
+  was: [[1, '', 'web'], [1, '', 'up'], [1, '', 'zebra']], of: [[1, '', 'up'], [1, '', 'van']], are: [[3, 'ar', 'car']],
+  were: [[1, '', 'web'], [3, 'er', 'her']], here: [[1, '', 'hat'], [3, 'ear', 'hear']], there: [[2, '', 'this'], [3, 'air', 'chair']],
+  where: [[2, '', 'whale'], [3, 'air', 'chair']], have: [[1, '', 'hat'], [1, '', 'apple'], [1, '', 'van'], Q],
+  give: [[1, '', 'goat'], [1, '', 'igloo'], [1, '', 'van'], Q], live: [[1, '', 'lion'], [1, '', 'igloo'], [1, '', 'van'], Q],
+  love: [[1, '', 'lion'], [1, '', 'up'], [1, '', 'van'], Q], come: [[1, '', 'cat'], [1, '', 'up'], [1, '', 'moon'], Q],
+  some: [[1, '', 'sun'], [1, '', 'up'], [1, '', 'moon'], Q], done: [[1, '', 'dog'], [1, '', 'up'], [1, '', 'nest'], Q],
+  one: [[3, '', 'won']], two: [[1, '', 'top'], [2, 'oo', 'zoo']], they: [[2, '', 'this'], [2, 'ay', 'play']],
+  you: [[1, '', 'yo-yo'], [2, 'oo', 'zoo']], your: [[1, '', 'yo-yo'], [3, 'or', 'corn']], does: [[1, '', 'dog'], [2, '', 'up'], [1, '', 'zebra']],
+  the: [[2, '', 'this'], [1, '', 'up']], put: [[1, '', 'pig'], [1, '', 'book'], [1, '', 'top']], push: [[1, '', 'pig'], [1, '', 'book'], [2, 'shh', 'ship']],
+  pull: [[1, '', 'pig'], [1, '', 'book'], [2, '', 'bell']], full: [[1, '', 'fish'], [1, '', 'book'], [2, '', 'bell']],
+  to: [[1, '', 'top'], [1, 'oo', 'zoo']], do: [[1, '', 'dog'], [1, 'oo', 'zoo']], who: [[2, '', 'hat'], [1, 'oo', 'zoo']]
+};
+function soundUnits(word) {
+  const w = word.toLowerCase(), n = w.length, out = [];
+  if (EXCEPT[w]) { let i = 0; return EXCEPT[w].map(([len, say, clue, quiet]) => { const u = { s: word.slice(i, i + len), say, clue, quiet: !!quiet }; i += len; return u; }); }
+  // magic e: vowel + one consonant + e at the end (bike, while, home)
+  const vce = n >= 3 && /[aeiou][^aeiouwxy]e$/.test(w) && !/[aeiou]{2}[^aeiou]e$/.test(w) ? n - 3 : -1;
+  let i = 0;
+  const push = (len, say, clue, quiet = false) => { out.push({ s: word.slice(i, i + len), say, clue, quiet }); i += len; };
+  while (i < n) {
+    const r = w.slice(i), c = w[i];
+    if (vce >= 0 && i === vce + 2 && c === 'e') { push(1, '', '', true); continue; }                       // quiet e
+    if (r.startsWith('ear')) {   // hear, near, years = "ear"; earth, learn = "er"
+      const eer = /^ears?$/.test(r); push(3, eer ? 'ear' : 'er', eer ? 'hear' : 'her'); continue;
+    }
+    if (r.startsWith('are') && r.length === 3) { push(3, 'air', 'care'); continue; }
+    if (r.startsWith('ore') && r.length === 3) { push(3, 'or', 'more'); continue; }
+    if (r.startsWith('ow')) { const oh = i + 2 === n && i >= 2 && !/[aeiou]/.test(w[i - 1]) && !/[aeiou]/.test(w[i - 2] || 'a'); push(2, oh ? 'oh' : 'ow', oh ? 'snow' : 'cow'); continue; }
+    const t3 = TEAMS[r.slice(0, 3)], t2 = TEAMS[r.slice(0, 2)];
+    if (r.length >= 3 && t3) { push(3, t3[0], t3[1]); continue; }
+    if (r.startsWith('or') && w[i - 1] === 'w') { push(2, 'er', 'her'); continue; }   // world, work, word
+    if (r.length >= 2 && t2 && !(i + 1 === vce)) { push(2, t2[0], t2[1]); continue; }
+    if (r.length >= 2 && r[0] === r[1] && !'aeiou'.includes(c)) { push(2, '', DOUBLE_WORD[c] || KEYWORD[c]); continue; }
+    if ('aeiou'.includes(c)) {
+      if (i === vce) { push(1, ...LONG[c]); continue; }
+      if (i === n - 1 && !/[aeiouy]/.test(w.slice(0, i))) { push(1, ...OPEN[c]); continue; }   // go, me, hi
+      push(1, '', KEYWORD[c]); continue;                                                     // short: apple, egg…
+    }
+    if (c === 'y') { if (i === 0) push(1, '', 'yo-yo'); else push(1, 'eye', 'fly'); continue; }
+    if (c === 'c' && /[eiy]/.test(w[i + 1] || '')) { push(1, '', 'city'); continue; }
+    if (c === 'g' && (w.slice(i + 1) === 'e' || w[i + 1] === 'y')) { push(1, '', 'gem'); continue; }   // page, gym (not give, girl)
+    if (c === 'x') { push(1, '', 'fox'); continue; }
+    push(1, '', KEYWORD[c] || c);
+  }
+  // A clue word shouldn't be the word he's spelling ("me" → "ee, like he")
+  for (const u of out) if (u.clue === w && ALT[w]) u.clue = ALT[w];
+  return out;
+}
+const ALT = { me: 'he', go: 'no', hi: 'I', her: 'fur', car: 'star', bird: 'third', tree: 'free', more: 'store', night: 'light', hear: 'near',
+  cake: 'lake', bike: 'like', home: 'bone', play: 'day', rain: 'train', boat: 'coat', moon: 'soon', cow: 'now', snow: 'slow', ship: 'shop',
+  thumb: 'thin', chip: 'chop', duck: 'luck', ring: 'sing', queen: 'quit', knee: 'knot', write: 'wrap', match: 'catch', badge: 'edge',
+  chair: 'hair', care: 'dare', eat: 'seat', out: 'loud', coin: 'join', boy: 'toy', saw: 'paw', new: 'few', blue: 'glue', corn: 'fork',
+  turn: 'burn', zoo: 'too', fly: 'sky', bell: 'well', kiss: 'miss', puff: 'off', buzz: 'fizz', cube: 'mule', these: 'Pete', this: 'that',
+  sun: 'sock', top: 'tub', cat: 'cup', dog: 'duck', fish: 'fan', hat: 'hop', lion: 'leg', nest: 'net', pig: 'pan', red: 'run', van: 'vet',
+  web: 'wet', jam: 'jet', kite: 'kid', ball: 'bat', goat: 'gum', up: 'us', egg: 'end', fox: 'box', zebra: 'zip', book: 'look', city: 'cent', gem: 'gym' };
+const unitPhrase = u => u.quiet ? 'This letter is quiet. You can’t hear it.' : (u.say ? `${u.say}. Like ${u.clue}.` : `Like ${u.clue}.`);
+
 /* Letters that are easy to mix up, by sound or by shape. */
 const CONFUSE = { a: 'eu', b: 'dp', c: 'ks', d: 'bt', e: 'ia', f: 'vp', g: 'jk', h: 'ny', i: 'ey', j: 'gy', k: 'cg', l: 'rw', m: 'nw', n: 'mu', o: 'ua', p: 'bq', q: 'kp', r: 'wl', s: 'cz', t: 'dk', u: 'oa', v: 'fb', w: 'ru', x: 'kz', y: 'ie', z: 'sx' };
 
@@ -311,30 +402,53 @@ let settings = Object.assign({ need: 2 }, store('spell-settings') || {});
 const COOL_MS = 1000;   // keys pause after a wrong letter, so he has to stop and listen
 
 function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
-let sounds = store('spell-sounds') || {};   // part text (lowercase) -> "say it like"
+let sounds = store('spell-sounds') || {};   // part key -> what to say instead ("say it like")
+let voices = store('spell-voice') || {};    // part key (or "w:<word>") -> recording of a grown-up's voice (data URL)
 
 function buildPlan(input) {
   const text = input.trim().replace(/\s+/g, ' ');
   const parts = [], letters = [];
   let idx = 0;
   text.split(' ').forEach((wd, wi) => {
-    const pieces = wd.includes('-') ? wd.split('-').filter(Boolean) : syllables(wd);
-    const clean = pieces.join('');
-    const quiet = quietSet(clean.replace(/[^A-Za-z]/g, ''));
+    const letterOnly = wd.replace(/[^A-Za-z]/g, '');
+    const bySound = !wd.includes('-') && letterOnly.length > 1 && letterOnly === wd && syllables(wd).length === 1;
+    const pieces = bySound ? soundUnits(wd) : (wd.includes('-') ? wd.split('-').filter(Boolean) : syllables(wd)).map(s => ({ s }));
+    const quiet = bySound ? null : quietSet(pieces.map(p => p.s).join('').replace(/[^A-Za-z]/g, ''));
     let wpos = 0;
     pieces.forEach(pc => {
       const pIdx = parts.length;
-      parts.push({ text: pc, say: sounds[pc.toLowerCase()] || '', word: wi });
-      [...pc].forEach(ch => {
+      const unit = bySound ? { say: pc.say, clue: pc.clue, quiet: pc.quiet } : null;
+      const key = unit ? `s:${pc.s.toLowerCase()}|${unit.quiet ? 'quiet' : unit.clue}` : pc.s.toLowerCase();
+      parts.push({ text: pc.s, unit, key, say: sounds[key] || '', word: wi, team: bySound && pc.s.length > 1 });
+      [...pc.s].forEach(ch => {
         const isLetter = /[a-z]/i.test(ch);
-        letters.push({ ch, partIdx: pIdx, quiet: isLetter && quiet.has(wpos), fixed: !isLetter });
+        letters.push({ ch, partIdx: pIdx, quiet: isLetter && (bySound ? !!pc.quiet : quiet.has(wpos)), fixed: !isLetter });
         wpos++; idx++;
       });
     });
   });
-  return { text: text.replace(/-/g, ''), parts, letters };
+  return { text: text.replace(/-/g, ''), parts, letters, bySound: parts.some(p => p.unit) };
 }
-const partSay = p => p.say || (p.text.length === 1 ? letterName(p.text.toLowerCase()) : p.text.toLowerCase());
+const partSay = p => p.say || (p.unit ? unitPhrase(p.unit) : p.text.length === 1 ? letterName(p.text.toLowerCase()) : p.text.toLowerCase());
+
+/* ================= Playing: a grown-up's recording if there is one, else the computer voice ================= */
+let nowAudio = null;
+function playClip(url) {
+  if (canTalk) speechSynthesis.cancel();
+  if (nowAudio) { nowAudio.pause(); nowAudio = null; }
+  return new Promise(res => {
+    const a = new Audio(url); nowAudio = a;
+    a.onended = a.onerror = () => res();
+    a.play().catch(() => res());
+    setTimeout(res, 8000);
+  });
+}
+function playPart(p, rate) {
+  if (voices[p.key]) return playClip(voices[p.key]);
+  return say(partSay(p), rate ?? (p.unit ? 0.8 : 0.55));
+}
+const wordKey = t => 'w:' + t.toLowerCase();
+function playWord(text, rate = 0.9) { return voices[wordKey(text)] ? playClip(voices[wordKey(text)]) : say(text, rate); }
 
 /* ============ Grown-up setup ============ */
 function renderSetup() {
@@ -344,7 +458,18 @@ function renderSetup() {
   $('partsArea').hidden = !ok;
   if (!ok) return;
   const pl = buildPlan(v);
-  $('partsEdit').innerHTML = pl.parts.map((p, i) => `<div class="pe"><div class="pe-top"><b>${esc(p.text)}</b><button data-hear="${i}" aria-label="Hear ${esc(p.text)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg></button></div><input type="text" data-say="${esc(p.text.toLowerCase())}" value="${esc(p.say)}" placeholder="sounds like…" aria-label="How ${esc(p.text)} should sound"></div>`).join('');
+  $('partsLbl').textContent = pl.bySound && pl.parts.every(p => p.unit) ? 'Sounds' : pl.bySound ? 'Parts and sounds' : 'Sound parts';
+  $('partsHelp').innerHTML = (pl.bySound
+    ? 'One-syllable words are split into their <b>sounds</b>. Letters shaded together make one sound. Each sound plays a clue word, because the computer voice can’t say a sound like “th” on its own. '
+    : 'Longer words are split into syllables. If a part is split oddly, type the word with dashes (like <b>vi-ta-min</b>). ')
+    + 'Tap a speaker to hear it. If it sounds wrong, type what it should say, or tap <b>Record</b> and say it yourself. Your voice is saved on this device and used instead of the computer voice.';
+  const spk = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>`;
+  const recBtn = (key, label) => `<button class="rec${rec && rec.key === key ? ' on' : ''}" data-rec="${esc(key)}" aria-label="Record your voice for ${esc(label)}">${rec && rec.key === key ? 'Stop' : 'Record'}</button>`;
+  const mine = key => voices[key] ? `<span class="mine">✓ your voice <button data-delvoice="${esc(key)}">remove</button></span>` : '';
+  const wk = wordKey(pl.text);
+  $('partsEdit').innerHTML = `<div class="pe wholeword"><div class="pe-top"><span>Whole word: <b>${esc(pl.text)}</b></span><button data-hearword aria-label="Hear the whole word">${spk}</button>${recBtn(wk, 'the whole word')}</div>${mine(wk)}</div>`
+    + pl.parts.map((p, i) => `<div class="pe${p.team ? ' team' : ''}"><div class="pe-top"><b>${esc(p.text)}</b><button data-hear="${i}" aria-label="Hear ${esc(p.text)}">${spk}</button>${recBtn(p.key, p.text)}</div>`
+      + `<input type="text" data-say="${esc(p.key)}" value="${esc(p.say)}" placeholder="${esc(p.unit ? unitPhrase(p.unit) : p.text.toLowerCase())}" aria-label="What ${esc(p.text)} should say">${mine(p.key)}</div>`).join('');
 }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function renderRecent() {
@@ -355,15 +480,65 @@ function renderRecent() {
 $('wordIn').addEventListener('input', renderSetup);
 $('wordIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !$('startBtn').disabled) start(); });
 $('partsEdit').addEventListener('click', e => {
-  const b = e.target.closest('[data-hear]'); if (!b) return;
-  const pl = buildPlan($('wordIn').value); say(partSay(pl.parts[+b.dataset.hear]), 0.6);
+  const pl = buildPlan($('wordIn').value);
+  const h = e.target.closest('[data-hear]'); if (h) return playPart(pl.parts[+h.dataset.hear]);
+  if (e.target.closest('[data-hearword]')) return playWord(pl.text);
+  const r = e.target.closest('[data-rec]'); if (r) return toggleRecord(r.dataset.rec);
+  const d = e.target.closest('[data-delvoice]'); if (d) { delete voices[d.dataset.delvoice]; saveVoices(); renderSetup(); }
 });
 $('partsEdit').addEventListener('input', e => {
   const el = e.target; if (!el.dataset.say) return;
   if (el.value.trim()) sounds[el.dataset.say] = el.value.trim(); else delete sounds[el.dataset.say];
   store('spell-sounds', sounds);
 });
-$('testWord').onclick = () => say(buildPlan($('wordIn').value).text);
+$('testWord').onclick = () => playWord(buildPlan($('wordIn').value).text);
+
+/* ---------- Recording a grown-up's voice ---------- */
+let rec = null;   // { key, mr, stream, timer }
+const REC_MAX_MS = 4000;
+function recNote(t) { $('recNote').hidden = !t; $('recNote').textContent = t || ''; }
+function saveVoices() {
+  try { localStorage.setItem('spell-voice', JSON.stringify(voices)); return true; }
+  catch (e) { recNote('This device is out of room for recordings. Remove a few “your voice” recordings and try again.'); return false; }
+}
+async function toggleRecord(key) {
+  if (rec) { const same = rec.key === key; stopRecord(); if (same) return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { recNote('This browser can’t record. Try Chrome or Safari, or type how it should sound instead.'); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { recNote('The microphone is blocked. Allow it for this site in the browser’s settings, then tap Record again.'); return; }
+  const type = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+  let mr;
+  try { mr = new MediaRecorder(stream, type ? { mimeType: type, audioBitsPerSecond: 32000 } : undefined); }
+  catch (e) { mr = new MediaRecorder(stream); }
+  const chunks = [];
+  mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop = () => {
+    stream.getTracks().forEach(t => t.stop());
+    const blob = new Blob(chunks, { type: mr.mimeType || type || 'audio/webm' });
+    if (!blob.size) { recNote('Nothing was recorded. Try again, a little closer to the microphone.'); renderSetup(); return; }
+    const fr = new FileReader();
+    fr.onload = () => {
+      const had = voices[key]; voices[key] = fr.result;
+      if (!saveVoices()) { if (had) voices[key] = had; else delete voices[key]; }
+      else { recNote(''); playClip(fr.result); }
+      renderSetup();
+    };
+    fr.readAsDataURL(blob);
+  };
+  rec = { key, mr, stream, timer: setTimeout(stopRecord, REC_MAX_MS) };
+  if (canTalk) speechSynthesis.cancel();
+  mr.start();
+  recNote('Recording… say it now. It stops by itself after 4 seconds, or tap Stop.');
+  renderSetup();
+}
+function stopRecord() {
+  if (!rec) return;
+  clearTimeout(rec.timer);
+  const r = rec; rec = null;
+  try { if (r.mr.state !== 'inactive') r.mr.stop(); else r.stream.getTracks().forEach(t => t.stop()); } catch (e) { }
+  renderSetup();
+}
 $('chips').addEventListener('click', e => { const c = e.target.closest('[data-w]'); if (c) { $('wordIn').value = c.dataset.w; renderSetup(); } });
 $('startBtn').onclick = start;
 function renderNeed() { document.querySelectorAll('#needSeg [data-need]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.need === settings.need)); }
@@ -383,6 +558,7 @@ if (!canTalk) $('voiceWarn').hidden = false;
 function show(id) { ['setup', 'play', 'done'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('playing', id === 'play'); if (canTalk) speechSynthesis.cancel(); }
 
 function start() {
+  stopRecord();
   const raw = $('wordIn').value.trim(); if (!/[a-z]/i.test(raw)) return;
   const r = (store('spell-recent') || []).filter(w => w.toLowerCase() !== raw.toLowerCase());
   r.unshift(raw); store('spell-recent', r.slice(0, 12)); renderRecent();
@@ -395,7 +571,7 @@ function begin() {
   resetLetterHelp();
   buildKeys(); renderWord(); show('play');
   setMsg('Listen to the word.', '');
-  say(plan.text).then(() => { if (!$('play').hidden) setMsg(firstPrompt(), ''); });
+  playWord(plan.text).then(() => { if (!$('play').hidden) setMsg(firstPrompt(), ''); });
 }
 function firstPrompt() { return 'What letter does it start with?'; }
 
@@ -423,15 +599,16 @@ function renderWord() {
       return `<span class="lbox${doneCls}${curCls}${quietCls}">${inner}</span>`;
     }).join('');
     const now = cur && cur.partIdx === pi;
-    return `<div class="part${now ? ' now' : ''}"><div class="boxes">${boxes}</div><button class="ear" data-part="${pi}" aria-label="Hear this part"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>hear</button></div>`;
+    return `<div class="part${now ? ' now' : ''}${p.team ? ' team' : ''}"><div class="boxes">${boxes}</div><button class="ear" data-part="${pi}" aria-label="Hear this part"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>hear</button></div>`;
   }).join('')}</div>`).join('');
 }
 
-$('word').addEventListener('click', e => { const b = e.target.closest('[data-part]'); if (b) say(partSay(plan.parts[+b.dataset.part]), 0.55); });
-$('hearWord').onclick = () => say(plan.text, 0.9);
+$('word').addEventListener('click', e => { const b = e.target.closest('[data-part]'); if (b) playPart(plan.parts[+b.dataset.part]); });
+$('hearWord').onclick = () => playWord(plan.text);
 $('hearSlow').onclick = async () => {
+  if (plan.bySound) { await playWord(plan.text, 0.7); await wait(400); }
   for (const [i, p] of plan.parts.entries()) {
-    highlightPart(i); await say(partSay(p), 0.55); await wait(350);
+    highlightPart(i); await playPart(p); await wait(350);
   }
   highlightPart(null); renderWord();
 };
@@ -475,12 +652,12 @@ function press(ch, keyEl) {
     if (wasQuiet) m = 'Yes! That one is quiet. You can’t hear it.';
     setMsg(m + (nextPart ? ' Listen to the next part.' : ' What comes next?'), 'good');
     const np = plan.letters[pos].partIdx, atPos = pos;
-    say(letterName(ch), 1).then(async () => { if (nextPart && !$('play').hidden && pos === atPos) { await wait(200); say(partSay(plan.parts[np]), 0.55); } });
+    say(letterName(ch), 1).then(async () => { if (nextPart && !$('play').hidden && pos === atPos) { await wait(200); playPart(plan.parts[np]); } });
   } else {
     if (keyEl) { keyEl.classList.add('no', 'shake'); setTimeout(() => keyEl.classList.remove('no', 'shake'), 500); }
     const box = document.querySelector('.lbox.cur'); if (box) { box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake'); }
     const now = Date.now();
-    if (triedSet.has(ch)) { setMsg('You tried that one already. Listen, and try a different letter.', 'try'); say(partSay(plan.parts[plan.letters[pos].partIdx]), 0.55); return; }
+    if (triedSet.has(ch)) { setMsg('You tried that one already. Listen, and try a different letter.', 'try'); playPart(plan.parts[plan.letters[pos].partIdx]); return; }
     if (now - lastTry < COOL_MS + 400) { setMsg('Slow down. Listen first, then pick.', 'try'); return; }
     lastTry = now; tries++; stats.tries++; triedSet.add(ch);
     const tk = document.querySelector(`.key[data-k="${ch}"]`); if (tk) tk.classList.add('tried');   // stays red until he gets this letter
@@ -488,7 +665,7 @@ function press(ch, keyEl) {
     const unlockedNow = canHelp() && (level === 0 ? tries === settings.need : tries === triesAtHelp + 1);
     setMsg(unlockedNow && level < 3 ? 'Good try! Listen again. You can use Help me now if you need it.' : 'Close! Listen again and try another one.', 'try');
     updateHelpBtn(unlockedNow);
-    say(partSay(plan.parts[plan.letters[pos].partIdx]), 0.55);
+    playPart(plan.parts[plan.letters[pos].partIdx]);
   }
 }
 
@@ -513,15 +690,15 @@ function help() {
     const left = level === 0 ? settings.need - tries : 1;
     setMsg(level === 0 ? `Try your best first! Listen, then pick a letter. (${left} more ${left > 1 ? 'tries' : 'try'})` : 'Try one more letter first, then you can get more help.', 'try');
     const b = $('helpBtn'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
-    highlightPart(L.partIdx); say(partSay(P), 0.55);
+    highlightPart(L.partIdx); playPart(P);
     return;
   }
   level = Math.min(level + 1, 3); triesAtHelp = tries; stats.helps++; updateHelpBtn();
   highlightPart(L.partIdx);
   if (level === 1) {
     if (L.quiet) { setMsg('This letter is quiet. You can’t hear it! Tap Help me again for a hint.', 'part'); return; }
-    setMsg('Listen to just this part. What sound do you hear next?', 'part');
-    say(partSay(P), 0.5);
+    setMsg(P.unit ? 'Listen to this sound. Which letters make it?' : 'Listen to just this part. What sound do you hear next?', 'part');
+    playPart(P, P.unit ? 0.7 : 0.5);
   } else if (level === 2) {
     const want = L.ch.toLowerCase();
     // 3 bright choices: the answer plus 2 look-alike/sound-alike letters he hasn't already tried
@@ -532,7 +709,7 @@ function help() {
     mustHear = new Set(opts);
     document.querySelectorAll('.key').forEach(k => k.classList.toggle('listen', opts.includes(k.dataset.k)));
     setMsg('It’s one of the 3 bright letters. Listen to each one first!', 'part');
-    say(partSay(P), 0.5);
+    playPart(P, P.unit ? 0.7 : 0.5);
   } else {
     renderWord();
     setMsg('Look closely at the box. Find that letter and tap it!', 'part');
@@ -551,9 +728,9 @@ function finish() {
   document.body.appendChild(conf); setTimeout(() => conf.remove(), 3600);
   const helped = helpedAt.size;
   $('summary').textContent = `For the grown-up: ${stats.letters} letters, ${stats.tries} tries in all. ${helped ? `${helped} letter${helped > 1 ? 's' : ''} took more than one try (amber boxes)` : 'Every letter right on the first try'}${stats.helps ? `, and he used Help me ${stats.helps} time${stats.helps > 1 ? 's' : ''}.` : ', with no Help me.'}`;
-  say('You spelled ' + plan.text + '!', 0.95);
+  (voices[wordKey(plan.text)] ? say('You spelled it!', 0.95).then(() => playWord(plan.text)) : say('You spelled ' + plan.text + '!', 0.95));
 }
-$('hearDone').onclick = () => say(plan.text, 0.85);
+$('hearDone').onclick = () => playWord(plan.text, 0.85);
 
 renderRecent();
 renderSetup();
