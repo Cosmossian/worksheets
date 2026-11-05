@@ -372,8 +372,21 @@ const $ = id => document.getElementById(id);
 const app = $('app');
 
 /* ============ The words: from the sight word check (link), or the latest check on this device ============ */
-const RESULTS_EMAIL = 'dylan.l.cosmos+maverick@gmail.com';
+const RESULTS_EMAIL = 'dylan.l.cosmos@gmail.com';
 const FORM_URL = 'https://formsubmit.co/ajax/' + RESULTS_EMAIL;
+
+/* FormSubmit replies {"success":"true"} when it sent the email. Anything else (like "This form needs Activation") is not sent yet:
+   the results stay queued and are tried again, and the reply is shown on the grown-up screen. */
+async function postForm(body) {
+  try {
+    const res = await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) });
+    let j = {}; try { j = await res.json(); } catch (e) { }
+    const ok = res.ok && (j.success === true || j.success === 'true');
+    const msg = j.message || (res.ok ? '' : `FormSubmit answered with error ${res.status}`);
+    store('spell-send-status', { t: Date.now(), ok, msg });
+    return ok;
+  } catch (e) { store('spell-send-status', { t: Date.now(), ok: false, msg: 'Couldn’t reach FormSubmit (no internet, or it was blocked).' }); return false; }
+}
 const params = new URLSearchParams(location.search);
 let WORDS = [];   // [{ w, his }]
 if (params.get('w')) WORDS = params.get('w').split('|').map(p => { const [w, his] = p.split(':'); return { w: (w || '').trim(), his: (his || '').trim() }; }).filter(x => x.w);
@@ -711,8 +724,7 @@ async function sendOutbox() {
     let box = store('fixup-outbox') || [];
     for (const rec of [...box]) {
       try {
-        const res = await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(rec.body || emailBody(rec)) });
-        if (!res.ok) break;
+        if (!(await postForm(rec.body || emailBody(rec)))) break;
         box = box.filter(x => x.id !== rec.id); store('fixup-outbox', box);
         const l = store('fixup-latest'); if (l && l.id === rec.id) { l.sent = true; store('fixup-latest', l); }
       } catch (e) { break; }

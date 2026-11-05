@@ -250,7 +250,8 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
     <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyMic" checked> Make sure he says each word out loud (uses the microphone)</label>
     <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyKeep" checked> Save his voice so I can listen later</label>
     <label class="check-row"><input type="checkbox" id="dailyPractice" checked> Then practice each word with the Spelling Helper</label>
-    <small class="note">Results are emailed to <b id="mailTo"></b>.</small>
+    <small class="note">Results are emailed to <b id="mailTo"></b>. <button class="linkbtn" id="testMail">Send a test email</button></small>
+    <small class="note" id="mailStatus"></small>
     <div class="row"><button class="btn primary big" id="dailyStart" disabled>Start today’s words</button></div>
     <div class="last-check" id="lastCheck"></div>
     <div class="clips" id="lookClips"></div>
@@ -1030,8 +1031,21 @@ function finish() {
 $('hearDone').onclick = () => playWord(plan.text, 0.85);
 
 /* ================= Daily sight words: practice → check → results (emailed) ================= */
-const RESULTS_EMAIL = 'dylan.l.cosmos+maverick@gmail.com';
+const RESULTS_EMAIL = 'dylan.l.cosmos@gmail.com';
 const FORM_URL = 'https://formsubmit.co/ajax/' + RESULTS_EMAIL;   // FormSubmit: free form-to-email (first email asks you to confirm once)
+
+/* FormSubmit replies {"success":"true"} when it sent the email. Anything else (like "This form needs Activation") is not sent yet:
+   the results stay queued and are tried again, and the reply is shown on the grown-up screen. */
+async function postForm(body) {
+  try {
+    const res = await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) });
+    let j = {}; try { j = await res.json(); } catch (e) { }
+    const ok = res.ok && (j.success === true || j.success === 'true');
+    const msg = j.message || (res.ok ? '' : `FormSubmit answered with error ${res.status}`);
+    store('spell-send-status', { t: Date.now(), ok, msg });
+    return ok;
+  } catch (e) { store('spell-send-status', { t: Date.now(), ok: false, msg: 'Couldn’t reach FormSubmit (no internet, or it was blocked).' }); return false; }
+}
 const SENTENCES = {
   // Dolch pre-primer
   a: ['I have ___ red ball.', 'ball'], and: ['I like cats ___ dogs.', 'cat'], away: ['The bird flew ___.', 'bird'],
@@ -1439,7 +1453,7 @@ function showResults() {
   const confettiOn = right === n;
   if (confettiOn) { const conf = document.createElement('div'); conf.className = 'confetti'; const cols = ['#3C7DD9', '#F59E0B', '#34D399', '#C4B5FD', '#F87171', '#FACC15']; conf.innerHTML = Array.from({ length: 60 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-delay:${Math.random() * 0.8}s"></i>`).join(''); document.body.appendChild(conf); setTimeout(() => conf.remove(), 3600); }
   $('resSent').textContent = 'Sending the results to your grown-up…';
-  sendOutbox().then(() => { const l = store('spell-check-latest'); $('resSent').textContent = l && l.sent ? `For the grown-up: results emailed to ${RESULTS_EMAIL}.` : 'For the grown-up: the email couldn’t send right now (no internet?). It will try again the next time this page opens.'; });
+  sendOutbox().then(() => { const l = store('spell-check-latest'); $('resSent').textContent = l && l.sent ? `For the grown-up: results emailed to ${RESULTS_EMAIL}.` : `For the grown-up: the email hasn’t gone through yet${(store('spell-send-status') || {}).msg ? ` (${(store('spell-send-status') || {}).msg})` : ''}. It will try again the next time this page opens.`; });
 }
 $('resList').addEventListener('click', async e => {
   const b = e.target.closest('[data-miss]'); if (!b || !daily) return;
@@ -1493,15 +1507,28 @@ async function sendOutbox() {
     let box = store('spell-check-outbox') || [];
     for (const rec of [...box]) {
       try {
-        const res = await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(emailBody(rec)) });
-        if (!res.ok) break;
+        if (!(await postForm(emailBody(rec)))) break;
         box = box.filter(x => x.id !== rec.id); store('spell-check-outbox', box);
         const l = store('spell-check-latest'); if (l && l.id === rec.id) { l.sent = true; store('spell-check-latest', l); }
       } catch (e) { break; }
     }
   } finally { sending = false; renderLastCheck(); }
 }
+function renderMailStatus() {
+  const st = store('spell-send-status'), el = $('mailStatus'); if (!el) return;
+  if (!st) { el.textContent = ''; return; }
+  el.style.color = st.ok ? 'var(--good)' : 'var(--try)';
+  el.textContent = st.ok ? `Last email sent ✓ (${timeOf(st.t)})`
+    : `Last email didn’t send (${timeOf(st.t)}): ${st.msg || 'no reply'}${/activat/i.test(st.msg || '') ? ' → Check your inbox (and spam) for “Activate Form” from FormSubmit, click it, then tap “Send a test email” again.' : ''}`;
+}
+$('testMail').onclick = async () => {
+  $('mailStatus').style.color = 'var(--muted)'; $('mailStatus').textContent = 'Sending a test email…';
+  await postForm({ _subject: 'Spelling Helper: test email', _template: 'table', _captcha: 'false', Message: 'If you got this, the daily sight word results emails are working.', Sent: new Date().toLocaleString() });
+  renderMailStatus();
+  if ((store('spell-check-outbox') || []).length) sendOutbox();
+};
 function renderLastCheck() {
+  renderMailStatus();
   const l = store('spell-check-latest'), box = store('spell-check-outbox') || [];
   if (!l) { $('lastCheck').innerHTML = ''; return; }
   const right = l.results.filter(r => r.ok).length, missed = l.results.filter(r => !r.ok);
@@ -1557,8 +1584,7 @@ if ((store('spell-check-outbox') || []).length) sendOutbox();   // send anything
   for (const rec of [...box]) {
     if (!rec.body) continue;
     try {
-      const res = await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(rec.body) });
-      if (!res.ok) break;
+      if (!(await postForm(rec.body))) break;
       box = box.filter(x => x.id !== rec.id); store('fixup-outbox', box);
       const l = store('fixup-latest'); if (l && l.id === rec.id) { l.sent = true; store('fixup-latest', l); }
     } catch (e) { break; }
