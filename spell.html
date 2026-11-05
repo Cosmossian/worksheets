@@ -144,6 +144,19 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .rv-sec .del { margin-top: 8px; border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 13px; padding: 0; }
 .rv-empty { color: var(--muted); }
 
+/* ---------- Shared across devices (sign-in) + his start screen ---------- */
+.acct { display: flex; flex-direction: column; gap: 8px; }
+.acct .row { margin-top: 4px; }
+.acct input[type=email], .acct input[type=password] { font: 18px Andika, sans-serif; width: 100%; border: 2px solid var(--field-line); border-radius: 12px; padding: 8px 12px; background: var(--field); color: var(--ink); }
+.acct .who { font-size: 16px; } .acct .who b { color: var(--good); }
+.acct .err { color: var(--try); font-size: 14px; }
+.sync-note { font-size: 14px; color: var(--good); min-height: 18px; }
+.kidhome { max-width: 640px; margin: 0 auto; padding: 40px 20px; display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center; }
+.kidhome h2 { margin: 0; font: 700 40px Fredoka, sans-serif; color: var(--navy); }
+.kidhome p { margin: 0; font-size: 22px; color: var(--muted); line-height: 1.4; }
+.kidhome .btn.big { font-size: 30px; padding: 22px 40px; min-height: 84px; border-radius: 24px; }
+.kidhome .done-today { color: var(--good); font: 600 22px Fredoka, sans-serif; }
+
 /* ---------- Child's screen ---------- */
 .play { max-width: 980px; margin: 0 auto; padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
 .hear { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
@@ -246,6 +259,21 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 
 <!-- Grown-up: type the word -->
 <main class="setup" id="setup">
+  <div class="card acct" id="acctCard">
+    <h2>Shared across devices</h2>
+    <div id="acctOut">
+      <p class="help" style="margin:0">Sign in to keep today’s words, results, recordings and settings in your Recipe Box database, so they’re the same on every device. On <b>his</b> device, sign in with <b>his</b> login: it then only shows him “Start today’s words”.</p>
+      <input type="email" id="acctEmail" placeholder="Email" autocomplete="username">
+      <input type="password" id="acctPass" placeholder="Password" autocomplete="current-password">
+      <div class="row"><button class="btn primary" id="acctIn">Sign in</button><button class="linkbtn" id="acctMakeKid">Create his login</button></div>
+      <div class="err" id="acctErr"></div>
+    </div>
+    <div id="acctIn2" hidden>
+      <div class="who" id="acctWho"></div>
+      <div class="sync-note" id="syncNote"></div>
+      <div class="row"><button class="linkbtn" id="acctOutBtn">Sign out of the Study on this device</button></div>
+    </div>
+  </div>
   <div class="card" id="dailyCard">
     <h2>Daily sight words</h2>
     <p class="help">Type today’s words. First <b>Look &amp; Listen</b>: he sees each word, says it out loud, then hears it, 3 times through. Then he practices each one with the Spelling Helper, then takes a <b>check</b>: the page says each word and a sentence without showing it, and he spells it from memory with no help. The results are emailed to you, and the words he missed go into Spelling Fix-Up.</p>
@@ -358,6 +386,15 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
   </div>
 </main>
 
+<!-- His device: just today's words -->
+<main class="kidhome" id="kidhome" hidden>
+  <h2 id="kidHi">Hi! 👋</h2>
+  <p id="kidMsg">Today’s words are ready.</p>
+  <div class="done-today" id="kidDone" hidden></div>
+  <button class="btn big primary" id="kidStart">Start today’s words</button>
+  <button class="grownup" id="kidGrown">Grown-up: hold for the grown-up screen</button>
+</main>
+
 <!-- Grown-up: Parent Review (recordings + results, by day) -->
 <main class="setup" id="review" hidden>
   <div class="card">
@@ -436,6 +473,7 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
   </div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 /* ============ Talking ============ */
 const canTalk = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
@@ -672,7 +710,7 @@ function agoText(ms) {
 }
 const COOL_MS = 1000;   // keys pause after a wrong letter, so he has to stop and listen
 
-function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); if (typeof cloudOnStore === 'function') cloudOnStore(k); } catch (e) { return null; } }
 let sounds = store('spell-sounds') || {};   // part key -> what to say instead ("say it like")
 let voices = store('spell-voice') || {};    // part key (or "w:<word>") -> recording of a grown-up's voice (data URL)
 
@@ -782,7 +820,7 @@ let rec = null;   // { key, mr, stream, timer }
 const REC_MAX_MS = 4000;
 function recNote(t) { $('recNote').hidden = !t; $('recNote').textContent = t || ''; }
 function saveVoices() {
-  try { localStorage.setItem('spell-voice', JSON.stringify(voices)); return true; }
+  try { localStorage.setItem('spell-voice', JSON.stringify(voices)); if (typeof cloudSyncVoices === 'function') cloudSyncVoices(); return true; }
   catch (e) { recNote('This device is out of room for recordings. Remove a few “your voice” recordings and try again.'); return false; }
 }
 async function toggleRecord(key) {
@@ -834,7 +872,7 @@ renderWin();
 function holdToOpen(btn, ms, target = 'setup') {
   let t = null;
   const cancel = () => { clearTimeout(t); t = null; btn.classList.remove('holding'); };
-  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.classList.add('holding'); t = setTimeout(() => { cancel(); show(target); }, ms); });
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.classList.add('holding'); t = setTimeout(() => { cancel(); if (target === 'grown') { grownMode = true; show('setup'); } else show(target); }, ms); });
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, cancel));
   btn.addEventListener('contextmenu', e => e.preventDefault());
 }
@@ -845,7 +883,8 @@ $('newWord').onclick = () => { $('wordIn').value = ''; renderSetup(); show('setu
 $('again').onclick = () => begin();
 if (!canTalk) $('voiceWarn').hidden = false;
 
-function show(id) { if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review'].forEach(x => $(x).hidden = x !== id); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
+let grownMode = false;
+function show(id) { if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome'].forEach(x => $(x).hidden = x !== id); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
 
 function start() {
   stopRecord();
@@ -1141,10 +1180,13 @@ function parseList(text) {
 function sightPracticeWords() {   // this week's list on the worksheets page (same site, same browser)
   try { const st = JSON.parse(localStorage.getItem('fgfw-state') || '{}'); return st.sight && st.sight.words ? parseList(st.sight.words.replace(/\s+/g, ', ')) : []; } catch (e) { return []; }
 }
-function renderDailySetup() {
+function renderDailySetup(fromCloud) {
   $('mailTo').textContent = RESULTS_EMAIL;
   const saved = store('spell-daily');
-  if (saved && !$('dailyIn').value) $('dailyIn').value = saved.words || '';
+  if (saved && (!$('dailyIn').value || fromCloud)) $('dailyIn').value = saved.words || '';
+  const kid = cloud.role === 'kid';
+  ['dailyIn', 'dailyPractice', 'dailyLook', 'dailyMic', 'dailyKeep'].forEach(id => $(id).disabled = kid);
+  $('useSight').hidden = kid;
   if (saved && typeof saved.practice === 'boolean') $('dailyPractice').checked = saved.practice;
   if (saved && typeof saved.look === 'boolean') $('dailyLook').checked = saved.look;
   if (saved && typeof saved.mic === 'boolean') $('dailyMic').checked = saved.mic;
@@ -1164,10 +1206,13 @@ $('useSight').onclick = () => { $('dailyIn').value = sightPracticeWords().join('
 $('dailyStart').onclick = () => {
   if (testing) stopMicTest();
   const words = parseList($('dailyIn').value); if (!words.length) return;
-  stopRecord(); saveDailySetup();
-  daily = { words, i: 0, phase: 'practice', practiced: $('dailyPractice').checked, looked3: $('dailyLook').checked, micWanted: $('dailyMic').checked, keepVoice: $('dailyKeep').checked, practice: {}, results: [] };
-  if (daily.looked3) startLook(); else afterLook();
+  stopRecord(); if (cloud.role !== 'kid') saveDailySetup();
+  startDaily(words, { practice: $('dailyPractice').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked });
 };
+function startDaily(words, o) {
+  daily = { words, i: 0, phase: 'practice', practiced: o.practice !== false, looked3: o.look !== false, micWanted: o.mic !== false, keepVoice: o.keep !== false, practice: {}, results: [] };
+  if (daily.looked3) startLook(); else afterLook();
+}
 
 function renderDailyBar() {
   if (!daily) { $('dailyBar').hidden = true; return; }
@@ -1256,14 +1301,16 @@ function lookSession(create) {
 function saveClip(word, round, url) {
   if (!url) return;
   const { log, sess } = lookSession(true);
-  sess.clips.push({ word, round, url });
-  if (!saveLookLog(log)) { sess.clips.pop(); saveLookLog(log); }
+  const key = `clip:${sess.session}:${sess.clips.length}`;
+  sess.clips.push({ word, round, url, key });
+  if (!saveLookLog(log)) { sess.clips.pop(); saveLookLog(log); return; }
+  cloudPutAudio(key, 'clip', url, sess.session); cloudPutLook(sess);
 }
 function saveLookStats() {
   if (!daily || !daily.session) return;
   const { log, sess } = lookSession(true);
   Object.assign(sess, { heard: daily.heard, total: daily.lookTotal, micOk: daily.micOk, micWanted: daily.micWanted, words: daily.words });
-  saveLookLog(log);
+  saveLookLog(log); cloudPutLook(sess);
 }
 function clipButtons(sess) {
   const words = [...new Set(sess.clips.map(c => c.word))];
@@ -1273,9 +1320,11 @@ function renderClips() {   // the latest session, right on the setup card
   const log = lookLog(), sess = [...log].reverse().find(x => x.clips && x.clips.length), el = $('lookClips');
   el.innerHTML = sess ? `<b>Listen to his latest Look &amp; Listen (${esc(shortDate(sess.t))}):</b>` + clipButtons(sess) : '';
 }
-function playLogClip(ref) {
+async function playLogClip(ref) {
   const [sid, k] = ref.split(':'); const sess = lookLog().find(x => String(x.session) === sid);
-  const c = sess && sess.clips[+k]; if (c) playClip(c.url);
+  const c = sess && sess.clips[+k]; if (!c) return;
+  const url = c.url || (c.key ? await cloudGetAudio(c.key) : null);   // recorded on another device: fetch it
+  if (url) playClip(url);
 }
 $('lookClips').addEventListener('click', e => { const b = e.target.closest('[data-clip]'); if (b) playLogClip(b.dataset.clip); });
 
@@ -1468,6 +1517,7 @@ function showResults() {
   const g = gradeFor(right, n);
   rec.grade = { pct: g.pct, letter: g.letter }; store('spell-check-latest', rec);
   const clog = store('spell-check-log') || []; clog.push(rec); store('spell-check-log', clog.slice(-30));
+  cloudPutLog('check', rec.id, rec.t, rec);
   const ob = store('spell-check-outbox') || []; const me = ob.find(x => x.id === rec.id); if (me) { me.grade = rec.grade; store('spell-check-outbox', ob); }
   $('resTitle').textContent = 'All done!';
   $('grade').innerHTML = `<span class="letter" style="background:${g.color}">${g.letter}</span><span class="pct">${g.pct}%<small>${right} of ${n} right</small></span>`;
@@ -1605,7 +1655,8 @@ function renderLastCheck() {
 /* ---- Parent Review: by day, newest first ---- */
 const dayKey = t => new Date(t).toDateString();
 const timeOf = t => new Date(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-function renderReview() {
+async function renderReview() {
+  if (cloudMember()) { $('reviewList').innerHTML = '<p class="rv-empty">Loading…</p>'; await cloudPullLogs(); if ($('review').hidden) return; }
   const looks = lookLog(), checks = store('spell-check-log') || [], fixes = store('fixup-log') || [];
   const days = {};
   const add = (t, item) => { (days[dayKey(t)] = days[dayKey(t)] || { t, items: [] }).items.push(item); };
@@ -1636,10 +1687,190 @@ $('reviewList').addEventListener('click', e => {
 holdToOpen($('reviewBtn'), 2000, 'review');
 $('openReview').onclick = () => show('review');
 $('reviewDone').onclick = () => show('setup');
+$('kidStart').onclick = () => { const d = store('spell-daily') || {}; const words = parseList(d.words || ''); if (!words.length) return renderKidHome(); startDaily(words, d); };
+holdToOpen($('kidGrown'), 2000, 'grown');
+
+/* ================= Shared across devices: the Recipe Box's Supabase database =================
+   Tables (study-setup.sql): study_state (today's words, settings, sounds, history, recent), study_log (checks, Fix-Ups,
+   Look & Listen sessions), study_audio (his clips, kept 7 days; the grown-up's recorded sounds). The Study has its own
+   sign-in (storage key "study-auth"), separate from the Recipe Box's. This device keeps working offline from its own copy;
+   anything that couldn't be saved is retried. Microphone sensitivity stays per device (every microphone is different). */
+const SB_URL = 'https://wpgclwmssnmiidvnekml.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZ2Nsd21zc25taWlkdm5la21sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzE4NDUsImV4cCI6MjEwOTE0Nzg0NX0.o19X9l7zS1bk34DpR3id0gt6mAB42ZZb6olRr8ohzTc';
+const KID_EMAIL = 'dylan.l.cosmos+maverick@gmail.com';
+const SYNC = { 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent' };
+const cloud = { sb: null, user: null, role: null, pulling: false, timers: {} };
+const cloudMember = () => !!(cloud.sb && cloud.user && cloud.role);
+function cloudClient() {
+  if (cloud.sb) return cloud.sb;
+  if (!window.supabase || !window.supabase.createClient) return null;
+  cloud.sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } });
+  return cloud.sb;
+}
+function syncNote(t) { const el = $('syncNote'); if (el) el.textContent = t || ''; }
+/* Offline queue: [{op, args}] in localStorage "study-cloud-queue", retried on open and when the network comes back */
+function cloudQueue(op, args) { const q = store('study-cloud-queue') || []; q.push({ op, args }); localStorage.setItem('study-cloud-queue', JSON.stringify(q.slice(-200))); }
+async function cloudRun(op, args, queueOnFail = true) {
+  if (!cloudMember()) { if (cloud.user && queueOnFail) cloudQueue(op, args); return false; }   // not signed in: this device only
+  try {
+    let r;
+    if (op === 'state') r = await cloud.sb.from('study_state').upsert({ key: args.key, data: args.data, updated_at: new Date().toISOString() });
+    else if (op === 'log') r = await cloud.sb.from('study_log').upsert({ key: args.key, kind: args.kind, t: new Date(args.t).toISOString(), data: args.data });
+    else if (op === 'audio') r = await cloud.sb.from('study_audio').upsert({ key: args.key, kind: args.kind, session: args.session || null, data: args.data });
+    else if (op === 'unaudio') r = await cloud.sb.from('study_audio').delete().eq('key', args.key);
+    if (r && r.error) throw r.error;
+    return true;
+  } catch (e) { if (queueOnFail) cloudQueue(op, args); return false; }
+}
+async function cloudFlush() {
+  const q = store('study-cloud-queue') || []; if (!q.length || !cloudMember()) return;
+  localStorage.setItem('study-cloud-queue', '[]');
+  for (const item of q) await cloudRun(item.op, item.args);   // failures go back in the queue
+}
+window.addEventListener('online', () => cloudFlush());
+// store() calls this for every write; synced keys go up (debounced), except while pulling
+function cloudOnStore(k) {
+  if (!SYNC[k] || cloud.pulling || !cloud.sb) return;
+  if (cloud.role === 'kid' && ['spell-daily', 'spell-settings', 'spell-sounds'].includes(k)) return;   // set from the grown-up's device
+  clearTimeout(cloud.timers[k]);
+  cloud.timers[k] = setTimeout(() => {
+    let data = store(k);
+    if (k === 'spell-settings' && data) data = { need: data.need, win: data.win };   // sensitivity stays on this device
+    cloudRun('state', { key: SYNC[k], data }).then(ok => { if (ok && k === 'spell-daily') syncNote(`Saved for his device ✓ (${timeOf(Date.now())})`); });
+  }, 700);
+}
+function cloudPutLog(kind, id, t, data) { const clean = JSON.parse(JSON.stringify(data)); delete clean.body; return cloudRun('log', { key: `${kind}:${id}`, kind, t, data: clean }); }
+function cloudPutLook(sess) { return cloudPutLog('look', sess.session, sess.t, { ...sess, clips: (sess.clips || []).map(c => ({ word: c.word, round: c.round, key: c.key })) }); }
+function cloudPutAudio(key, kind, data, session) { return cloudRun('audio', { key, kind, data, session }); }
+async function cloudGetAudio(key) {
+  if (!cloudMember()) return null;
+  try { const { data, error } = await cloud.sb.from('study_audio').select('data').eq('key', key).maybeSingle(); if (error) throw error; return data ? data.data : null; } catch (e) { return null; }
+}
+// The grown-up's recorded sounds/words: push what changed, remove what was removed
+function cloudSyncVoices() {
+  if (cloud.pulling || !cloud.sb || cloud.role === 'kid') return;
+  const sent = store('study-voices-sent') || {};
+  Object.keys(voices).forEach(k => { const sig = voices[k].length + ':' + voices[k].slice(-24); if (sent[k] !== sig) { cloudPutAudio('voice:' + k, 'voice', voices[k]); sent[k] = sig; } });
+  Object.keys(sent).forEach(k => { if (!voices[k]) { cloudRun('unaudio', { key: 'voice:' + k }); delete sent[k]; } });
+  localStorage.setItem('study-voices-sent', JSON.stringify(sent));
+}
+// Pull everything small: words, settings, sounds, history, recent words, the grown-up's voices
+async function cloudPull() {
+  if (!cloudMember()) return;
+  cloud.pulling = true;
+  try {
+    const { data: rows, error } = await cloud.sb.from('study_state').select('key,data,updated_at');
+    if (error) throw error;
+    const byKey = Object.fromEntries((rows || []).map(r => [r.key, r.data]));
+    Object.entries(SYNC).forEach(([local, key]) => {
+      if (!(key in byKey)) { if (cloud.role === 'grownup' && store(local)) cloudOnStoreForce(local); return; }   // first time: send this device's copy up
+      if (local === 'spell-settings') { const mine = store('spell-settings') || {}; localStorage.setItem(local, JSON.stringify({ ...mine, ...byKey[key], sens: mine.sens || 3 })); }
+      else localStorage.setItem(local, JSON.stringify(byKey[key]));
+    });
+    settings = Object.assign({ need: 2, win: 60, sens: 3 }, store('spell-settings') || {});
+    sounds = store('spell-sounds') || {};
+    const { data: vrows } = await cloud.sb.from('study_audio').select('key,data').eq('kind', 'voice');
+    if (vrows) {
+      const fresh = {}; vrows.forEach(r => { fresh[r.key.replace(/^voice:/, '')] = r.data; });
+      if (vrows.length || cloud.role === 'kid') { Object.keys(voices).forEach(k => delete voices[k]); Object.assign(voices, fresh); localStorage.setItem('spell-voice', JSON.stringify(voices)); }
+      else cloudSyncVoices();   // nothing in the cloud yet: send this device's
+    }
+    // his recordings are only kept 7 days (here and in the cloud)
+    cloud.sb.from('study_audio').delete().eq('kind', 'clip').lt('created_at', new Date(Date.now() - 7 * 864e5).toISOString()).then(() => { });
+    syncNote(`Up to date ✓ (${timeOf(Date.now())})`);
+  } catch (e) { syncNote('Couldn’t reach the database right now. This device is using its own copy.'); }
+  finally { cloud.pulling = false; }
+  trimOldClips();
+  renderAll(true);
+}
+function cloudOnStoreForce(local) { const was = cloud.pulling; cloud.pulling = false; cloudOnStore(local); cloud.pulling = was; }
+// Results for Parent Review (last 30 days), merged with anything on this device that hasn't gone up yet
+async function cloudPullLogs() {
+  if (!cloudMember()) return;
+  try {
+    const since = new Date(Date.now() - 30 * 864e5).toISOString();
+    const { data, error } = await cloud.sb.from('study_log').select('key,kind,t,data').gte('t', since).order('t');
+    if (error) throw error;
+    const merge = (localKey, kind, idOf) => {
+      const mine = store(localKey) || [], ids = new Set();
+      const out = (data || []).filter(r => r.kind === kind).map(r => { ids.add(String(idOf(r.data))); return r.data; });
+      mine.forEach(x => { if (!ids.has(String(idOf(x)))) { out.push(x); if (kind !== 'look') cloudPutLog(kind, idOf(x), x.t, x); } });
+      return out.sort((a, b) => a.t - b.t);
+    };
+    localStorage.setItem('spell-check-log', JSON.stringify(merge('spell-check-log', 'check', x => x.id).slice(-30)));
+    localStorage.setItem('fixup-log', JSON.stringify(merge('fixup-log', 'fixup', x => x.id).slice(-30)));
+    const localLooks = lookLog(), urlByKey = {};
+    localLooks.forEach(sess => (sess.clips || []).forEach(c => { if (c.key && c.url) urlByKey[c.key] = c.url; }));
+    const looks = merge('spell-look-log', 'look', x => x.session).map(sess => ({ ...sess, clips: (sess.clips || []).map(c => ({ ...c, url: c.url || urlByKey[c.key] })) }));
+    saveLookLog(looks.slice(-7));
+  } catch (e) { }
+}
+function trimOldClips() {
+  const cut = Date.now() - 7 * 864e5, log = lookLog();
+  const kept = log.filter(sess => sess.t >= cut);
+  if (kept.length !== log.length) saveLookLog(kept);
+}
+function renderAll(fromCloud) {
+  renderRecent(); renderSetup(); renderDailySetup(fromCloud); renderNeed(); renderWin(); renderSens(); renderAccount();
+  if (!$('kidhome').hidden || (!$('setup').hidden && cloud.role === 'kid' && !grownMode)) show('setup');
+}
+
+/* ---- Sign-in card ---- */
+async function cloudSetUser(user) {
+  cloud.user = user || null; cloud.role = null;
+  if (cloud.user && cloud.sb) {
+    try { const { data } = await cloud.sb.from('study_members').select('role').maybeSingle(); cloud.role = data ? data.role : null; } catch (e) { }
+  }
+  renderAccount();
+  if (cloudMember()) { await cloudFlush(); await cloudPull(); }
+  else if (!$('kidhome').hidden) show('setup');
+}
+function renderAccount() {
+  const inside = !!cloud.user;
+  $('acctOut').hidden = inside; $('acctIn2').hidden = !inside;
+  if (!inside) return;
+  $('acctWho').innerHTML = cloud.role === 'grownup' ? `Signed in as <b>${esc(cloud.user.email)}</b> (grown-up). Today’s words, results and recordings are shared with his device.`
+    : cloud.role === 'kid' ? `This is <b>his device</b> (${esc(cloud.user.email)}). It shows him “Start today’s words”. Set the words from your own device.`
+    : `Signed in as ${esc(cloud.user.email)}, but this account isn’t set up for the Study. (Run study-setup.sql in Supabase, or check the email.)`;
+}
+$('acctIn').onclick = async () => {
+  const sb = cloudClient(); $('acctErr').textContent = '';
+  if (!sb) { $('acctErr').textContent = 'Couldn’t load the sign-in (no internet?).'; return; }
+  const email = $('acctEmail').value.trim(), password = $('acctPass').value;
+  if (!email || !password) { $('acctErr').textContent = 'Type the email and password.'; return; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) { $('acctErr').textContent = error.message === 'Invalid login credentials' ? 'That email and password don’t match. (Your Study login is the same as your Recipe Box one.)' : error.message; return; }
+  $('acctPass').value = ''; await cloudSetUser(data.user);
+};
+$('acctOutBtn').onclick = async () => { if (cloud.sb) await cloud.sb.auth.signOut(); grownMode = false; await cloudSetUser(null); show('setup'); };
+// Make his login without signing you out: a throwaway client that doesn't keep the session
+$('acctMakeKid').onclick = async () => {
+  const password = $('acctPass').value; $('acctErr').textContent = '';
+  if (!window.supabase) { $('acctErr').textContent = 'Couldn’t load the sign-in (no internet?).'; return; }
+  if (!password || password.length < 6) { $('acctErr').textContent = `Type the password you want for his login (6+ characters) in the password box, then tap “Create his login”. His email will be ${KID_EMAIL}.`; return; }
+  const temp = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-temp', persistSession: false, autoRefreshToken: false } });
+  const { error } = await temp.auth.signUp({ email: KID_EMAIL, password });
+  $('acctErr').textContent = error ? (/registered/i.test(error.message) ? 'His login already exists. Sign in with it on his device.' : `Couldn’t create it: ${error.message}. You can add him in Supabase instead: Authentication → Users → Add user.`)
+    : `His login is ready: ${KID_EMAIL}. On his device, sign in with that email and this password.`;
+};
+// keep his device up to date: when the page comes back into view, and every minute on the start screen
+document.addEventListener('visibilitychange', () => { if (!document.hidden && cloudMember() && !daily) cloudPull(); });
+setInterval(() => { if (cloudMember() && !daily && (!$('kidhome').hidden || !$('setup').hidden)) cloudPull(); }, 60000);
+
+/* ---- His start screen ---- */
+function renderKidHome() {
+  const d = store('spell-daily') || {}, words = parseList(d.words || '');
+  const today = (store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString());
+  $('kidMsg').textContent = words.length ? `Today you have ${words.length} word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : 'No words yet. Ask a grown-up to add today’s words.';
+  $('kidStart').hidden = !words.length;
+  $('kidDone').hidden = !today.length;
+  if (today.length) { const r = today.at(-1), g = r.grade || gradeFor(r.results.filter(x => x.ok).length, r.results.length); $('kidDone').textContent = `You already did a check today: ${g.letter} (${g.pct}%). You can practice again!`; }
+}
 
 renderRecent();
 renderSetup();
 renderDailySetup();
+(async () => { const sb = cloudClient(); if (!sb) return; try { const { data } = await sb.auth.getSession(); await cloudSetUser(data.session && data.session.user); } catch (e) { } sb.auth.onAuthStateChange((ev, sess) => { if (ev === 'SIGNED_OUT') cloudSetUser(null); }); })();
 if (location.hash === '#review') show('review');
 if ((store('spell-check-outbox') || []).length) sendOutbox();   // send anything that didn't go out last time
 (async () => {   // also resend on-screen Fix-Up results that didn't go out (they're saved with their finished email)

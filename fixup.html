@@ -150,6 +150,7 @@ body.inpart .prog { margin: 0 auto; }
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 /* ============ Shared word logic: copied from the printed Spelling Fix-Up (worksheets/index.html) so screen and paper match ============ */
 const SENTENCES = {
@@ -694,6 +695,7 @@ function showResults() {
   rec.cid = params.get('cid') || null;
   store('fixup-latest', rec);
   const flog = store('fixup-log') || []; flog.push(rec); store('fixup-log', flog.slice(-30));
+  cloudSaveFixup(rec);
   rec.body = emailBody(rec);
   const box = store('fixup-outbox') || []; box.push(rec); store('fixup-outbox', box.slice(-20));
   app.innerHTML = `<div class="part-title"><h2>You finished the Fix-Up!</h2><p>Practice Test</p></div>
@@ -738,6 +740,23 @@ async function sendOutbox() {
       } catch (e) { break; }
     }
   } finally { sending = false; }
+}
+
+/* ============ Shared across devices: save this Fix-Up to the Study database (same sign-in as the Spelling Helper) ============ */
+const SB_URL = 'https://wpgclwmssnmiidvnekml.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZ2Nsd21zc25taWlkdm5la21sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzE4NDUsImV4cCI6MjEwOTE0Nzg0NX0.o19X9l7zS1bk34DpR3id0gt6mAB42ZZb6olRr8ohzTc';
+async function cloudSaveFixup(rec) {
+  const clean = JSON.parse(JSON.stringify(rec)); delete clean.body;
+  const args = { key: `fixup:${rec.id}`, kind: 'fixup', t: rec.t, data: clean };
+  try {
+    if (!window.supabase) throw 0;
+    const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } });
+    const { data } = await sb.auth.getSession(); if (!data.session) return;   // this device isn't signed in to the Study: stays on this device
+    const r = await sb.from('study_log').upsert({ key: args.key, kind: 'fixup', t: new Date(rec.t).toISOString(), data: clean });
+    if (r.error) throw r.error;
+  } catch (e) {   // the Spelling Helper retries it next time it opens
+    const q = store('study-cloud-queue') || []; q.push({ op: 'log', args }); store('study-cloud-queue', q.slice(-200));
+  }
 }
 
 /* ============ Start ============ */
