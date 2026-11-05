@@ -157,6 +157,14 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .kidhome .btn.big { font-size: 30px; padding: 22px 40px; min-height: 84px; border-radius: 24px; }
 .kidhome .done-today { color: var(--good); font: 600 22px Fredoka, sans-serif; }
 .kidhome .grownup { order: 20; }
+body.authwait main, body.authwait .app-header .review-btn, body.authwait .app-header .back { visibility: hidden; }
+body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-header .back { display: none; }
+.gate-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; width: 100%; max-width: 520px; }
+.gate-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; font: 700 30px Fredoka, sans-serif; color: var(--ink); background: var(--surface-2); border: 3px solid var(--study); border-radius: 24px; padding: 26px 10px; cursor: pointer; }
+.gate-btn span { font-size: 64px; line-height: 1; }
+.gate-form { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 420px; }
+.gate-form input { font-size: 22px; padding: 12px 14px; }
+.gate-form .err { color: var(--try); min-height: 20px; }
 .kid-sheets { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 520px; order: 10; }
 .kid-sheets h3 { margin: 10px 0 0; font: 700 26px Fredoka, sans-serif; color: var(--navy); }
 .kid-sheets a { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-decoration: none; font: 600 24px Fredoka, sans-serif; color: var(--ink); background: var(--surface-2); border: 3px solid var(--study); border-radius: 20px; padding: 16px 22px; }
@@ -254,7 +262,7 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
-<body>
+<body class="authwait">
 <header class="app-header">
   <h1>Spelling Helper</h1>
   <button class="review-btn" id="reviewBtn" title="Hold for 2 seconds">Parent Review</button>
@@ -401,6 +409,21 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 </main>
 
 <!-- His device: just today's words -->
+<main class="kidhome gate" id="gate" hidden>
+  <h2>Who’s using the Study?</h2>
+  <div class="gate-pick" id="gatePick">
+    <button class="gate-btn" data-who="parent"><span>🧑</span>Parent</button>
+    <button class="gate-btn" data-who="child"><span>🧒</span>Child</button>
+  </div>
+  <div class="gate-form" id="gateForm" hidden>
+    <p id="gateWhat"></p>
+    <input type="text" id="gateId" autocomplete="username" autocapitalize="off" spellcheck="false">
+    <input type="password" id="gatePass" placeholder="Password" autocomplete="current-password">
+    <button class="btn big primary" id="gateIn">Sign in</button>
+    <div class="err" id="gateErr"></div>
+    <button class="linkbtn" id="gateBack">← Pick again</button>
+  </div>
+</main>
 <main class="kidhome" id="kidhome" hidden>
   <h2 id="kidHi">Hi! 👋</h2>
   <p id="kidMsg">Today’s words are ready.</p>
@@ -769,7 +792,7 @@ function playClip(url) {
     const a = new Audio(url); nowAudio = a;
     a.onended = a.onerror = () => res();
     a.play().catch(() => res());
-    setTimeout(res, 8000);
+    setTimeout(res, 5000);
   });
 }
 function playPart(p, rate) {
@@ -906,7 +929,7 @@ function placeMicTest(id) {   // his start screen gets the same mic test (sensit
   if ($('micTestPanel').previousElementSibling !== target && $('micTestPanel').parentNode !== target) { if (testing) stopMicTest(); onKid ? target.appendChild($('micTestPanel')) : target.after($('micTestPanel')); }
   $('micTestPanel').hidden = id === 'kidhome' && !onKid;
 }
-function show(id) { if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome'].forEach(x => $(x).hidden = x !== id); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
+function show(id) { if (cloud.sb && !cloud.user && id !== 'gate') id = 'gate'; if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome', 'gate'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('gated', id === 'gate'); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
 
 function start() {
   stopRecord();
@@ -1879,6 +1902,7 @@ function renderAccount() {
   $('acctOut').hidden = inside; $('acctIn2').hidden = !inside;
   if (!inside) return;
   $('kidMaker').hidden = cloud.role !== 'grownup';
+  document.body.classList.toggle('kid', cloud.role === 'kid');
   $('syncRow').hidden = cloud.role !== 'grownup';
   $('acctWho').innerHTML = cloud.role === 'grownup' ? `Signed in as <b>${esc(cloud.user.email)}</b> (grown-up). Today’s words, results and recordings are shared with his device.`
     : cloud.role === 'kid' ? `This is <b>his device</b> (signed in as ${esc(shownName(cloud.user.email))}). It shows him “Start today’s words”. Set the words from your own device.`
@@ -1893,7 +1917,33 @@ $('acctIn').onclick = async () => {
   if (error) { $('acctErr').textContent = error.message === 'Invalid login credentials' ? 'That doesn’t match. You: your Recipe Box email and password. Him: his username and password.' : /not confirmed/i.test(error.message) ? 'His login needs a one-time OK in Supabase: Authentication → Users → click his username → Confirm user. (Or turn off “Confirm email” under Authentication → Sign In / Providers → Email.)' : error.message; return; }
   $('acctPass').value = ''; await cloudSetUser(data.user);
 };
-$('acctOutBtn').onclick = async () => { if (cloud.sb) await cloud.sb.auth.signOut(); grownMode = false; await cloudSetUser(null); show('setup'); };
+$('acctOutBtn').onclick = async () => { if (cloud.sb) await cloud.sb.auth.signOut(); grownMode = false; await cloudSetUser(null); show('gate'); };
+/* ---- Parent / Child sign-in screen (shown whenever nobody is signed in to the Study) ---- */
+let gateWho = '';
+$('gatePick').onclick = e => {
+  const b = e.target.closest('[data-who]'); if (!b) return; gateWho = b.dataset.who;
+  $('gatePick').hidden = true; $('gateForm').hidden = false; $('gateErr').textContent = '';
+  $('gateWhat').textContent = gateWho === 'parent' ? 'Sign in with your Recipe Box email and password.' : 'Type your username and password.';
+  $('gateId').placeholder = gateWho === 'parent' ? 'Email' : 'Username'; $('gateId').value = ''; $('gatePass').value = ''; $('gateId').focus();
+};
+$('gateBack').onclick = () => { $('gatePick').hidden = false; $('gateForm').hidden = true; };
+$('gatePass').onkeydown = $('gateId').onkeydown = e => { if (e.key === 'Enter') $('gateIn').click(); };
+$('gateIn').onclick = async () => {
+  const sb = cloudClient(), err = t => { $('gateErr').textContent = t; };
+  if (!sb) return err('Couldn’t load the sign-in (no internet?).');
+  const id = $('gateId').value.trim(), password = $('gatePass').value;
+  if (!id || !password) return err(gateWho === 'parent' ? 'Type your email and password.' : 'Type your username and password.');
+  $('gateIn').disabled = true; err('Signing in…');
+  const { data, error } = await sb.auth.signInWithPassword({ email: loginEmail(id), password });
+  $('gateIn').disabled = false;
+  if (error) return err(error.message === 'Invalid login credentials' ? (gateWho === 'parent' ? 'That email and password don’t match.' : 'That username and password don’t match. Ask a grown-up.') : /not confirmed/i.test(error.message) ? 'This login needs a one-time OK in Supabase: Authentication → Users → Confirm user.' : error.message);
+  await cloudSetUser(data.user);
+  if (!cloud.role) { await sb.auth.signOut(); await cloudSetUser(null); return err('That login isn’t set up for the Study yet.'); }
+  err(''); $('gatePass').value = '';
+  const next = new URLSearchParams(location.search).get('next');
+  if (next && cloud.role === 'grownup' && /^[\w.-]+\.html(#\w+)?$/.test(next)) { location.href = next; return; }
+  show(cloud.role === 'kid' ? 'kidhome' : 'setup');
+};
 // Make his login without signing you out: a throwaway client makes the account, then your session adds him to the Study as "kid"
 $('acctMakeKid').onclick = async () => {
   const user = $('kidUser').value.trim().toLowerCase(), password = $('kidPass').value, say2 = t => { $('kidErr').textContent = t; };
@@ -1935,7 +1985,14 @@ function renderKidHome() {
 renderRecent();
 renderSetup();
 renderDailySetup();
-(async () => { const sb = cloudClient(); if (!sb) return; try { const { data } = await sb.auth.getSession(); await cloudSetUser(data.session && data.session.user); } catch (e) { } sb.auth.onAuthStateChange((ev, sess) => { if (ev === 'SIGNED_OUT') cloudSetUser(null); }); })();
+(async () => {   // who's signed in? Nobody → the Parent / Child screen. (If the sign-in can't load at all, it works on this device only, like before.)
+  const sb = cloudClient();
+  if (!sb) { document.body.classList.remove('authwait'); return; }
+  try { const { data } = await sb.auth.getSession(); await cloudSetUser(data.session && data.session.user); } catch (e) { }
+  document.body.classList.remove('authwait');
+  if (!cloud.user) show('gate'); else show(location.hash === '#review' && cloud.role !== 'kid' ? 'review' : 'setup');
+  sb.auth.onAuthStateChange((ev, sess) => { if (ev === 'SIGNED_OUT') { cloudSetUser(null); show('gate'); } });
+})();
 if (location.hash === '#review') show('review');
 if ((store('spell-check-outbox') || []).length) sendOutbox();   // send anything that didn't go out last time
 (async () => {   // on-screen worksheet results that didn't go out (saved with their finished email)

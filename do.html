@@ -35,12 +35,18 @@ button { font: inherit; color: inherit; }
 .btn[disabled] { opacity: .45; cursor: default; }
 .btn svg { width: 24px; height: 24px; flex: none; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.row.acts { gap: 64px; }
+.nextbar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--surface); border: 2px solid var(--study); border-radius: 999px; padding: 10px 22px; display: flex; align-items: center; gap: 14px; z-index: 60; font: 600 18px Fredoka, sans-serif; box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
+.nextbar i { width: 140px; height: 12px; border-radius: 999px; background: var(--field); overflow: hidden; display: block; }
+.nextbar b { display: block; height: 100%; width: 0; background: var(--good); border-radius: 999px; animation: nextfill linear forwards; }
+@keyframes nextfill { to { width: 100%; } }
+body.advancing main button, body.advancing main .key { pointer-events: none; }
 
 main { max-width: 980px; margin: 0 auto; padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .part-title { text-align: center; }
 .part-title h2 { margin: 0; font: 700 28px Fredoka, sans-serif; }
 .part-title p { margin: 2px 0 0; color: var(--muted); font-size: 17px; }
-.message { min-height: 34px; text-align: center; font: 600 24px Fredoka, sans-serif; display: flex; align-items: center; justify-content: center; padding: 0 10px; }
+.message { min-height: 2.8em; max-width: 720px; line-height: 1.3; text-align: center; font: 600 24px Fredoka, sans-serif; display: flex; align-items: center; justify-content: center; padding: 0 10px; }
 .message.good { color: var(--good); } .message.try { color: var(--try); }
 .count { font: 600 16px Fredoka, sans-serif; color: var(--muted); }
 
@@ -134,6 +140,35 @@ body.inpart .prog { margin: 0 auto; }
   .prog { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+.nextbar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--surface); border: 2px solid var(--study); border-radius: 999px; padding: 10px 22px; display: flex; align-items: center; gap: 14px; z-index: 60; font: 600 18px Fredoka, sans-serif; box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
+.nextbar i { width: 140px; height: 12px; border-radius: 999px; background: var(--field); overflow: hidden; display: block; }
+.nextbar b { display: block; height: 100%; width: 0; background: var(--good); border-radius: 999px; animation: nextfill linear forwards; }
+@keyframes nextfill { to { width: 100%; } }
+body.advancing main button, body.advancing main .key { pointer-events: none; }
+.message { min-height: 2.8em; max-width: 720px; line-height: 1.35; }
+.row.acts { gap: 64px; margin-top: 4px; }
+#io { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.tracebox { background: #fff; border-radius: 18px; padding: 4px; touch-action: none; }
+.tracebox canvas { display: block; touch-action: none; cursor: crosshair; }
+.qgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 16px; width: 100%; max-width: 820px; }
+.qcard { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.qcard small { font: 600 15px Fredoka, sans-serif; color: var(--muted); }
+.qcoin { width: 120px; height: 120px; border: 0; background: none; padding: 0; cursor: pointer; position: relative; perspective: 600px; touch-action: manipulation; }
+.qcoin .f { position: absolute; inset: 0; backface-visibility: hidden; transition: transform .4s; border-radius: 50%; }
+.qcoin .f svg { width: 100%; height: 100%; }
+.qcoin .back { transform: rotateY(180deg); }
+.qcoin.flipped .front { transform: rotateY(180deg); } .qcoin.flipped .back { transform: rotateY(360deg); }
+.qmark { display: flex; gap: 6px; min-height: 40px; align-items: center; }
+.qmark span { color: var(--muted); font-size: 15px; }
+.qmark button { font: 600 15px Fredoka, sans-serif; border: 2px solid var(--line); background: var(--surface-2); border-radius: 12px; padding: 6px 8px; cursor: pointer; }
+.qmark button.on { border-color: #F59E0B; background: var(--try-bg); }
+@media (max-width: 640px) { .qgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.legend { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; font-size: 15px; color: var(--muted); }
+.legend span { display: flex; align-items: center; gap: 6px; line-height: 1.2; }
+.legend b { color: var(--ink); font-size: 15px; }
+.pill.used { opacity: .3; text-decoration: line-through; cursor: default; }
+.opts.five { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 820px; }
+.opts.five .opt { font-size: 36px; }
 .app-header .back { font: 600 16px Fredoka, sans-serif; color: var(--ink); text-decoration: none; border: 2px solid var(--line); border-radius: 999px; padding: 6px 14px; }
 .trybar { background: var(--try-bg); color: var(--try); text-align: center; font: 600 15px Fredoka, sans-serif; padding: 6px 12px; }
 .lbox.ghost { color: #4B5D73; }
@@ -502,16 +537,23 @@ function say(text, rate = 0.9) {
     u.lang = (voice && voice.lang) || 'en-US'; u.rate = rate; u.pitch = 1.05;
     u.onend = u.onerror = () => res();
     speechSynthesis.speak(u);
-    setTimeout(res, 7000);
+    setTimeout(res, Math.min(6000, 1500 + text.length * 80));   // never wait forever if the voice gets stuck
   });
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
+/* Between screens: a bar that fills up so he can see the next one is coming (taps and keys pause meanwhile). Never waits on the voice. */
+async function nextUp(ms = 1200, label = 'Next one coming…') {
+  onKey = null; document.body.classList.add('advancing');
+  const bar = document.createElement('div'); bar.className = 'nextbar'; bar.setAttribute('role', 'status');
+  bar.innerHTML = `<span>${esc(label)}</span><i><b style="animation-duration:${ms}ms"></b></i>`;
+  document.body.appendChild(bar); await wait(ms); bar.remove(); document.body.classList.remove('advancing');
+}
 const letterName = ch => ({ a: 'ay', e: 'ee', i: 'eye', o: 'oh', u: 'you', y: 'why', z: 'zee' }[ch] || ch.toUpperCase());
 function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
 const voices = store('spell-voice') || {};
 function playClip(url) {
   if (canTalk) speechSynthesis.cancel();
-  return new Promise(res => { const a = new Audio(url); a.onended = a.onerror = () => res(); a.play().catch(() => res()); setTimeout(res, 8000); });
+  return new Promise(res => { const a = new Audio(url); a.onended = a.onerror = () => res(); a.play().catch(() => res()); setTimeout(res, 5000); });
 }
 const playWord = (w, rate = 0.85) => voices['w:' + w.toLowerCase()] ? playClip(voices['w:' + w.toLowerCase()]) : say(w, rate);
 const sayBlank = s => say(s.replace('___', ' blank '), 0.85);   // a sentence with the missing word read as "blank"
@@ -557,7 +599,7 @@ function freeType({ answer, test = false, match = (a, b) => norm(a) === norm(b),
     let typed = '', tries = 0, first = null;
     const space = /\s/.test(answer);
     $('io').innerHTML = `<div class="boxes" id="ans"></div><div class="message" id="msg"></div>${keysHtml()}
-      <div class="row">${space ? '<button class="btn big" id="spaceBtn">space</button>' : ''}<button class="btn big" id="backBtn">⌫ Back</button><button class="btn big primary" id="doneBtn" disabled>${test ? 'Done ✓' : 'Check ✓'}</button></div>`;
+      <div class="row acts">${space ? '<button class="btn big" id="spaceBtn">space</button>' : ''}<button class="btn big" id="backBtn">⌫ Back</button><button class="btn big primary" id="doneBtn" disabled>${test ? 'Done ✓' : 'Check ✓'}</button></div>`;
     const draw = () => { $('ans').innerHTML = boxes(typed, 'typed') + '<span class="lbox cur"></span>'; $('doneBtn').disabled = !typed.trim(); };
     draw();
     onKey = c => { if ($('confirm').hidden && typed.length < 24) { typed += c; draw(); } };
@@ -575,7 +617,7 @@ function freeType({ answer, test = false, match = (a, b) => norm(a) === norm(b),
       if (match(t, answer)) {
         onKey = null; $('ans').innerHTML = boxes(t, 'done'); $('doneBtn').disabled = true;
         setMsg(tries ? 'You got it!' : 'Yes! Right the first time!', 'good');
-        say('Yes!', 1).then(() => wait(500)).then(() => resolve({ typed: first, ok: tries === 0, tries }));
+        say('Yes!', 1); nextUp(1200).then(() => resolve({ typed: first, ok: tries === 0, tries }));
       } else {
         tries++; typed = ''; draw(); shakeEl($('ans'));
         if (tries >= 2) { setMsg(`It’s spelled: ${[...answer].join(' ')}. Now you type it.`, 'try'); say(`It's spelled ${[...answer.replace(/[^a-z]/gi, '')].map(letterName).join(', ')}.`, 0.75); }
@@ -674,21 +716,68 @@ function sightSheet() {
       app.querySelector('.dots').onclick = e => {
         const b = e.target.closest('[data-d]'); if (!b || +b.dataset.d !== n + 1) return;
         b.classList.add('on'); n++;
-        if (n === 3) { setMsg('Great saying!', 'good'); wait(700).then(done); }
+        if (n === 3) { setMsg('Great saying!', 'good'); nextUp(1100).then(done); }
       };
     }));
     partDone('You looked at and said every word.');
   };
+  // Trace with a finger (touch screen) or the mouse, over the big gray word. Done checks every letter got traced and he stayed on the letters.
   const trace = async () => {
-    let miss = 0;
-    await each(W.length, async i => {
-      const x = W[i];
-      app.innerHTML = head('Trace it: type each gray letter. Say each letter as you go.') + count(i, W.length) + `<button class="btn" id="hear">${SPK}Hear the word</button><div id="io"></div>`;
+    let redo = 0;
+    try { await document.fonts.load('700 140px Andika'); } catch (e) { }
+    await each(W.length, i => new Promise(done => {
+      const x = W[i], word = x.dw;
+      app.innerHTML = head('Trace the word with your finger. Say each letter as you trace it.') + count(i, W.length)
+        + `<button class="btn" id="hear">${SPK}Hear the word</button><div class="tracebox"><canvas id="tc"></canvas></div><div class="message" id="msg"></div>
+        <div class="row acts"><button class="btn big" id="clearBtn">↺ Start over</button><button class="btn big primary" id="doneBtn">Done ✓</button></div>`;
       $('hear').onclick = () => playWord(x.w); playWord(x.w);
-      miss += await guided({ word: x.dw, fill: letterIdx(x.dw), ghost: true, hint: 'Look at the gray letter. Which one is it?' });
-      setMsg('Traced!', 'good'); await say(x.dw, 0.85); await wait(300);
-    });
-    partDone(miss ? `${miss} wrong letter${miss > 1 ? 's' : ''} while tracing.` : 'Every letter right!');
+      const cv = $('tc'), dpr = window.devicePixelRatio || 1, Wd = Math.min(900, window.innerWidth - 40), Ht = 240;
+      cv.width = Wd * dpr; cv.height = Ht * dpr; cv.style.width = Wd + 'px'; cv.style.height = Ht + 'px';
+      const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+      let fs = 170; const font = s => `700 ${s}px Andika, sans-serif`;
+      ctx.font = font(fs); while (ctx.measureText(word).width > Wd * 0.88 && fs > 50) { fs -= 6; ctx.font = font(fs); }
+      const tw = ctx.measureText(word).width, x0 = (Wd - tw) / 2, base = Ht / 2 + fs * 0.33;
+      // letter spans (for "trace the orange letter too")
+      const spans = [...word].map((ch, k) => ({ ch, a: x0 + ctx.measureText(word.slice(0, k)).width, b: x0 + ctx.measureText(word.slice(0, k + 1)).width })).filter(s => isLetter(s.ch));
+      const make = () => { const c = document.createElement('canvas'); c.width = Wd; c.height = Ht; const g = c.getContext('2d'); g.font = font(fs); g.textBaseline = 'alphabetic'; return [c, g]; };
+      const [core, cg] = make(); cg.fillText(word, x0, base);                                                   // the letters themselves
+      const [near, ng] = make(); ng.lineWidth = Math.max(18, fs * 0.16); ng.lineJoin = 'round'; ng.strokeText(word, x0, base); ng.fillText(word, x0, base);   // the letters + a little room
+      const [ink, ig] = make(); ig.lineCap = ig.lineJoin = 'round'; ig.lineWidth = Math.max(16, fs * 0.13);
+      const coreD = cg.getImageData(0, 0, Wd, Ht).data, nearD = ng.getImageData(0, 0, Wd, Ht).data;
+      let strokes = [], cur = null, orange = new Set();
+      const draw = () => {
+        ctx.clearRect(0, 0, Wd, Ht); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, Wd, Ht);
+        ctx.strokeStyle = '#E2E8F0'; ctx.lineWidth = 2; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(10, base); ctx.lineTo(Wd - 10, base); ctx.stroke(); ctx.setLineDash([]);
+        ctx.font = font(fs); [...word].forEach((ch, k) => { const s = spans.find(z => z.a === x0 + ctx.measureText(word.slice(0, k)).width); ctx.fillStyle = s && orange.has(s) ? '#FDBA74' : '#CBD5E1'; ctx.fillText(ch, x0 + ctx.measureText(word.slice(0, k)).width, base); });
+        ctx.strokeStyle = '#2563EB'; ctx.lineCap = ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(10, fs * 0.08);
+        strokes.forEach(st => { ctx.beginPath(); st.forEach(([px, py], k) => k ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); if (st.length === 1) ctx.lineTo(st[0][0] + 0.1, st[0][1]); ctx.stroke(); });
+      };
+      draw();
+      const pt = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * Wd / r.width, (e.clientY - r.top) * Ht / r.height]; };
+      cv.onpointerdown = e => { e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) { } cur = [pt(e)]; strokes.push(cur); draw(); };
+      cv.onpointermove = e => { if (!cur) return; cur.push(pt(e)); draw(); };
+      cv.onpointerup = cv.onpointercancel = () => { cur = null; };
+      $('clearBtn').onclick = () => { strokes = []; orange.clear(); setMsg(''); draw(); };
+      $('doneBtn').onclick = () => {
+        if (!strokes.length) return setMsg('Use your finger to trace the gray letters.', 'try');
+        ig.clearRect(0, 0, Wd, Ht);
+        strokes.forEach(st => { ig.beginPath(); st.forEach(([px, py], k) => k ? ig.lineTo(px, py) : ig.moveTo(px, py)); if (st.length === 1) ig.lineTo(st[0][0] + 0.1, st[0][1]); ig.stroke(); });
+        const inkD = ig.getImageData(0, 0, Wd, Ht).data;
+        let inkAll = 0, inkOut = 0; const per = spans.map(() => [0, 0]);
+        for (let py = 0; py < Ht; py += 3) for (let px = 0; px < Wd; px += 3) {
+          const o = (py * Wd + px) * 4 + 3, isInk = inkD[o] > 40;
+          if (isInk) { inkAll++; if (nearD[o] < 40) inkOut++; }
+          if (coreD[o] > 100) { const s = spans.findIndex(z => px >= z.a && px < z.b); if (s >= 0) { per[s][1]++; if (isInk) per[s][0]++; } }
+        }
+        const missedL = spans.filter((s, k) => per[k][1] && per[k][0] / per[k][1] < 0.45);
+        const outside = inkAll ? inkOut / inkAll : 1;
+        orange = new Set(missedL);
+        if (outside > 0.4) { redo++; draw(); setMsg('Stay on the gray letters. Tap Start over and trace them carefully.', 'try'); say('Stay on the gray letters.', 0.95); return; }
+        if (missedL.length) { redo++; draw(); setMsg(`Trace the orange letter${missedL.length > 1 ? 's' : ''} too: ${missedL.map(s => s.ch).join(', ')}.`, 'try'); say(`Trace the orange letter${missedL.length > 1 ? 's' : ''} too.`, 0.95); return; }
+        setMsg('Beautiful tracing!', 'good'); say(word, 0.85); nextUp(1300).then(done);
+      };
+    }));
+    partDone(redo ? `All traced! (${redo} time${redo > 1 ? 's' : ''} he had to trace a bit more.)` : 'Every word traced neatly!');
   };
   // Cover & Write, then Check letter by letter. Wrong: look again at the tricky part, cover, and fix it.
   const coverWrite = async () => {
@@ -708,7 +797,7 @@ function sightSheet() {
         let typed = '';
         app.innerHTML = head('Write it from memory. No peeking!') + count(i, W.length) + `<div class="hidden-word">The word is covered</div><div id="io"></div>`;
         $('io').innerHTML = `<div class="boxes" id="ans"></div><div class="message" id="msg"></div>${keysHtml()}
-          <div class="row"><button class="btn big" id="backBtn">⌫ Back</button><button class="btn big primary" id="doneBtn" disabled>Check ✓</button></div>`;
+          <div class="row acts"><button class="btn big" id="backBtn">⌫ Back</button><button class="btn big primary" id="doneBtn" disabled>Check ✓</button></div>`;
         const draw = () => { $('ans').innerHTML = boxes(typed, 'typed') + '<span class="lbox cur"></span>'; $('doneBtn').disabled = !typed; };
         draw();
         onKey = c => { if (typed.length < 24) { typed += c; draw(); } };
@@ -724,11 +813,11 @@ function sightSheet() {
           if (right) {
             if (tries === 0) mark('Cover & Write', x.dw, true, typed, x.dw, x.w); else mark('Cover & Write', x.dw, false, first, x.dw, x.w);
             setMsg(tries ? 'You fixed it!' : 'Yes! Right from memory!', 'good');
-            say(tries ? 'You fixed it!' : 'Yes!', 1).then(() => wait(600)).then(done);
+            say(tries ? 'You fixed it!' : 'Yes!', 1); nextUp(1300).then(done);
           } else {
             tries++;
             setMsg('Check: the red letters don’t match. Let’s look again.', 'try');
-            say('Not quite. Let’s look again.', 0.95).then(() => wait(900)).then(() => look(true));
+            say('Not quite. Let’s look again.', 0.95); nextUp(2000, 'Let’s look at it again…').then(() => look(true));
           }
         };
       };
@@ -736,33 +825,46 @@ function sightSheet() {
     }));
     partDone(firstTry('Cover & Write') + '.');
   };
-  // Word Shapes: which word fits the shape? (tall letters stick up, tail letters hang down)
+  // Word Shapes: which word fits the shape? Tall letters stick up, hanging letters go down. If two words have the same shape,
+  // the first letter(s) are shown so there's only one answer. Words already used drop out of the bank.
   const shapes = async () => {
     const TALL = 'bdfhklt', TAIL = 'gjpqy';
-    const shape = (word, c, fillIn) => {
-      const u = 34; let x = 0, r = '';
+    const kind = ch => (ch === 'I' || TALL.includes(ch)) ? 'T' : TAIL.includes(ch) ? 'G' : 's';
+    const sig = dw => [...dw].filter(isLetter).map(kind).join('');
+    const shape = (word, c, show = 0, fillIn = false) => {
+      const u = 40; let x = 0, r = '', n = 0;
       for (const ch of word) {
-        if (!isLetter(ch)) { x += 14; continue; }
-        const [y, h] = (ch === 'I' || TALL.includes(ch)) ? [0, 52] : TAIL.includes(ch) ? [20, 52] : [20, 32];
-        r += `<rect x="${x + 2}" y="${y + 2}" width="${u - 4}" height="${h - 4}" rx="5" fill="#FFFFFF" stroke="${c}" stroke-width="3"/>`;
-        if (fillIn) r += `<text x="${x + u / 2}" y="${46}" text-anchor="middle" font-family="Andika, sans-serif" font-size="30" font-weight="700" fill="#1F2937">${esc(ch)}</text>`;
-        x += u;
+        if (!isLetter(ch)) { x += 16; continue; }
+        const [y, h] = kind(ch) === 'T' ? [0, 60] : kind(ch) === 'G' ? [24, 60] : [24, 36];
+        r += `<rect x="${x + 2}" y="${y + 2}" width="${u - 4}" height="${h - 4}" rx="6" fill="#FFFFFF" stroke="${c}" stroke-width="3"/>`;
+        if (fillIn || n < show) r += `<text x="${x + u / 2}" y="53" text-anchor="middle" font-family="Andika, sans-serif" font-size="34" font-weight="700" fill="${n < show && !fillIn ? c : '#1F2937'}">${esc(ch)}</text>`;
+        x += u; n++;
       }
-      return `<svg width="${x}" height="74" viewBox="0 0 ${x} 74" aria-hidden="true">${r}</svg>`;
+      return `<svg width="${x}" height="86" viewBox="0 0 ${x} 86" aria-hidden="true">${r}</svg>`;
     };
-    const order = shuffle(W.map((_, i) => i), seed);
+    // how many first letters to show so no other word fits the same shape
+    const hintLen = x => { const others = W.filter(y => y !== x && sig(y.dw) === sig(x.dw)); if (!others.length) return 0; let k = 1; while (k < x.dw.length && others.some(y => y.dw.slice(0, k).toLowerCase() === x.dw.slice(0, k).toLowerCase())) k++; return k; };
+    const legend = `<div class="legend"><span><svg width="18" height="42"><rect x="1" y="1" width="16" height="28" rx="3" fill="#fff" stroke="#94A3B8" stroke-width="2"/></svg>tall letters<br><b>b d f h k l t</b></span>
+      <span><svg width="18" height="42"><rect x="1" y="13" width="16" height="16" rx="3" fill="#fff" stroke="#94A3B8" stroke-width="2"/></svg>short letters<br><b>a c e m n o r s…</b></span>
+      <span><svg width="18" height="42"><rect x="1" y="13" width="16" height="28" rx="3" fill="#fff" stroke="#94A3B8" stroke-width="2"/></svg>hanging letters<br><b>g j p q y</b></span></div>`;
+    const order = shuffle(W.map((_, i) => i), seed), used = new Set();
     await each(order.length, n => new Promise(done => {
-      const x = W[order[n]], c = COLORS[n % COLORS.length]; let missed = false, pickedWrong = '';
-      app.innerHTML = head('Which word fits this shape? Tap it.') + `<div class="count">Shape ${n + 1} of ${order.length}</div>
-        <div class="shape-wrap" id="shape">${shape(x.dw, c, false)}</div><div class="bank">${W.map(y => `<button class="pill" data-w="${esc(y.w)}">${esc(y.dw)}</button>`).join('')}</div><div class="message" id="msg"></div>`;
+      const x = W[order[n]], c = COLORS[n % COLORS.length], hl = hintLen(x); let missed = false, pickedWrong = '';
+      app.innerHTML = head('Which word fits this shape? Count the boxes. Look for tall and hanging letters.') + `<div class="count">Shape ${n + 1} of ${order.length}${hl ? ` · Hint: it starts with “${esc(x.dw.slice(0, hl))}”` : ''}</div>
+        <div class="shape-wrap" id="shape">${shape(x.dw, c, hl)}</div>${legend}
+        <div class="bank">${W.map(y => `<button class="pill${used.has(y.w) ? ' used' : ''}" data-w="${esc(y.w)}" ${used.has(y.w) ? 'disabled' : ''}>${esc(y.dw)}</button>`).join('')}</div><div class="message" id="msg"></div>`;
       app.querySelector('.bank').onclick = e => {
         const b = e.target.closest('[data-w]'); if (!b || b.disabled) return;
         if (b.dataset.w === x.w) {
-          b.classList.add('right'); app.querySelectorAll('.bank .pill').forEach(p => p.disabled = true);
-          $('shape').innerHTML = shape(x.dw, c, true);
+          b.classList.add('right'); app.querySelectorAll('.bank .pill').forEach(p => p.disabled = true); used.add(x.w);
+          $('shape').innerHTML = shape(x.dw, c, 0, true);
           mark('Word Shapes', x.dw, !missed, missed ? pickedWrong : x.dw, x.dw);
-          setMsg('Yes! It fits!', 'good'); playWord(x.w).then(() => wait(700)).then(done);
-        } else { if (!missed) pickedWrong = b.dataset.w; missed = true; b.classList.add('wrong'); b.disabled = true; shakeEl(b); setMsg('That one doesn’t fit. Look at the tall and hanging letters.', 'try'); }
+          setMsg('Yes! It fits!', 'good'); playWord(x.w); nextUp(1300).then(done);
+        } else {
+          if (!missed) pickedWrong = b.dataset.w; missed = true; b.classList.add('wrong'); b.disabled = true; shakeEl(b);
+          const y = W.find(z => z.w === b.dataset.w), boxesN = [...x.dw].filter(isLetter).length, yN = [...y.dw].filter(isLetter).length;
+          setMsg(yN !== boxesN ? `“${y.dw}” has ${yN} letters. The shape has ${boxesN} boxes.` : `“${y.dw}” has the wrong tall or hanging letters. Look again.`, 'try');
+        }
       };
     }));
     partDone(firstTry('Word Shapes') + '.');
@@ -778,7 +880,7 @@ function sightSheet() {
       $('hear').onclick = () => playWord(x.w); playWord(x.w);
       const miss = await guided({ word: x.dw, fill: b, hint: 'Think about how the word looks. Try another letter.' });
       mark('Missing Letters', x.dw, miss === 0, '', x.dw, x.w);
-      setMsg(miss ? 'You filled it in!' : 'Yes! Right the first time!', 'good'); await say(x.dw, 0.85); await wait(400);
+      setMsg(miss ? 'You filled it in!' : 'Yes! Right the first time!', 'good'); say(x.dw, 0.85); await nextUp(1300);
     });
     partDone(firstTry('Missing Letters') + '.');
   };
@@ -806,7 +908,15 @@ function sightSheet() {
 /* ================= Word Master Challenge: Fix It!, Picture Sentences, Spelling Detective. A test: one try each. ================= */
 function masterSheet() {
   const words = SD.words || [], seed = seedOf(words);
-  const W = words.map(w => { const m = misspellings(w); return { w, dw: displayWord(w), fix: m[0] || w + 'e', wrong: [m[1] || w + w.slice(-1), m[2] || w.slice(0, -1) + 'e'] }; });
+  // 4 wrong spellings for Spelling Detective (5 choices on screen; the paper has 3). The Fix It! one isn't reused.
+  const wrongFor = (w, m) => {
+    const out = [], add = x => { if (x && x !== w && x !== m[0] && !out.includes(x) && !REAL_WORDS.has(x)) out.push(x); };
+    m.slice(1).forEach(add);
+    for (let i = 0; i < w.length - 1; i++) if (w[i] !== w[i + 1]) add(w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2));   // two letters swapped
+    add(w + w.slice(-1)); add(w.slice(0, -1)); add(w + 'e'); add(w[0] + w);
+    return out.slice(0, 4);
+  };
+  const W = words.map(w => { const m = misspellings(w); return { w, dw: displayWord(w), fix: m[0] || w + 'e', wrong: wrongFor(w, m) }; });
   const fixIt = async () => {
     const order = shuffle(W.map((_, i) => i), seed);
     await each(order.length, async n => {
@@ -816,7 +926,7 @@ function masterSheet() {
       $('hear').onclick = () => playWord(x.w); playWord(x.w);
       const r = await freeType({ answer: x.dw, test: true });
       mark('Fix It!', displayWord(x.fix), r.ok, r.typed, x.dw, x.w);
-      setMsg(r.ok ? 'Right!' : `The right way: ${x.dw}`, r.ok ? 'good' : 'try'); await wait(r.ok ? 700 : 1600);
+      setMsg(r.ok ? 'Right!' : `The right way: ${x.dw}`, r.ok ? 'good' : 'try'); await nextUp(r.ok ? 1200 : 2200);
     });
     partDone(firstTry('Fix It!').replace(' the first time', '') + '.');
   };
@@ -830,7 +940,7 @@ function masterSheet() {
       $('hear').onclick = () => sayBlank(s); sayBlank(s);
       const r = await freeType({ answer: x.dw, test: true });
       mark('Picture Sentences', s, r.ok, r.typed, x.dw, x.w);
-      setMsg(r.ok ? 'Right!' : `The word was: ${x.dw}`, r.ok ? 'good' : 'try'); await wait(r.ok ? 700 : 1600);
+      setMsg(r.ok ? 'Right!' : `The word was: ${x.dw}`, r.ok ? 'good' : 'try'); await nextUp(r.ok ? 1200 : 2200);
     });
     partDone(firstTry('Picture Sentences').replace(' the first time', '') + '.');
   };
@@ -840,7 +950,7 @@ function masterSheet() {
       const x = W[order[n]], opts = shuffle([x.w, ...x.wrong], seed + n * 7);
       app.innerHTML = head('Tap the word that is spelled right. One try!') + `<div class="count">Word ${n + 1} of ${order.length}</div>
         <button class="btn" id="hear">${SPK}Hear the word</button>
-        <div class="opts">${opts.map(o => `<button class="opt" data-o="${esc(o)}">${esc(displayWord(o))}</button>`).join('')}</div><div class="message" id="msg"></div>`;
+        <div class="opts five">${opts.map(o => `<button class="opt" data-o="${esc(o)}">${esc(displayWord(o))}</button>`).join('')}</div><div class="message" id="msg"></div>`;
       $('hear').onclick = () => playWord(x.w); playWord(x.w);
       app.querySelector('.opts').onclick = e => {
         const b = e.target.closest('[data-o]'); if (!b || b.disabled) return;
@@ -848,7 +958,7 @@ function masterSheet() {
         const ok = b.dataset.o === x.w; if (!ok) b.classList.add('wrong');
         mark('Spelling Detective', x.dw, ok, displayWord(b.dataset.o), x.dw, x.w);
         setMsg(ok ? 'Good detective work!' : 'The green one is spelled right.', ok ? 'good' : 'try');
-        wait(ok ? 900 : 1700).then(done);
+        nextUp(ok ? 1200 : 2200).then(done);
       };
     }));
     partDone(firstTry('Spelling Detective').replace(' the first time', '') + '.');
@@ -889,7 +999,7 @@ function questionSheet() {
         if (right) {
           mark('Circle the What words', label, tries === 0, toks.filter((_, i) => on.has(i)).join(' '), toks.slice(0, lead).join(' '));
           app.querySelectorAll('.qtok').forEach(b => b.classList.add('locked')); setMsg('Yes! Those words tell you what kind of answer.', 'good');
-          say('Yes!', 1).then(() => wait(600)).then(done);
+          say('Yes!', 1); nextUp(1100, 'Next step coming…').then(done);
         } else { tries++; setMsg('Find the word “What” and the word right after it that tells what kind of answer.', 'try'); shakeEl($('qline')); }
       };
     }); else app.querySelectorAll('.qtok').forEach(b => b.classList.add('locked'));
@@ -903,7 +1013,7 @@ function questionSheet() {
           if (noArticle(b.dataset.v) === noArticle(answer)) {
             b.classList.add('right'); $('bank').querySelectorAll('.pill').forEach(p => p.disabled = true);
             mark(part, label, !missed, missed ? firstPick : b.dataset.v, answer);
-            setMsg('Yes!', 'good'); say(b.dataset.v, 0.9).then(() => wait(500)).then(done);
+            setMsg('Yes!', 'good'); say(b.dataset.v, 0.9); nextUp(1100, 'Next step coming…').then(done);
           } else {
             if (!missed) firstPick = b.dataset.v; missed = true; b.classList.add('wrong'); b.disabled = true; shakeEl(b);
             setMsg(n === 2 ? 'Look at the words you circled. What kind of answer do they want?' : `Read it again. It wants ${/^[aeiou]/.test(it.kind) ? 'an' : 'a'} ${it.kind}.`, 'try');
@@ -919,7 +1029,7 @@ function questionSheet() {
     got.push(['It wants', it.kind]); showGot();
     await pickOrType(3, 'The answer', SD.wordBank ? 'Now tap the <b>answer</b>.' : 'Now type the <b>answer</b>.', it.answer, answers.map(a => a.answer), v => (list.find(a => a.answer === v) || {}).icon);
     got.push(['Answer', it.answer]); showGot();
-    await wait(700);
+    await nextUp(1300, k < PARTS.length - 1 - (SD.example ? 1 : 0) ? 'Next question coming…' : 'Almost done…');
     const mine = items.filter(x => x.label === label);
     partSum.push([`Question ${k + 1}`, `${mine.filter(x => x.ok).length} of ${mine.length} steps right the first time`]);
     nextPart();
@@ -972,14 +1082,57 @@ function stepsSheet() {
 function eaglesSheet() {
   const eagle = (w, h) => `<svg width="${w}" height="${h}" viewBox="0 0 140 110" aria-hidden="true"><path d="M70 58 C50 40 28 30 4 34 C16 42 18 48 14 54 C26 52 30 58 26 64 C40 60 50 66 58 72 Z" fill="#8B5A2B" stroke="#4A2C12" stroke-width="3" stroke-linejoin="round"/><path d="M70 58 C90 40 112 30 136 34 C124 42 122 48 126 54 C114 52 110 58 114 64 C100 60 90 66 82 72 Z" fill="#8B5A2B" stroke="#4A2C12" stroke-width="3" stroke-linejoin="round"/><ellipse cx="70" cy="72" rx="18" ry="24" fill="#8B5A2B" stroke="#4A2C12" stroke-width="3"/><path d="M58 92 L52 104 M64 94 L62 106 M82 92 L88 104 M76 94 L78 106" stroke="#D97706" stroke-width="4" stroke-linecap="round"/><circle cx="70" cy="40" r="17" fill="#FFFFFF" stroke="#4A2C12" stroke-width="3"/><circle cx="64" cy="37" r="3.2" fill="#1F2937"/><circle cx="76" cy="37" r="3.2" fill="#1F2937"/><path d="M64 44 L76 44 L70 54 Z" fill="#F59E0B" stroke="#B45309" stroke-width="2" stroke-linejoin="round"/></svg>`;
   const marks = [];
+  let pretend = true, coins = [];
+  // pretend quarters: heads = a face, tails = a random design (some eagles, some not)
+  const coinFace = (side, design) => {
+    const ring = `<circle cx="60" cy="60" r="56" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="4"/><circle cx="60" cy="60" r="47" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-dasharray="3 4"/>`;
+    if (side === 'heads') return `<svg viewBox="0 0 120 120" aria-hidden="true">${ring}<path d="M70 28 C52 26 42 38 43 52 L37 62 L43 64 C42 72 45 78 52 80 L54 92 L78 92 C76 84 80 76 82 66 C86 48 84 32 70 28 Z" fill="#9CA3AF"/><text x="60" y="22" text-anchor="middle" font-family="Fredoka" font-size="11" font-weight="700" fill="#6B7280">LIBERTY</text><text x="60" y="108" text-anchor="middle" font-family="Fredoka" font-size="11" font-weight="700" fill="#6B7280">HEADS</text></svg>`;
+    const art = {
+      eagle: `<g transform="translate(18 26) scale(0.6)">${eagle(140, 110).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</g>`,
+      tree: `<rect x="56" y="70" width="8" height="22" fill="#92400E"/><circle cx="60" cy="56" r="22" fill="#4ADE80" stroke="#166534" stroke-width="3"/>`,
+      mountain: `<path d="M18 88 L46 44 L60 64 L74 38 L102 88 Z" fill="#94A3B8" stroke="#475569" stroke-width="3" stroke-linejoin="round"/><path d="M74 38 L67 50 L74 47 L81 50 Z" fill="#fff"/>`,
+      dome: `<path d="M34 88 V72 H86 V88 Z M40 72 C40 52 80 52 80 72 Z M58 52 V42 H62 V52 Z" fill="#CBD5E1" stroke="#475569" stroke-width="3" stroke-linejoin="round"/>`,
+      star: `<path d="M60 32 L67 52 L88 52 L71 64 L77 85 L60 72 L43 85 L49 64 L32 52 L53 52 Z" fill="#FDE68A" stroke="#A16207" stroke-width="3" stroke-linejoin="round"/>`
+    }[design];
+    return `<svg viewBox="0 0 120 120" aria-hidden="true">${ring}${art}<text x="60" y="108" text-anchor="middle" font-family="Fredoka" font-size="11" font-weight="700" fill="#6B7280">TAILS</text></svg>`;
+  };
   const ready = () => {
-    app.innerHTML = head('Get your quarters ready.') + `<div>${eagle(150, 118)}</div>
-      <div class="srows">${['Collect <b>8 quarters</b>.', 'Put them <b>tails-up</b> in a row, so you can tell them apart: quarter 1, 2, 3… all the way to 8.'].map((s, i) => `<div class="srow"><span class="num" style="background:${COLORS[i]}">${i + 1}</span><div class="txt">${s}</div></div>`).join('')}</div>
-      <button class="btn big primary" id="go">I have 8 quarters ready →</button>`;
-    say('Collect 8 quarters. Put them tails up in a row.', 0.95);
-    $('go').onclick = () => partDone('8 quarters, tails-up.');
+    app.innerHTML = head('How do you want to count eagles?') + `<div>${eagle(150, 118)}</div>
+      <div class="wxgrid two"><button class="coin" data-mode="pretend"><span class="emo">🪙</span>Pretend quarters<small style="font-size:16px;color:var(--muted)">on the screen</small></button>
+      <button class="coin" data-mode="real"><span class="emo">✋</span>Real quarters<small style="font-size:16px;color:var(--muted)">8 real ones</small></button></div>`;
+    say('Do you want pretend quarters or real quarters?', 0.95);
+    app.querySelector('.wxgrid').onclick = e => {
+      const b = e.target.closest('[data-mode]'); if (!b) return;
+      pretend = b.dataset.mode === 'pretend'; extra.mode = b.dataset.mode;
+      if (pretend) {
+        const n = 2 + Math.floor(Math.random() * 5), others = ['tree', 'mountain', 'dome', 'star'];
+        coins = shuffle([...Array(n).fill('eagle'), ...Array.from({ length: 8 - n }, (_, k) => others[(k + Math.floor(Math.random() * 4)) % 4])], Date.now() % 9973).map(d => ({ design: d, side: 'heads' }));
+        extra.coins = coins.map(c => c.design);
+        return partDone('8 pretend quarters, ready to flip.');
+      }
+      app.innerHTML = head('Get your quarters ready.') + `<div class="srows">${['Collect <b>8 quarters</b>.', 'Put them <b>tails-up</b> in a row, so you can tell them apart: quarter 1, 2, 3… all the way to 8.'].map((s, k) => `<div class="srow"><span class="num" style="background:${COLORS[k]}">${k + 1}</span><div class="txt">${s}</div></div>`).join('')}</div>
+        <button class="btn big primary" id="go2">I have 8 quarters ready →</button>`;
+      say('Collect 8 quarters. Put them tails up in a row.', 0.95);
+      $('go2').onclick = () => partDone('8 real quarters, tails-up.');
+    };
   };
   const check = () => {
+    if (pretend) {   // tap a quarter to flip it; on tails, mark eagle or no eagle
+      const draw = () => {
+        app.innerHTML = head('Tap each quarter to flip it to tails. Does it have an eagle? Mark it.') + `<div class="qgrid">${coins.map((c, k) => `<div class="qcard"><button class="qcoin${c.side === 'tails' ? ' flipped' : ''}" data-flip="${k}" aria-label="Quarter ${k + 1}, ${c.side} up. Tap to flip."><span class="f front">${coinFace('heads')}</span><span class="f back">${coinFace('tails', c.design)}</span></button>
+          <small>Quarter ${k + 1}</small>${c.side === 'tails' ? `<div class="qmark"><button data-m="has" data-k="${k}" class="${marks[k] === 'has' ? 'on' : ''}">🦅 Eagle</button><button data-m="no" data-k="${k}" class="${marks[k] === 'no' ? 'on' : ''}">✗ No eagle</button></div>` : '<div class="qmark"><span>flip me!</span></div>'}</div>`).join('')}</div>
+          <button class="btn big primary" id="countBtn" ${marks.filter(Boolean).length === 8 ? '' : 'disabled'}>Count my eagles →</button><div class="message" id="msg">${marks.filter(Boolean).length < 8 ? `${8 - marks.filter(Boolean).length} quarter${8 - marks.filter(Boolean).length === 1 ? '' : 's'} left to mark.` : 'All 8 marked!'}</div>`;
+      };
+      draw(); say('Tap each quarter to flip it to tails. Then mark it eagle or no eagle.', 0.95);
+      app.onclick = e => {
+        const f = e.target.closest('[data-flip]'), m = e.target.closest('[data-m]');
+        if (f) { const c = coins[+f.dataset.flip]; c.side = c.side === 'heads' ? 'tails' : 'heads'; f.classList.toggle('flipped', c.side === 'tails'); setTimeout(draw, 420); return; }
+        if (m) { marks[+m.dataset.k] = m.dataset.m; draw(); return; }
+        if (e.target.closest('#countBtn')) { app.onclick = null; coins.forEach((c, k) => mark('Marking quarters', `Quarter ${k + 1} (${c.design === 'eagle' ? 'eagle' : 'a ' + c.design})`, (marks[k] === 'has') === (c.design === 'eagle'), marks[k] === 'has' ? 'eagle' : 'no eagle', c.design === 'eagle' ? 'eagle' : 'no eagle'));
+          const wrong = coins.filter((c, k) => (marks[k] === 'has') !== (c.design === 'eagle')).length; partDone(wrong ? `${wrong} quarter${wrong > 1 ? 's' : ''} marked wrong.` : 'Every quarter marked right!'); }
+      };
+      return;
+    }
     const show = i => {
       app.innerHTML = head('Look at each quarter. Does it have an eagle?') + `<div class="count">Quarter ${i + 1} of 8</div>
         <div class="qnum"><span>Quarter<b>${i + 1}</b></span></div>
@@ -1006,15 +1159,15 @@ function eaglesSheet() {
         mark('Count the eagles', 'How many eagles?', tries === 0, String(tries ? extra.firstCount : n), String(has));
         extra.count = has; $('np').querySelectorAll('button').forEach(x => x.disabled = true);
         setMsg(`Yes! You had ${has} eagle${has === 1 ? '' : 's'}!`, 'good'); say(`Yes! You had ${has} eagle${has === 1 ? '' : 's'}!`, 0.95);
-        wait(1500).then(() => partDone(tries ? `Counted ${has} eagles on try ${tries + 1}.` : `Counted ${has} eagles right the first time.`));
+        nextUp(1500).then(() => partDone(tries ? `Counted ${has} eagles on try ${tries + 1}.` : `Counted ${has} eagles right the first time.`));
       } else {
         if (!tries) extra.firstCount = n; tries++; b.classList.add('wrong'); b.disabled = true; shakeEl(b);
         setMsg('Not quite. Point to each X in the blue column and count again.', 'try');
       }
     };
   };
-  PARTS = [{ name: 'Get Ready', run: ready }, { name: 'Check Each Quarter', run: check }, { name: 'Count', run: count }];
-  return { intro: 'You need 8 real quarters for this one!' };
+  PARTS = [{ name: 'Get Ready', run: ready }, { name: 'Flip and Check', run: check }, { name: 'Count', run: count }];
+  return { intro: 'Flip the quarters and find the eagles!' };
 }
 
 
@@ -1362,6 +1515,9 @@ async function cloudSaveSheet(rec) {
 const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet, steps: stepsSheet, eagles: eaglesSheet, weather: weatherSheet };
 (async () => {
   if (TRY) { $('trybar').hidden = false; $('backLink').href = 'index.html'; }
+  else {   // he has to be signed in to the Study (the sign-in screen is on the Spelling Helper page)
+    try { const sb = sbClient(); if (sb) { const { data } = await sb.auth.getSession(); if (!data.session) { location.replace('spell.html'); return; } } } catch (e) { }
+  }
   A = await loadAssignment();
   if (!A || !SHEETS[A.tool]) {
     app.innerHTML = `<div class="part-title"><h2>This worksheet isn’t here</h2><p>${TRY ? 'Go back to the Worksheets page and tap “Try it on screen” again.' : 'Ask a grown-up to assign it again.'}</p></div><a class="btn big primary" href="${TRY ? 'index.html' : 'spell.html'}" style="text-decoration:none">Go back</a>`;

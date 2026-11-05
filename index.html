@@ -49,6 +49,7 @@ textarea { resize: vertical; min-height: 44px; }
 .btn-small { font-size: 14px; padding: 6px 12px; min-height: 36px; background: #2A3A4E; color: var(--ink); }
 .btn-small:hover { background: #34475E; } .btn-print:hover { background: #4A8BE6; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
+body.authwait .tabs, body.authwait .workspace { visibility: hidden; }
 .onscreen { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
 .onscreen h3 { margin: 0 0 4px; font: 700 18px Fredoka, sans-serif; color: var(--navy); }
 .btn-assign { background: #0F9F8F; color: #FFFFFF; } .btn-assign:hover { background: #12B5A3; }
@@ -255,7 +256,7 @@ textarea { resize: vertical; min-height: 44px; }
 
 </style>
 </head>
-<body>
+<body class="authwait">
 <header class="app-header">
   <h1>First Grade Fun Worksheets</h1>
   <a class="speller-link" href="spell.html">Spelling Helper: spell any word together →</a>
@@ -1271,6 +1272,18 @@ if (fromLink.get('fixup')) {
 const fromHash = location.hash.slice(1);
 if (['sight', 'master', 'fixup', 'question', 'steps', 'eagles', 'weather'].includes(fromHash)) state.tool = fromHash;
 renderPanel();
+// The Worksheets page is for grown-ups: nobody signed in → the Parent / Child screen; his login → his start screen.
+(async () => {
+  const sb = sbClient(), open = () => document.body.classList.remove('authwait');
+  if (!sb) return open();   // the sign-in couldn't load (offline): printing still works
+  let role = null;
+  try {
+    const { data } = await sb.auth.getSession();
+    if (data.session) { const { data: m, error } = await sb.from('study_members').select('role').eq('email', data.session.user.email.toLowerCase()).maybeSingle(); if (error) return open(); role = m ? m.role : null; }
+  } catch (e) { return open(); }
+  if (role === 'grownup') return open();
+  location.replace(role === 'kid' ? 'spell.html' : 'spell.html?next=' + encodeURIComponent('index.html' + location.hash));
+})();
 // Re-draw once the fonts arrive, so long words are measured with the real font.
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderPreview);
 
