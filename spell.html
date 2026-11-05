@@ -116,7 +116,13 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .look-word { font: 700 clamp(64px, 14vw, 128px) Andika, sans-serif; letter-spacing: 6px; background: #fff; color: #1F2937; border-radius: 26px; padding: 10px 44px; margin: 10px 0; }
 .look-prompt { font: 700 30px Fredoka, sans-serif; color: var(--try); margin: 0; }
 .meter { width: min(420px, 80vw); height: 16px; border-radius: 999px; background: var(--field); border: 1px solid var(--line); overflow: hidden; }
-.meter i { display: block; height: 100%; width: 0; background: var(--good); transition: width .08s linear; }
+.meter { position: relative; }
+.meter i { display: block; height: 100%; width: 0; background: var(--try); transition: width .08s linear, background .1s; }
+.meter.over i { background: var(--good); }
+.meter b { position: absolute; top: -3px; bottom: -3px; left: 40%; width: 3px; background: #fff; border-radius: 2px; opacity: .85; }
+.mic-test { margin: 8px 0 0 32px; display: flex; flex-direction: column; gap: 6px; }
+.mic-test .meter { width: min(360px, 100%); height: 18px; }
+.mic-test .hit { font: 600 15px Fredoka, sans-serif; color: var(--good); min-height: 20px; }
 .mic-hint { font-size: 16px; color: var(--muted); margin: 0; }
 .clips { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
 .clips .cw { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; }
@@ -248,6 +254,18 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
     <small class="note">Separate with commas. <button class="linkbtn" id="useSight" hidden></button></small>
     <label class="check-row"><input type="checkbox" id="dailyLook" checked> Look &amp; Listen first: he sees each word, says it, then hears it (3 rounds)</label>
     <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyMic" checked> Make sure he says each word out loud (uses the microphone)</label>
+    <div class="mic-test">
+      <span class="lbl" style="margin:4px 0 0">Microphone sensitivity</span>
+      <div class="seg" id="sensSeg" role="group" aria-label="Microphone sensitivity">
+        <button data-sens="1">Normal</button><button data-sens="2">Sensitive</button><button data-sens="3">Very sensitive</button><button data-sens="4">Most sensitive</button>
+      </div>
+      <div class="row" style="margin-top:4px"><button class="btn" id="micTest">🎤 Test the microphone</button></div>
+      <div id="micTestBox" hidden>
+        <small class="note" style="margin:0">Have him say a word in his normal voice, from where he sits. The bar needs to pass the white line. If it doesn’t, pick a more sensitive setting. If the room alone passes it, pick a less sensitive one.</small>
+        <div class="meter" id="tMeter"><i id="tFill"></i><b></b></div>
+        <div class="hit" id="tHit"></div>
+      </div>
+    </div>
     <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyKeep" checked> Save his voice so I can listen later</label>
     <label class="check-row"><input type="checkbox" id="dailyPractice" checked> Then practice each word with the Spelling Helper</label>
     <small class="note">Results are emailed to <b id="mailTo"></b>. <button class="linkbtn" id="testMail">Send a test email</button></small>
@@ -355,7 +373,7 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
   <div class="done-wrap">
     <p class="look-prompt" id="lookPrompt">Read it out loud!</p>
     <div class="look-word" id="lookWord"></div>
-    <div class="meter" id="meter" hidden><i id="meterFill"></i></div>
+    <div class="meter" id="meter" hidden><i id="meterFill"></i><b title="loud enough"></b></div>
     <p class="mic-hint" id="micHint" hidden>🎤 I’m listening…</p>
     <div class="row" style="justify-content:center">
       <button class="btn big primary" id="saidIt" hidden>🗣 I said it!</button>
@@ -628,7 +646,10 @@ let plan = null;        // { text, parts: [{ text, say, start, end, word }], let
 let pos = 0, tries = 0, level = 0, helpedAt = new Set();
 let mustHear = new Set();   // gold Help letters he still has to listen to
 let triedSet = new Set(), lastTry = 0, triesAtHelp = 0, stats = { tries: 0, helps: 0, letters: 0 };
-let settings = Object.assign({ need: 2, win: 60 }, store('spell-settings') || {});
+let settings = Object.assign({ need: 2, win: 60, sens: 3 }, store('spell-settings') || {});
+/* Microphone sensitivity: how much louder than the room his voice must be, the lowest level that counts, and how long it must last. */
+const SENS = { 1: { x: 2.0, min: 0.004, ms: 180 }, 2: { x: 1.6, min: 0.002, ms: 150 }, 3: { x: 1.35, min: 0.0012, ms: 120 }, 4: { x: 1.18, min: 0.0006, ms: 90 } };
+const sens = () => SENS[settings.sens] || SENS[3];
 let remember = null;          // set when he spelled this word recently: { last, ago, hard: Set of letter positions }
 let helpUsedAt = new Set();   // letters where he pressed Help me
 const extra = () => remember ? 1 : 0;   // Remember-it mode: one more try before every Help step
@@ -1141,6 +1162,7 @@ $('dailyPractice').addEventListener('change', saveDailySetup);
 ['dailyLook', 'dailyMic', 'dailyKeep'].forEach(id => $(id).addEventListener('change', saveDailySetup));
 $('useSight').onclick = () => { $('dailyIn').value = sightPracticeWords().join(', '); saveDailySetup(); renderDailySetup(); };
 $('dailyStart').onclick = () => {
+  if (testing) stopMicTest();
   const words = parseList($('dailyIn').value); if (!words.length) return;
   stopRecord(); saveDailySetup();
   daily = { words, i: 0, phase: 'practice', practiced: $('dailyPractice').checked, looked3: $('dailyLook').checked, micWanted: $('dailyMic').checked, keepVoice: $('dailyKeep').checked, practice: {}, results: [] };
@@ -1189,7 +1211,7 @@ function listenForVoice(onLevel, onNudge, keep) {
     while (performance.now() - t0 < 350) { samples.push(micLevel()); await wait(25); if (my !== listenToken) return res(null); }
     samples.sort((a, b) => a - b);
     const floor = samples[Math.floor(samples.length * 0.2)] || 0;
-    const th = Math.max(0.006, floor * 2);   // a little louder than the room is enough (Dylan checks the recordings)
+    const th = Math.max(sens().min, floor * sens().x);   // set by the grown-up's sensitivity choice (Dylan checks the recordings)
     let mr = null, chunks = [];
     if (keep && window.MediaRecorder) { try { mr = new MediaRecorder(mic.stream, { audioBitsPerSecond: 24000 }); mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); }; mr.start(); } catch (e) { mr = null; } }
     let voiced = 0, gap = 0, heardAt = 0, nudged = false, last = performance.now(); const start = last;
@@ -1203,9 +1225,9 @@ function listenForVoice(onLevel, onNudge, keep) {
     const timer = setInterval(() => {
       if (my !== listenToken) return finish(false);
       const now = performance.now(), dt = now - last; last = now;
-      const lvl = micLevel(); onLevel(Math.min(1, lvl / (th * 2.5)));
+      const lvl = micLevel(); onLevel(Math.min(1, lvl / (th * 2.5)), lvl > th);
       if (lvl > th) { voiced += dt; gap = 0; } else { gap += dt; if (!heardAt && gap > 450) voiced = 0; }
-      if (!heardAt && voiced >= 180) heardAt = now;                              // a short moment of voice is enough; a single click still isn't
+      if (!heardAt && voiced >= sens().ms) heardAt = now;                        // a short moment of voice is enough; a single click still isn't
       if (heardAt && (gap >= 650 || now - heardAt > 3000)) return finish(true);  // let him finish the word
       if (!heardAt && !nudged && now - start > 8000) { nudged = true; onNudge(); }
     }, 40);
@@ -1281,7 +1303,7 @@ async function lookWord() {
   await quietNow();                                     // don't let the computer's own voice count
   if (my !== listenToken || $('look').hidden) return;
   const r = await listenForVoice(
-    lvl => { $('meterFill').style.width = Math.round(lvl * 100) + '%'; },
+    (lvl, over) => { $('meterFill').style.width = Math.round(lvl * 100) + '%'; $('meter').classList.toggle('over', over); },
     () => { $('lookPrompt').textContent = 'I can’t hear you. Say it nice and loud!'; $('micHint').textContent = '🎤 Still listening…'; },
     daily.keepVoice);
   if (!r || my + 1 !== listenToken || $('look').hidden) return;
@@ -1538,6 +1560,23 @@ async function sendOutbox() {
     }
   } finally { sending = false; renderLastCheck(); }
 }
+function renderSens() { document.querySelectorAll('#sensSeg [data-sens]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.sens === settings.sens)); }
+$('sensSeg').addEventListener('click', e => { const b = e.target.closest('[data-sens]'); if (!b) return; settings.sens = +b.dataset.sens; store('spell-settings', settings); renderSens(); if (testing) { stopMicTest(); startMicTest(); } });
+let testing = false;
+async function startMicTest() {
+  if (!(await getMic())) { $('micTestBox').hidden = false; $('tHit').style.color = 'var(--try)'; $('tHit').textContent = 'The microphone isn’t available. Allow it in the browser (the icon in the address bar), then try again.'; return; }
+  testing = true; $('micTestBox').hidden = false; $('micTest').textContent = '■ Stop the test'; $('tHit').textContent = 'Listening… have him say a word.'; $('tHit').style.color = 'var(--muted)';
+  let hits = 0;
+  while (testing) {
+    const r = await listenForVoice((lvl, over) => { $('tFill').style.width = Math.round(lvl * 100) + '%'; $('tMeter').classList.toggle('over', over); }, () => { }, false);
+    if (!testing || !r) break;
+    hits++; $('tHit').style.color = 'var(--good)'; $('tHit').textContent = `✓ Heard him (${hits})`;
+    await wait(500);
+  }
+}
+function stopMicTest() { testing = false; listenToken++; $('micTest').textContent = '🎤 Test the microphone'; $('tFill').style.width = '0'; stopMic(); }
+$('micTest').onclick = () => testing ? stopMicTest() : startMicTest();
+renderSens();
 function renderMailStatus() {
   const st = store('spell-send-status'), el = $('mailStatus'); if (!el) return;
   if (!st) { el.textContent = ''; return; }
