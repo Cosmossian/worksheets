@@ -60,6 +60,10 @@ main { max-width: 980px; margin: 0 auto; padding: 12px 16px 24px; display: flex;
 .chunks { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
 .chunk { display: flex; gap: 4px; padding: 5px; border-radius: 16px; border: 2px dashed var(--line); }
 .chunk.t { border: 3px solid var(--part); background: var(--part-bg); }
+.chunk.now { border: 3px solid #F59E0B; box-shadow: 0 0 0 5px rgba(245, 158, 11, .2); }
+.lbox.given { border-style: solid; border-color: var(--line); background: var(--surface); color: var(--muted); }
+.palette { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.swatch { width: 54px; height: 54px; border-radius: 50%; border: 4px solid var(--surface); box-shadow: 0 0 0 2px var(--line); cursor: pointer; touch-action: manipulation; }
 
 .keys { display: grid; grid-template-columns: repeat(9, 1fr); gap: 8px; width: 100%; max-width: 820px; }
 body.inpart .app-header h1 { display: none; }
@@ -474,66 +478,91 @@ function partPick() {
   show();
 }
 
-/* ---------- 2. Chunk It: type the word part by part (the tricky part is marked) ---------- */
+/* ---------- 2. Chunk It: every chunk, in a random order. Listen to the chunk, then type just that chunk (tricky parts are purple) ---------- */
 function partChunk() {
   let i = 0; score.chunk = { mistakes: 0 };
   const show = () => {
     const { w } = WORDS[i], dw = displayWord(w), chunks = chunksFor(dw);
-    const letters = [...dw].filter(c => c !== ' ');
-    let pos = 0;
+    let targets = chunks.map((g, k) => g.s.trim() ? k : -1).filter(k => k >= 0);   // all of them
+    for (let a = targets.length - 1; a > 0; a--) { const b = Math.floor(Math.random() * (a + 1)); [targets[a], targets[b]] = [targets[b], targets[a]]; }
+    if (targets.length > 1 && targets.every((k, n) => n === 0 || k > targets[n - 1])) targets.push(targets.shift());   // never in the usual order
     const { tip } = trickyFor(w.toLowerCase());
+    let ti = 0, pos = 0, heard = false;
+    const part = () => ti < targets.length ? chunks[targets[ti]].s.replace(/ /g, '') : '';
     const draw = () => {
-      let k = 0;
-      $('chunks').innerHTML = chunks.map(g => `<div class="chunk${g.t ? ' t' : ''}">${[...g.s].map(() => { const n = k++; return `<span class="lbox${n < pos ? ' done' : n === pos ? ' cur' : ''}">${n < pos ? esc(letters[n]) : ''}</span>`; }).join('')}</div>`).join('');
+      $('chunks').innerHTML = chunks.map((g, k) => {
+        const cur = targets[ti] === k, done = targets.indexOf(k) < ti && targets.includes(k), cls = `chunk${g.t ? ' t' : ''}${cur ? ' now' : ''}`;
+        if (!targets.includes(k)) return `<div class="${cls}">${[...g.s].map(() => '<span class="lbox sp"></span>').join('')}</div>`;
+        if (done) return `<div class="${cls}">${[...g.s].map(ch => `<span class="lbox done">${esc(ch)}</span>`).join('')}</div>`;
+        if (cur && !heard) return `<div class="${cls}">${[...g.s].map(ch => `<span class="lbox typed">${esc(ch)}</span>`).join('')}</div>`;   // look at it while listening
+        return `<div class="${cls}">${[...g.s].map((ch, n) => `<span class="lbox${cur && n < pos ? ' done' : cur && n === pos ? ' cur' : ''}">${cur && n < pos ? esc(ch) : ''}</span>`).join('')}</div>`;
+      }).join('');
+      $('keys').classList.toggle('cool', !heard);
+      $('hearPart').classList.toggle('primary', !heard);
     };
-    app.innerHTML = title('Say each part. Type the letters into the boxes.') + `<div class="count">Word ${i + 1} of ${WORDS.length}${tip ? ` · Tricky part: ${esc(tip)}` : ''}</div>
-      <div class="big-word">${chunks.map(g => g.t ? `<span class="t" style="color:#7E22CE">${esc(g.s)}</span>` : esc(g.s)).join('<span style="color:#CBD5E1"> · </span>')}</div>
-      <div class="row"><button class="btn" id="hear">${SPK}Hear the word</button></div>
+    app.innerHTML = title('Listen to the glowing part. Then type just that part. Every part, in a mixed-up order!') + `<div class="count">Word ${i + 1} of ${WORDS.length}${tip ? ` · Tricky part: ${esc(tip)}` : ''}</div>
+      <div class="row"><button class="btn big primary" id="hearPart">${SPK}Hear this part</button><button class="btn" id="hear">${SPK}Hear the word</button></div>
       <div class="chunks" id="chunks"></div>
       <div class="message" id="msg"></div>${keysHtml()}`;
+    const hearPart = () => {
+      const p = part(); if (!p) return playWord(w);   // already finished this word
+      return say(`This part is spelled ${[...p].map(letterName).join(', ')}.${tip && chunks[targets[ti]].t ? ' ' + tip.replace(/[“”]/g, '') + '.' : ''}`, 0.8).then(() => wait(250)).then(() => playWord(w));
+    };
     $('hear').onclick = () => playWord(w);
-    draw(); playWord(w);
-    onKey = (c, el) => {
-      if (pos >= letters.length) return;
-      if (c === letters[pos].toLowerCase()) {
-        pos++; draw();
-        if (pos >= letters.length) { onKey = null; setMsg('You chunked it!', 'good'); say(dw, 0.85).then(() => wait(400)).then(() => { i++; i < WORDS.length ? show() : partDone(score.chunk.mistakes ? `Only ${score.chunk.mistakes} wrong letter${score.chunk.mistakes > 1 ? 's' : ''}. Nice work!` : 'Every letter right!'); }); }
-        else setMsg('');
-      } else { score.chunk.mistakes++; shakeEl(document.querySelector('#chunks .cur')); setMsg('Look at the word again. Which letter comes next?', 'try'); cool(); }
+    $('hearPart').onclick = () => hearPart().then(() => { if (!heard) { heard = true; pos = 0; draw(); setMsg('Now type that part.'); } });
+    draw(); playWord(w).then(() => setMsg('Tap “Hear this part” first.'));
+    onKey = (c) => {
+      if (!heard) { setMsg('Tap “Hear this part” first.', 'try'); shakeEl($('hearPart')); return; }
+      const p = part();
+      if (c === p[pos].toLowerCase()) {
+        pos++;
+        if (pos >= p.length) {
+          ti++; pos = 0;
+          if (ti >= targets.length) { onKey = null; draw(); $('keys').classList.remove('cool'); setMsg('You got the tricky part!', 'good'); say(dw, 0.85).then(() => wait(400)).then(() => { i++; i < WORDS.length ? show() : partDone(score.chunk.mistakes ? `Only ${score.chunk.mistakes} wrong letter${score.chunk.mistakes > 1 ? 's' : ''}. Nice work!` : 'Every letter right!'); }); return; }
+          heard = false; setMsg('Great! Now listen to the next part.', 'good');
+        } else setMsg('');
+        draw();
+      } else { score.chunk.mistakes++; shakeEl(document.querySelector('#chunks .cur')); setMsg('Listen again. Which letter comes next?', 'try'); cool(); }
     };
   };
   show();
 }
 
-/* ---------- 3. Rainbow Write: type it twice looking at it, then once without looking ---------- */
+/* ---------- 3. Rainbow Write: pick a color for each line. Type it twice looking at it, then once from memory (the word and the other lines disappear) ---------- */
 function partRainbow() {
   let i = 0; score.rainbow = { clean: 0, of: WORDS.length * 3 };
-  const COLORS = ['#F87171', '#FBBF24', '#34D399'];
+  const PALETTE = [['#F87171', 'red'], ['#FB923C', 'orange'], ['#FBBF24', 'yellow'], ['#34D399', 'green'], ['#38BDF8', 'light blue'], ['#7FB0F0', 'blue'], ['#C4B5FD', 'purple'], ['#F9A8D4', 'pink']];
   const show = () => {
     const { w } = WORDS[i], dw = displayWord(w), letters = [...dw].filter(c => c !== ' ');
-    let row = 0, pos = 0, rowMiss = false;
+    let row = 0, pos = 0, rowMiss = false; const cols = [];
     const draw = () => {
-      $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${COLORS[r]}">${r + 1}</span>${letters.map((ch, n) => {
+      const rows = row >= 2 ? [2] : [0, 1].filter(r => r <= row);   // the memory line shows alone
+      $('rw').innerHTML = rows.map(r => `<div class="rw-row"><span class="n" style="color:${cols[r] || 'var(--muted)'}">${r + 1}</span>${letters.map((ch, n) => {
         const done = r < row || (r === row && n < pos);
-        return `<span class="lbox${done ? ' done' : r === row && n === pos ? ' cur' : ''}" style="${done ? `border-color:${COLORS[r]};color:${COLORS[r]};background:var(--surface-2)` : ''}">${done ? esc(ch) : ''}</span>`;
+        return `<span class="lbox${done ? ' done' : r === row && n === pos && cols[r] ? ' cur' : ''}" style="${done ? `border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)` : ''}">${done ? esc(ch) : ''}</span>`;
       }).join('')}</div>`).join('');
-      $('wordShow').innerHTML = row < 2 ? `<div class="big-word">${esc(dw)}</div>` : `<div class="hidden-word">Now without looking!</div>`;
+      $('wordShow').innerHTML = row < 2 ? `<div class="big-word">${esc(dw)}</div>` : `<div class="hidden-word">Now from memory!</div>`;
+      const picking = row <= 2 && !cols[row];
+      $('pal').innerHTML = picking ? `<div class="count">Pick a color for line ${row + 1}</div><div class="palette">${PALETTE.map(([c, name]) => `<button class="swatch" data-c="${c}" style="background:${c}" aria-label="${name}"></button>`).join('')}</div>` : '';
+      $('keys').classList.toggle('cool', picking);
     };
-    app.innerHTML = title('Type the word 3 times. The last time, the word hides!') + `<div class="count">Word ${i + 1} of ${WORDS.length}</div>
+    app.innerHTML = title('Pick a color, then type the word. 3 lines. The last line is from memory!') + `<div class="count">Word ${i + 1} of ${WORDS.length}</div>
       <div id="wordShow"></div>
       <div class="row"><button class="btn" id="hear">${SPK}Hear the word</button></div>
-      <div class="rw" id="rw"></div><div class="message" id="msg"></div>${keysHtml()}`;
+      <div id="pal"></div><div class="rw" id="rw"></div><div class="message" id="msg"></div>${keysHtml()}`;
     $('hear').onclick = () => playWord(w);
+    $('pal').onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; cols[row] = b.dataset.c; setMsg(''); draw(); };
     draw(); playWord(w);
     onKey = (c) => {
       if (row > 2) return;
+      if (!cols[row]) { setMsg('Pick a color first.', 'try'); return; }
       if (c === letters[pos].toLowerCase()) {
         pos++;
         if (pos >= letters.length) {
           if (!rowMiss) score.rainbow.clean++;
           row++; pos = 0; rowMiss = false;
-          if (row === 2) { setMsg('Now try it without looking!', 'good'); say('Now try it without looking!', 0.95); }
-          else if (row > 2) { onKey = null; draw(); setMsg('Rainbow done!', 'good'); say(dw, 0.85).then(() => wait(400)).then(() => { i++; i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes.`); }); return; }
+          if (row === 2) { setMsg('Now from memory! The word is hiding.', 'good'); say('Now try it from memory!', 0.95); }
+          else if (row > 2) { onKey = null; draw(); $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join(''); setMsg('Rainbow done!', 'good'); say(dw, 0.85).then(() => wait(700)).then(() => { i++; i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); }); return; }
           else setMsg('Great! Again.', 'good');
         }
         draw();
@@ -680,8 +709,8 @@ function partLines() {
   const s = score;
   return [
     ['Pick the Right One', `${s.pick.first} of ${s.pick.of} right on the first try`],
-    ['Chunk It', s.chunk.mistakes ? `${s.chunk.mistakes} wrong letter${s.chunk.mistakes > 1 ? 's' : ''}` : 'no wrong letters'],
-    ['Rainbow Write', `${s.rainbow.clean} of ${s.rainbow.of} with no mistakes (last one without looking)`],
+    ['Chunk It (tricky part)', s.chunk.mistakes ? `${s.chunk.mistakes} wrong letter${s.chunk.mistakes > 1 ? 's' : ''}` : 'no wrong letters'],
+    ['Rainbow Write', `${s.rainbow.clean} of ${s.rainbow.of} with no mistakes (last one from memory)`],
     ['Fix the Sentence', `${s.fix.first} of ${s.fix.of} fixed on the first try`],
     ['Word Search', `found ${s.search.found} of ${s.search.of}${s.search.wrongTaps ? `, ${s.search.wrongTaps} wrong tap${s.search.wrongTaps > 1 ? 's' : ''}` : ''}`]
   ];

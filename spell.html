@@ -156,6 +156,12 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .kidhome p { margin: 0; font-size: 22px; color: var(--muted); line-height: 1.4; }
 .kidhome .btn.big { font-size: 30px; padding: 22px 40px; min-height: 84px; border-radius: 24px; }
 .kidhome .done-today { color: var(--good); font: 600 22px Fredoka, sans-serif; }
+.kidhome .grownup { order: 20; }
+.kid-sheets { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 520px; order: 10; }
+.kid-sheets h3 { margin: 10px 0 0; font: 700 26px Fredoka, sans-serif; color: var(--navy); }
+.kid-sheets a { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-decoration: none; font: 600 24px Fredoka, sans-serif; color: var(--ink); background: var(--surface-2); border: 3px solid var(--study); border-radius: 20px; padding: 16px 22px; }
+.kid-sheets a.done { border-color: var(--good); }
+.kid-sheets a small { font-size: 17px; color: var(--good); white-space: nowrap; }
 
 /* ---------- Child's screen ---------- */
 .play { max-width: 980px; margin: 0 auto; padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
@@ -399,6 +405,7 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
   <h2 id="kidHi">Hi! 👋</h2>
   <p id="kidMsg">Today’s words are ready.</p>
   <div class="done-today" id="kidDone" hidden></div>
+  <div class="kid-sheets" id="kidSheets" hidden></div>
   <div id="kidMicSlot" style="max-width:520px;margin:0 auto 14px;text-align:left"></div>
   <button class="btn big primary" id="kidStart">Start today’s words</button>
   <button class="grownup" id="kidGrown">Grown-up: hold for the grown-up screen</button>
@@ -894,7 +901,7 @@ if (!canTalk) $('voiceWarn').hidden = false;
 
 let grownMode = false;
 function placeMicTest(id) {   // his start screen gets the same mic test (sensitivity is per device), when Look & Listen uses the mic
-  const d = store('spell-daily') || {}, onKid = id === 'kidhome' && d.look !== false && d.mic !== false;
+  const d = store('spell-daily') || {}, onKid = id === 'kidhome' && d.look !== false && d.mic !== false && parseList(d.words || '').length > 0;
   const target = onKid ? $('kidMicSlot') : $('setupMicSlot');
   if ($('micTestPanel').previousElementSibling !== target && $('micTestPanel').parentNode !== target) { if (testing) stopMicTest(); onKid ? target.appendChild($('micTestPanel')) : target.after($('micTestPanel')); }
   $('micTestPanel').hidden = id === 'kidhome' && !onKid;
@@ -1672,12 +1679,13 @@ const dayKey = t => new Date(t).toDateString();
 const timeOf = t => new Date(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 async function renderReview() {
   if (cloudMember()) { $('reviewList').innerHTML = '<p class="rv-empty">Loading…</p>'; await cloudPullLogs(); if ($('review').hidden) return; }
-  const looks = lookLog(), checks = store('spell-check-log') || [], fixes = store('fixup-log') || [];
+  const looks = lookLog(), checks = store('spell-check-log') || [], fixes = store('fixup-log') || [], sheets = store('sheet-log') || [];
   const days = {};
   const add = (t, item) => { (days[dayKey(t)] = days[dayKey(t)] || { t, items: [] }).items.push(item); };
   looks.forEach(x => add(x.t, { t: x.t, kind: 'look', x }));
   checks.forEach(x => add(x.t, { t: x.t, kind: 'check', x }));
   fixes.forEach(x => add(x.t, { t: x.t, kind: 'fix', x }));
+  sheets.forEach(x => add(x.t, { t: x.t, kind: 'sheet', x }));
   const order = Object.values(days).sort((a, b) => b.t - a.t);
   if (!order.length) { $('reviewList').innerHTML = '<p class="rv-empty">Nothing yet. Results show up here after he does the daily sight words.</p>'; return; }
   const wordList = rs => rs.map(r => r.ok ? `<span class="ok">✓ ${esc(r.word)}</span>` : `<span class="no">✗ ${esc(r.word)} (wrote “${esc(r.typed)}”)</span>`).join(' · ');
@@ -1689,6 +1697,14 @@ async function renderReview() {
         ${x.clips && x.clips.length ? `<div class="clips">${clipButtons(x)}</div><button class="del" data-delsess="${x.session}">Delete these recordings</button>` : '<div class="ln rv-empty">No recordings saved.</div>'}</div>`;
       if (it.kind === 'check') { const right = x.results.filter(r => r.ok).length, g = x.grade || gradeFor(right, x.results.length);
         return `<div class="rv-sec"><h4>Sight word check<span>${esc(timeOf(x.t))} · ${g.pct}% ${g.letter} · ${right} of ${x.results.length} right${x.sent ? ' · emailed ✓' : ''}</span></h4><div class="ln">${wordList(x.results)}</div></div>`; }
+      if (it.kind === 'sheet') {
+        const wrong = (x.items || []).filter(r => !r.ok);
+        return `<div class="rv-sec"><h4>${esc(x.title)}<span>${esc(timeOf(x.t))}${x.grade ? ` · ${x.grade.pct}% ${x.grade.letter} · ${x.right} of ${x.of} right the first time` : ' · done'}${x.sent ? ' · emailed ✓' : ''}</span></h4>
+          ${wrong.length ? `<div class="ln">${wrong.map(r => `<span class="no">✗ ${esc(r.part)}: ${esc(r.label)}${r.typed ? ` (put “${esc(r.typed)}”)` : ''} → ${esc(r.answer)}</span>`).join(' · ')}</div>` : (x.items || []).length ? '<div class="ln"><span class="ok">Everything right the first time ✓</span></div>' : ''}
+          ${x.extra && x.extra.marks ? `<div class="ln">Quarters: ${x.extra.marks.map((m, i) => `${i + 1} ${m === 'has' ? '🦅' : '✗'}`).join(' · ')}</div>` : ''}
+          ${x.extra && x.extra.stepTimes ? `<div class="ln">Steps done at ${x.extra.stepTimes.map(t => esc(timeOf(t))).join(', ')}</div>` : ''}
+          ${(x.parts || []).length > 1 ? `<div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div>` : ''}</div>`;
+      }
       const right = x.test.filter(r => r.ok).length;
       return `<div class="rv-sec"><h4>Spelling Fix-Up<span>${esc(timeOf(x.t))} · Practice Test ${x.grade.pct}% ${x.grade.letter} · ${right} of ${x.test.length} right</span></h4>
         <div class="ln">${wordList(x.test)}</div><div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div></div>`;
@@ -1715,7 +1731,7 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const KID_DOMAIN = 'kids.thatonedrawer.com';   // usernames become <username>@kids.thatonedrawer.com behind the scenes (never emailed)
 const loginEmail = id => { id = id.trim().toLowerCase(); return id.includes('@') ? id : `${id}@${KID_DOMAIN}`; };
 const shownName = email => email.endsWith('@' + KID_DOMAIN) ? email.slice(0, -KID_DOMAIN.length - 1) : email;
-const SYNC = { 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent' };
+const SYNC = { 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent', 'study-sheets': 'sheets' };   // sheets: on-screen worksheets assigned from the Worksheets page
 const cloud = { sb: null, user: null, role: null, pulling: false, timers: {} };
 const cloudMember = () => !!(cloud.sb && cloud.user && cloud.role);
 function cloudClient() {
@@ -1762,7 +1778,7 @@ window.addEventListener('online', () => cloudFlush());
 // store() calls this for every write; synced keys go up (debounced), except while pulling
 function cloudOnStore(k) {
   if (!SYNC[k] || cloud.pulling || !cloud.sb) return;
-  if (cloud.role === 'kid' && ['spell-daily', 'spell-settings', 'spell-sounds'].includes(k)) return;   // set from the grown-up's device
+  if (cloud.role === 'kid' && ['spell-daily', 'spell-settings', 'spell-sounds', 'study-sheets'].includes(k)) return;   // set from the grown-up's device
   clearTimeout(cloud.timers[k]);
   cloud.timers[k] = setTimeout(() => {
     let data = store(k);
@@ -1830,6 +1846,7 @@ async function cloudPullLogs() {
     };
     localStorage.setItem('spell-check-log', JSON.stringify(merge('spell-check-log', 'check', x => x.id).slice(-30)));
     localStorage.setItem('fixup-log', JSON.stringify(merge('fixup-log', 'fixup', x => x.id).slice(-30)));
+    localStorage.setItem('sheet-log', JSON.stringify(merge('sheet-log', 'sheet', x => x.id).slice(-40)));
     const localLooks = lookLog(), urlByKey = {};
     localLooks.forEach(sess => (sess.clips || []).forEach(c => { if (c.key && c.url) urlByKey[c.key] = c.url; }));
     const looks = merge('spell-look-log', 'look', x => x.session).map(sess => ({ ...sess, clips: (sess.clips || []).map(c => ({ ...c, url: c.url || urlByKey[c.key] })) }));
@@ -1854,7 +1871,7 @@ async function cloudSetUser(user) {
     try { const { data, error } = await cloud.sb.from('study_members').select('role').eq('email', cloud.user.email.toLowerCase()).maybeSingle(); cloud.role = data ? data.role : null; if (error) cloud.roleErr = error.message; } catch (e) { cloud.roleErr = String(e.message || e); }
   }
   renderAccount();
-  if (cloudMember()) { await cloudFlush(); await cloudPull(); }
+  if (cloudMember()) { await cloudFlush(); await cloudPull(); if (!$('review').hidden) renderReview(); }   // opened straight to Parent Review (the email link): refresh once signed in
   else if (!$('kidhome').hidden) show('setup');
 }
 function renderAccount() {
@@ -1901,7 +1918,15 @@ setInterval(() => { if (cloudMember() && !daily && (!$('kidhome').hidden || !$('
 function renderKidHome() {
   const d = store('spell-daily') || {}, words = parseList(d.words || '');
   const today = (store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString());
-  $('kidMsg').textContent = words.length ? `Today you have ${words.length} word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : 'No words yet. Ask a grown-up to add today’s words.';
+  const sheets = ((store('study-sheets') || {}).list || []);
+  $('kidMsg').textContent = words.length ? `Today you have ${words.length} word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : sheets.length ? 'Pick a worksheet below. Take your time and try your best!' : 'No words yet. Ask a grown-up to add today’s words.';
+  // On-screen worksheets assigned from the Worksheets page (done ones show their grade; Daily Steps counts today only)
+  const logs = [...(store('sheet-log') || []), ...(store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))];
+  const doneFor = a => logs.filter(l => l.aid === a.id && (!['steps', 'weather'].includes(a.tool) || new Date(l.t).toDateString() === new Date().toDateString())).sort((x, y) => y.t - x.t)[0];
+  const href = a => a.tool === 'fixup' ? `fixup.html?w=${encodeURIComponent(((a.data && a.data.words) || []).map(x => `${x.w}:${x.his || ''}`).join('|'))}&from=${encodeURIComponent(a.title)}&cid=${encodeURIComponent(a.id)}` : `do.html?a=${encodeURIComponent(a.id)}`;
+  $('kidSheets').hidden = !sheets.length;
+  $('kidSheets').innerHTML = sheets.length ? `<h3>Worksheets</h3>` + sheets.map(a => { const d = doneFor(a), g = d && d.grade;
+    return `<a class="${d ? 'done' : ''}" href="${href(a)}"><span>${esc(a.title)}</span>${d ? `<small>✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'weather' ? `day ${d.extra && d.extra.day} done today` : a.tool === 'steps' ? 'done today' : 'done'}${a.tool === 'weather' ? '' : ' · again?'}</small>` : '<span>→</span>'}</a>`; }).join('') : '';
   $('kidStart').hidden = !words.length;
   $('kidDone').hidden = !today.length;
   if (today.length) { const r = today.at(-1), g = r.grade || gradeFor(r.results.filter(x => x.ok).length, r.results.length); $('kidDone').textContent = `You already did a check today: ${g.letter} (${g.pct}%). You can practice again!`; }
@@ -1913,6 +1938,17 @@ renderDailySetup();
 (async () => { const sb = cloudClient(); if (!sb) return; try { const { data } = await sb.auth.getSession(); await cloudSetUser(data.session && data.session.user); } catch (e) { } sb.auth.onAuthStateChange((ev, sess) => { if (ev === 'SIGNED_OUT') cloudSetUser(null); }); })();
 if (location.hash === '#review') show('review');
 if ((store('spell-check-outbox') || []).length) sendOutbox();   // send anything that didn't go out last time
+(async () => {   // on-screen worksheet results that didn't go out (saved with their finished email)
+  let box = store('sheet-outbox') || [];
+  for (const rec of [...box]) {
+    if (!rec.body) continue;
+    try {
+      if (!(await postForm(rec.body))) break;
+      box = box.filter(x => x.id !== rec.id); store('sheet-outbox', box);
+      const log = store('sheet-log') || []; const l = log.find(x => x.id === rec.id); if (l) { l.sent = true; store('sheet-log', log); }
+    } catch (e) { break; }
+  }
+})();
 (async () => {   // also resend on-screen Fix-Up results that didn't go out (they're saved with their finished email)
   let box = store('fixup-outbox') || [];
   for (const rec of [...box]) {

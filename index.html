@@ -49,6 +49,13 @@ textarea { resize: vertical; min-height: 44px; }
 .btn-small { font-size: 14px; padding: 6px 12px; min-height: 36px; background: #2A3A4E; color: var(--ink); }
 .btn-small:hover { background: #34475E; } .btn-print:hover { background: #4A8BE6; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
+.onscreen { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
+.onscreen h3 { margin: 0 0 4px; font: 700 18px Fredoka, sans-serif; color: var(--navy); }
+.btn-assign { background: #0F9F8F; color: #FFFFFF; } .btn-assign:hover { background: #12B5A3; }
+.assign-msg { font-size: 14px; margin-top: 8px; min-height: 18px; }
+.assigned { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.assigned div { display: flex; gap: 8px; align-items: center; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; font-size: 14px; }
+.assigned div span { flex: 1; } .assigned .ok { color: #34D399; font-weight: 700; white-space: nowrap; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .note { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.4; }
 .qlist { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
@@ -99,6 +106,16 @@ textarea { resize: vertical; min-height: 44px; }
 .pill { padding: 1px 11px; border: 2px solid #94A3B8; border-radius: 999px; background: #FFFFFF; font-size: 19px; font-weight: 700; white-space: nowrap; }
 .pill.ip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 5px; font-size: 17px; }
 .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.wx-row { display: flex; border: 3px solid; border-radius: 16px; overflow: hidden; flex: 1 1 auto; }
+.wx-row.fc { flex: .55 1 auto; }
+.wx-day { color: #FFFFFF; font: 700 19px Fredoka, sans-serif; width: 96px; flex: none; display: grid; place-items: center; text-align: center; line-height: 1.1; padding: 4px; }
+.wx-cells { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 8px 12px; flex: 1; align-content: space-evenly; align-items: center; }
+.wx-cell { display: flex; flex-direction: column; gap: 2px; }
+.wx-cell > b { font: 700 15px Fredoka, sans-serif; color: var(--muted); }
+.wx-ch { display: flex; gap: 6px; align-items: flex-end; }
+.wx-ch span { display: flex; flex-direction: column; align-items: center; font-size: 12px; line-height: 1.1; text-align: center; max-width: 54px; }
+.wx-ch .wx-w { font: 700 18px Andika, sans-serif; border: 2px solid #94A3B8; border-radius: 999px; padding: 0 8px; background: #FFFFFF; max-width: none; }
+.wx-num { display: flex; align-items: flex-end; gap: 4px; font-size: 16px; }
 /* sight words */
 .sw-head { display: flex; gap: 8px; padding: 0 15px; flex: none; }
 .sw-h { display: flex; align-items: center; gap: 6px; }
@@ -250,11 +267,13 @@ textarea { resize: vertical; min-height: 44px; }
   <button role="tab" data-tool="question">What Is the Question Asking?</button>
   <button role="tab" data-tool="steps">Daily Steps Chart</button>
   <button role="tab" data-tool="eagles">Count the Eagles</button>
+  <button role="tab" data-tool="weather">My Weather Watch</button>
 </nav>
 <main class="workspace">
   <aside class="panel" id="panel" aria-label="Worksheet options"></aside>
   <div class="preview" id="preview" aria-label="Worksheet preview"></div>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 /* First Grade Fun Worksheets — built-in data.
    Everything here is plain data: edit it to add words, sentences, questions or pictures. */
@@ -462,6 +481,27 @@ const QUESTIONS = [
 ];
 
 /* Pictures you can pick for the Daily Steps chart. */
+/* "My Weather Watch" pictures (48x48), used on the printed sheet and on screen. */
+const WX = {
+  sunny: `<circle cx="24" cy="24" r="10" fill="#FACC15" stroke="#A16207" stroke-width="2.5"/><path d="M24 4 V9 M24 39 V44 M4 24 H9 M39 24 H44 M10 10 L13.5 13.5 M34.5 34.5 L38 38 M10 38 L13.5 34.5 M34.5 13.5 L38 10" stroke="#EA580C" stroke-width="3" stroke-linecap="round"/>`,
+  partly: `<circle cx="18" cy="17" r="8" fill="#FACC15" stroke="#A16207" stroke-width="2.2"/><path d="M18 3 V6 M6 17 H3 M8.5 7.5 L10.5 9.5 M27.5 7.5 L25.5 9.5" stroke="#EA580C" stroke-width="2.5" stroke-linecap="round"/><path d="M14 40 C7 40 6 31 13 30 C13 23 23 21 26 27 C29 22 39 24 38 31 C44 31 45 40 38 40 Z" fill="#FFFFFF" stroke="#475569" stroke-width="2.5" stroke-linejoin="round"/>`,
+  cloudy: `<path d="M12 38 C4 38 3 27 11 26 C11 17 23 14 27 22 C30 16 42 18 41 27 C47 27 48 38 40 38 Z" fill="#CBD5E1" stroke="#475569" stroke-width="2.5" stroke-linejoin="round"/>`,
+  rainy: `<path d="M12 28 C4 28 3 18 11 17 C11 9 23 6 27 13 C30 8 42 10 41 18 C47 18 48 28 40 28 Z" fill="#CBD5E1" stroke="#475569" stroke-width="2.5" stroke-linejoin="round"/><path d="M14 33 L11 41 M24 33 L21 41 M34 33 L31 41" stroke="#2563EB" stroke-width="3" stroke-linecap="round"/>`,
+  snowy: `<path d="M12 28 C4 28 3 18 11 17 C11 9 23 6 27 13 C30 8 42 10 41 18 C47 18 48 28 40 28 Z" fill="#E2E8F0" stroke="#475569" stroke-width="2.5" stroke-linejoin="round"/><path d="M13 32 V42 M8.5 37 H17.5 M24 33 V43 M19.5 38 H28.5 M35 32 V42 M30.5 37 H39.5" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>`,
+  foggy: `<path d="M12 22 C5 22 5 13 12 13 C13 6 23 5 26 11 C29 7 38 9 37 15 C42 15 43 22 37 22 Z" fill="#E2E8F0" stroke="#64748B" stroke-width="2.2" stroke-linejoin="round"/><path d="M6 29 H42 M10 35 H38 M6 41 H42" stroke="#94A3B8" stroke-width="3.5" stroke-linecap="round"/>`,
+  puffy: `<path d="M8 36 C2 36 2 27 9 26 C8 18 18 15 21 21 C22 11 36 10 37 20 C44 19 47 28 41 31 C46 33 44 36 40 36 Z" fill="#FFFFFF" stroke="#475569" stroke-width="2.5" stroke-linejoin="round"/><path d="M4 41 H44" stroke="#93C5FD" stroke-width="2" stroke-linecap="round"/>`,
+  flat: `<path d="M3 20 C10 15 18 18 24 16 C30 14 38 17 45 15 V30 C38 32 30 29 24 31 C18 33 10 30 3 32 Z" fill="#94A3B8" stroke="#475569" stroke-width="2.2" stroke-linejoin="round"/><path d="M4 38 H44" stroke="#93C5FD" stroke-width="2" stroke-linecap="round"/>`,
+  wispy: `<path d="M6 16 C14 10 22 18 30 12 C34 9 39 10 42 13 M4 26 C12 22 20 28 28 23 C33 20 38 21 41 24 M10 35 C17 31 24 36 31 32" fill="none" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>`,
+  clear: `<rect x="4" y="6" width="40" height="36" rx="8" fill="#BFDBFE" stroke="#3B82F6" stroke-width="2.2"/><circle cx="33" cy="16" r="5" fill="#FACC15"/>`,
+  calm: `<path d="M12 6 V44" stroke="#475569" stroke-width="3" stroke-linecap="round"/><path d="M13 8 C15 14 15 22 13 28 C17 24 18 16 13 8 Z" fill="#F87171" stroke="#B91C1C" stroke-width="2" stroke-linejoin="round"/>`,
+  breezy: `<path d="M12 6 V44" stroke="#475569" stroke-width="3" stroke-linecap="round"/><path d="M13 8 C20 10 26 14 32 22 C25 21 19 20 13 22 Z" fill="#F87171" stroke="#B91C1C" stroke-width="2" stroke-linejoin="round"/>`,
+  windy: `<path d="M12 6 V44" stroke="#475569" stroke-width="3" stroke-linecap="round"/><path d="M13 8 C22 7 32 9 42 8 C34 11 34 14 42 17 C32 16 22 18 13 17 Z" fill="#F87171" stroke="#B91C1C" stroke-width="2" stroke-linejoin="round"/><path d="M26 26 H44 M30 32 H46 M24 38 H40" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round"/>`
+};
+const WX_ICON = (k, size = 40) => WX[k] ? `<svg width="${size}" height="${size}" viewBox="0 0 48 48" aria-hidden="true">${WX[k]}</svg>` : '';
+const WX_SKY = [['sunny', 'Sunny'], ['partly', 'Partly cloudy'], ['cloudy', 'Cloudy'], ['rainy', 'Rainy'], ['snowy', 'Snowy'], ['foggy', 'Foggy']];
+const WX_CLOUDS = [['puffy', 'Puffy'], ['flat', 'Flat blanket'], ['wispy', 'Thin and wispy'], ['clear', 'No clouds']];
+const WX_WIND = [['calm', 'Calm'], ['breezy', 'Breezy'], ['windy', 'Windy']];
+
 const STEP_ICONS = ['laptop', 'book', 'pencil', 'house', 'checklist', 'talk', 'music', 'clock', 'apple', 'ball', 'star', 'heart', 'sun', 'moon', 'hand', 'tree'];
 
 </script>
@@ -755,6 +795,27 @@ function dailySteps({ heading, sub, steps, reminders }) {
   return sheet(title(heading || 'My School Day Steps', sub) + `<div class="col" style="gap:9px">${rows}</div>` + foot, { gap: 9 });
 }
 
+/* ================= 6. My Weather Watch (our own observation chart) ================= */
+function weatherWatch({ place, unit, days }) {
+  const u = unit === 'C' ? '°C' : '°F';
+  const choice = (list, size = 30) => `<div class="wx-ch">${list.map(([k, n]) => `<span>${WX_ICON(k, size)}<small>${esc(n)}</small></span>`).join('')}</div>`;
+  const words = list => `<div class="wx-ch">${list.map(n => `<span class="wx-w">${esc(n)}</span>`).join('')}</div>`;
+  const compass = `<svg width="62" height="62" viewBox="0 0 62 62" aria-hidden="true"><circle cx="31" cy="31" r="20" fill="#FFFFFF" stroke="#475569" stroke-width="2"/><path d="M31 15 L35 31 L31 47 L27 31 Z" fill="#E2E8F0" stroke="#475569" stroke-width="1.5"/><text x="31" y="9" text-anchor="middle" font-size="11" font-weight="700" font-family="Fredoka">N</text><text x="31" y="61" text-anchor="middle" font-size="11" font-weight="700" font-family="Fredoka">S</text><text x="58" y="35" text-anchor="middle" font-size="11" font-weight="700" font-family="Fredoka">E</text><text x="4" y="35" text-anchor="middle" font-size="11" font-weight="700" font-family="Fredoka">W</text></svg>`;
+  const cell = (label, inner) => `<div class="wx-cell"><b>${label}</b>${inner}</div>`;
+  const temp = `<div class="wx-ch">${['Hot', 'Warm', 'Cold'].map(n => `<span class="wx-w">${n}</span>`).join('')}</div><div class="wx-num">${blank(70)}<b>${u}</b></div>`;
+  const full = [cell('Weather', choice(WX_SKY, 36)), cell('Temperature', temp), cell('Wind', choice(WX_WIND, 36)), cell('Wind comes from', `<div class="wx-num">${compass}${blank(50)}</div>`),
+    cell('Rain today?', words(['Yes', 'No'])), cell('The air feels', words(['Dry', 'Damp'])), cell('Clouds', choice(WX_CLOUDS, 36))];
+  const fc = [cell('I think it will be', choice(WX_SKY, 36)), cell('Temperature', temp)];
+  const rows = [];
+  for (let d = 1; d <= days; d++) {
+    rows.push(`<div class="wx-row" style="border-color:${COLORS[(d - 1) % 8][0]};background:${COLORS[(d - 1) % 8][1]}"><div class="wx-day" style="background:${COLORS[(d - 1) % 8][0]}">Day ${d}</div><div class="wx-cells">${full.join('')}</div></div>`);
+    if (d === 1 && days > 1) rows.push(`<div class="wx-row fc" style="border-color:#B45309;background:#FFFBEB;border-style:dashed"><div class="wx-day" style="background:#B45309">My forecast<br>for Day 2</div><div class="wx-cells">${fc.join('')}</div></div>`);
+  }
+  return sheet(nameDate() + title('My Weather Watch', `Look outside, then circle what you see${place && place.name ? ' · ' + place.name : ''}`, WX_ICON('sunny', 44), WX_ICON('rainy', 44))
+    + `<div class="col" style="gap:10px;flex:1">${rows.join('')}</div>`
+    + `<div class="navybar"><span>Wind is named for where it <b style="color:#FDE68A">comes from</b>.</span><span class="nb-sub">Puffy clouds = cumulus · Flat blanket = stratus · Thin and wispy = cirrus</span></div>`, { gap: 10 });
+}
+
 /* ================= 5. Count the Eagles (coins) ================= */
 function countEagles() {
   const eagle = (w, h) => `<svg width="${w}" height="${h}" viewBox="0 0 140 110" aria-hidden="true"><path d="M70 58 C50 40 28 30 4 34 C16 42 18 48 14 54 C26 52 30 58 26 64 C40 60 50 66 58 72 Z" fill="#8B5A2B" stroke="#4A2C12" stroke-width="3" stroke-linejoin="round"/><path d="M70 58 C90 40 112 30 136 34 C124 42 122 48 126 54 C114 52 110 58 114 64 C100 60 90 66 82 72 Z" fill="#8B5A2B" stroke="#4A2C12" stroke-width="3" stroke-linejoin="round"/><ellipse cx="70" cy="72" rx="18" ry="24" fill="#8B5A2B" stroke="#4A2C12" stroke-width="3"/><path d="M58 92 L52 104 M64 94 L62 106 M82 92 L88 104 M76 94 L78 106" stroke="#D97706" stroke-width="4" stroke-linecap="round"/><circle cx="70" cy="40" r="17" fill="#FFFFFF" stroke="#4A2C12" stroke-width="3"/><circle cx="64" cy="37" r="3.2" fill="#1F2937"/><circle cx="76" cy="37" r="3.2" fill="#1F2937"/><path d="M64 44 L76 44 L70 54 Z" fill="#F59E0B" stroke="#B45309" stroke-width="2" stroke-linejoin="round"/></svg>`;
@@ -793,7 +854,8 @@ const DEFAULTS = {
   master: { words: 'baby, now, love, look, very, talk', sentences: {}, icons: {} },
   fixup: { label: '', words: 'first, while, more, against', wrote: {}, sentences: {}, showParent: true },
   question: { title: '', wordBank: true, example: false, picked: [0, 1, 2, 3, 4, 5, 6], custom: [] },
-  steps: DEFAULT_STEPS
+  steps: DEFAULT_STEPS,
+  weather: { place: null, unit: 'F', days: 3 }
 };
 
 let state;
@@ -845,6 +907,7 @@ function buildSheets() {
   }
   if (t === 'steps') return dailySteps(state.steps);
   if (t === 'eagles') return countEagles();
+  if (t === 'weather') return weatherWatch(state.weather);
   return '';
 }
 
@@ -974,12 +1037,142 @@ function panelEagles() {
   return `<h2>Count the Eagles</h2><p class="help">A coin activity: he places 8 quarters tails-up and marks which ones have an eagle. Each box is a little bigger than a real quarter.</p>${printBlock(false)}`;
 }
 
+function panelWeather() {
+  const st = state.weather;
+  return `<h2>My Weather Watch</h2><p class="help">He watches the weather for a few days: what the sky looks like, hot or cold, wind, rain, the air and the clouds, and he makes a forecast. On screen, he checks each answer against the real weather where you live, reads a thermometer and a compass, and finds out if his forecast came true.</p>
+  <div class="field"><label for="wxWhere">Where you live</label><input type="text" id="wxWhere" placeholder="ZIP code or town, like 43215 or Columbus, Ohio" value="${esc(st.place && st.place.q || '')}">
+    <div class="btn-row" style="margin-top:6px"><button class="btn btn-small" id="wxFind">Find it</button><button class="btn btn-small" id="wxHere">Use my location</button></div>
+    <small id="wxFound" style="color:${st.place ? '#34D399' : 'var(--muted)'}">${st.place ? `Weather for: ${esc(st.place.name)} ✓` : 'Needed for the on-screen version (it uses the real weather there).'}</small></div>
+  <div class="field"><span class="lbl">Temperature in</span><label class="check" style="display:inline-flex;margin-right:14px"><input type="radio" name="wxUnit" value="F" ${st.unit !== 'C' ? 'checked' : ''}> °F</label><label class="check" style="display:inline-flex"><input type="radio" name="wxUnit" value="C" ${st.unit === 'C' ? 'checked' : ''}> °C</label></div>
+  <div class="field"><label for="wxDays">How many days</label><select id="wxDays">${[2, 3, 4, 5].map(n => `<option value="${n}" ${+st.days === n ? 'selected' : ''}>${n} days</option>`).join('')}</select><small>Day 1 ends with a forecast for Day 2.</small></div>
+  ${printBlock(false)}`;
+}
+async function findPlace(q) {
+  q = q.trim(); if (!q) throw new Error('Type a ZIP code or a town.');
+  if (/^\d{5}$/.test(q)) {   // US ZIP code
+    const r = await fetch(`https://api.zippopotam.us/us/${q}`); if (!r.ok) throw new Error('That ZIP code wasn’t found.');
+    const j = await r.json(), pl = j.places && j.places[0]; if (!pl) throw new Error('That ZIP code wasn’t found.');
+    return { q, name: `${pl['place name']}, ${pl['state abbreviation']}`, lat: +pl.latitude, lon: +pl.longitude };
+  }
+  const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.split(',')[0])}&count=10&language=en&format=json`);
+  const j = await r.json(); const res = (j.results || []);
+  const want = (q.split(',')[1] || '').trim().toLowerCase();
+  const hit = res.find(x => want && [x.admin1, x.country, x.country_code].some(v => v && v.toLowerCase().startsWith(want))) || res[0];
+  if (!hit) throw new Error('That place wasn’t found. Try a ZIP code.');
+  return { q, name: `${hit.name}${hit.admin1 ? ', ' + hit.admin1 : ''}`, lat: hit.latitude, lon: hit.longitude };
+}
+
 function renderPanel() {
   const t = state.tool;
-  $panel.innerHTML = { sight: panelSight, master: panelMaster, fixup: panelFixup, question: panelQuestion, steps: panelSteps, eagles: panelEagles }[t]();
+  $panel.innerHTML = { sight: panelSight, master: panelMaster, fixup: panelFixup, question: panelQuestion, steps: panelSteps, eagles: panelEagles, weather: panelWeather }[t]() + onScreenBlock();
+  if (t === 'weather') wireWeather();
+  wireOnScreen();
   document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tool === t));
   document.getElementById('printBtn').onclick = () => window.print();
   scheduleRender();
+}
+
+/* ---------- On screen: assign a worksheet to his device, or try it here ----------
+   Assignments live in the Study database (study_state "sheets", the same sign-in as the Spelling Helper).
+   His start screen in the Spelling Helper shows each one as a button; do.html runs it (fixup.html for Spelling Fix-Up). */
+const SB_URL = 'https://wpgclwmssnmiidvnekml.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZ2Nsd21zc25taWlkdm5la21sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzE4NDUsImV4cCI6MjEwOTE0Nzg0NX0.o19X9l7zS1bk34DpR3id0gt6mAB42ZZb6olRr8ohzTc';
+const TOOL_NAMES = { sight: 'Sight Word Practice', master: 'Word Master Challenge', fixup: 'Spelling Fix-Up', question: 'What Is the Question Asking?', steps: 'Daily Steps', eagles: 'Count the Eagles', weather: 'My Weather Watch' };
+let sbc = null;
+const sbClient = () => sbc || (window.supabase && window.supabase.createClient ? (sbc = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } })) : null);
+const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
+function snapshot(t) {   // what the on-screen worksheet needs, frozen at the moment you assign it
+  if (t === 'sight') { const words = parseWords(state.sight.words); return { title: TOOL_NAMES.sight + (state.sight.label.trim() ? ' · ' + state.sight.label.trim() : ''), data: { words, label: state.sight.label.trim(), sentences: Object.fromEntries(words.map(w => [w, sentenceFor('sight', w)])) }, ok: words.length > 0 }; }
+  if (t === 'master') { const words = parseWords(state.master.words); return { title: TOOL_NAMES.master, data: { words, sentences: Object.fromEntries(words.map(w => [w, sentenceFor('master', w)])), icons: Object.fromEntries(words.map(w => [w, iconFor(w)])) }, ok: words.length > 0 }; }
+  if (t === 'fixup') { const words = parseWords(state.fixup.words); return { title: TOOL_NAMES.fixup + (state.fixup.label.trim() ? ' · ' + state.fixup.label.trim() : ''), data: { words: words.map(w => ({ w, his: state.fixup.wrote[w] || '' })) }, ok: words.length > 0 }; }
+  if (t === 'question') { const all = [...QUESTIONS, ...state.question.custom]; const its = state.question.picked.map(i => all[i]).filter(Boolean); return { title: state.question.title.trim() || TOOL_NAMES.question, data: { items: its, wordBank: state.question.wordBank, example: state.question.example }, ok: its.length > 0 }; }
+  if (t === 'steps') return { title: state.steps.heading.trim() || TOOL_NAMES.steps, data: structuredClone(state.steps), ok: state.steps.steps.length > 0 };
+  if (t === 'weather') return { title: TOOL_NAMES.weather, data: structuredClone(state.weather), ok: !!state.weather.place, need: 'Find where you live first (above), so it can use your real weather.' };
+  return { title: TOOL_NAMES.eagles, data: {}, ok: true };
+}
+const onScreenBlock = () => `<div class="onscreen"><h3>On screen</h3><p class="help" style="margin:0 0 8px">Saves paper. He does it on his device, and you get the grade by email and in Parent Review.</p>
+  <div class="btn-row"><button class="btn btn-assign" id="assignBtn">Assign to his device</button>${state.tool === 'fixup' ? '' : '<button class="btn btn-small" id="tryBtn">Try it on screen</button>'}</div>
+  <div class="assign-msg" id="assignMsg"></div><div class="assigned" id="assignedList"></div></div>`;
+const amsg = (t, bad) => { const m = document.getElementById('assignMsg'); if (m) { m.innerHTML = t; m.style.color = bad ? 'var(--warn-ink)' : '#34D399'; } };
+async function studySession() {
+  const sb = sbClient(); if (!sb) return null;
+  try { const { data } = await sb.auth.getSession(); return data.session ? sb : null; } catch (e) { return null; }
+}
+async function loadSheets(sb) {
+  const { data, error } = await sb.from('study_state').select('data').eq('key', 'sheets').maybeSingle();
+  if (error) throw error;
+  return (data && data.data && data.data.list) || [];
+}
+async function saveSheets(sb, list) {
+  const r = await sb.from('study_state').upsert({ key: 'sheets', data: { list }, updated_at: new Date().toISOString() });
+  if (r.error) throw r.error;
+  lsSet('study-sheets', { list });   // so this device's Spelling Helper shows it right away too
+}
+async function renderAssigned() {
+  const el = document.getElementById('assignedList'); if (!el) return;
+  const sb = await studySession();
+  if (!sb) { el.innerHTML = ''; return; }
+  try {
+    const list = await loadSheets(sb);
+    const since = new Date(Date.now() - 30 * 864e5).toISOString();
+    const { data: logs } = await sb.from('study_log').select('kind,t,data').in('kind', ['sheet', 'fixup']).gte('t', since);
+    const today = new Date().toDateString();
+    const doneFor = a => (logs || []).map(r => r.data).filter(d => (d.aid || d.cid) === a.id && (!['steps', 'weather'].includes(a.tool) || new Date(d.t).toDateString() === today)).sort((x, y) => y.t - x.t)[0];
+    if (!document.getElementById('assignedList')) return;
+    document.getElementById('assignedList').innerHTML = list.length ? `<b style="font-size:14px">On his device now:</b>` + list.map(a => {
+      const d = doneFor(a), g = d && d.grade;
+      return `<div><span>${esc(a.title)}<br><small style="color:var(--muted)">assigned ${esc(checkDate(a.at))}</small></span>${d ? `<span class="ok">✓ ${g ? `${g.letter} ${g.pct}%` : a.tool === 'weather' && d.extra && d.extra.day ? `day ${d.extra.day} today` : a.tool === 'steps' ? 'today' : 'done'}</span>` : ''}<button class="btn btn-small" data-unassign="${esc(a.id)}" aria-label="Remove ${esc(a.title)} from his device">Remove</button></div>`;
+    }).join('') : '';
+  } catch (e) { el.innerHTML = ''; }
+}
+function wireWeather() {
+  const found = (t, ok) => { const f = document.getElementById('wxFound'); f.innerHTML = t; f.style.color = ok ? '#34D399' : 'var(--warn-ink)'; };
+  document.getElementById('wxFind').onclick = async () => {
+    found('Looking…', true);
+    try { state.weather.place = await findPlace(document.getElementById('wxWhere').value); save(); found(`Weather for: ${esc(state.weather.place.name)} ✓`, true); scheduleRender(); }
+    catch (e) { found(esc(e.message || 'Couldn’t look that up right now.'), false); }
+  };
+  document.getElementById('wxHere').onclick = () => {
+    if (!navigator.geolocation) return found('This browser can’t share its location. Type a ZIP code instead.', false);
+    found('Asking the browser…', true);
+    navigator.geolocation.getCurrentPosition(p => { state.weather.place = { q: '', name: 'My location', lat: +p.coords.latitude.toFixed(3), lon: +p.coords.longitude.toFixed(3) }; save(); found('Weather for: My location ✓', true); scheduleRender(); },
+      () => found('The location wasn’t shared. Type a ZIP code instead.', false), { timeout: 15000 });
+  };
+  document.getElementById('wxWhere').onkeydown = e => { if (e.key === 'Enter') document.getElementById('wxFind').click(); };
+}
+function wireOnScreen() {
+  const t = state.tool;
+  document.getElementById('assignBtn').onclick = async () => {
+    const snap = snapshot(t);
+    if (!snap.ok) return amsg(snap.need || 'Add some words or questions first.', true);
+    const sb = await studySession();
+    if (!sb) return amsg('Sign in first on the <a href="spell.html">Spelling Helper</a> page (the “Shared across devices” box), then come back and assign it.', true);
+    amsg('Assigning…');
+    try {
+      const list = (await loadSheets(sb)).filter(a => !(a.tool === t && a.title === snap.title));   // re-assigning replaces the same worksheet
+      list.push({ id: Date.now().toString(36), tool: t, title: snap.title, at: Date.now(), data: snap.data });
+      await saveSheets(sb, list.slice(-12));
+      amsg(`Assigned ✓ “${esc(snap.title)}” is on his start screen now.`);
+      renderAssigned();
+    } catch (e) { amsg(`Couldn’t assign it: ${esc(e.message || e)}. Check the internet and try again.`, true); }
+  };
+  const tryBtn = document.getElementById('tryBtn');
+  if (tryBtn) tryBtn.onclick = () => {
+    const snap = snapshot(t);
+    if (!snap.ok) return amsg(snap.need || 'Add some words or questions first.', true);
+    lsSet('study-sheet-try', { id: 'try', tool: t, title: snap.title, at: Date.now(), data: snap.data });
+    window.open('do.html?try=1', '_blank');
+  };
+  document.getElementById('assignedList').onclick = async e => {
+    const b = e.target.closest('[data-unassign]'); if (!b) return;
+    const sb = await studySession(); if (!sb) return;
+    b.disabled = true;
+    try { await saveSheets(sb, (await loadSheets(sb)).filter(a => a.id !== b.dataset.unassign)); amsg('Removed from his device.'); }
+    catch (er) { amsg(`Couldn’t remove it: ${esc(er.message || er)}`, true); }
+    renderAssigned();
+  };
+  renderAssigned();
 }
 
 /* ---------- events ---------- */
@@ -1034,6 +1227,7 @@ $panel.addEventListener('change', e => {
       else q.picked = q.picked.filter(x => x !== i);
     }
   }
+  if (t === 'weather') { if (el.name === 'wxUnit') state.weather.unit = el.value; if (el.id === 'wxDays') state.weather.days = +el.value; }
   if (t === 'steps') {
     const st = state.steps;
     if (el.dataset.sicon) st.steps[+el.dataset.sicon].icon = el.value;
@@ -1075,7 +1269,7 @@ if (fromLink.get('fixup')) {
   history.replaceState(null, '', location.pathname + '#fixup');
 }
 const fromHash = location.hash.slice(1);
-if (['sight', 'master', 'fixup', 'question', 'steps', 'eagles'].includes(fromHash)) state.tool = fromHash;
+if (['sight', 'master', 'fixup', 'question', 'steps', 'eagles', 'weather'].includes(fromHash)) state.tool = fromHash;
 renderPanel();
 // Re-draw once the fonts arrive, so long words are measured with the real font.
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderPreview);
