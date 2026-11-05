@@ -56,6 +56,11 @@ drop policy if exists "see own membership" on public.study_members;
 create policy "see own membership" on public.study_members for select
   using (email = lower(coalesce(auth.jwt() ->> 'email', '')));
 
+-- lets your (grown-up) login add his username login to the Study from the page
+drop policy if exists "grownup manages members" on public.study_members;
+create policy "grownup manages members" on public.study_members for all
+  using (public.study_role() = 'grownup') with check (public.study_role() = 'grownup');
+
 drop policy if exists "members read state" on public.study_state;
 create policy "members read state" on public.study_state for select using (public.study_role() is not null);
 drop policy if exists "members write state" on public.study_state;

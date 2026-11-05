@@ -263,14 +263,21 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
     <h2>Shared across devices</h2>
     <div id="acctOut">
       <p class="help" style="margin:0">Sign in to keep today’s words, results, recordings and settings in your Recipe Box database, so they’re the same on every device. On <b>his</b> device, sign in with <b>his</b> login: it then only shows him “Start today’s words”.</p>
-      <input type="email" id="acctEmail" placeholder="Email" autocomplete="username">
+      <input type="text" id="acctEmail" placeholder="Email or username" autocomplete="username" autocapitalize="off" spellcheck="false">
       <input type="password" id="acctPass" placeholder="Password" autocomplete="current-password">
-      <div class="row"><button class="btn primary" id="acctIn">Sign in</button><button class="linkbtn" id="acctMakeKid">Create his login</button></div>
+      <div class="row"><button class="btn primary" id="acctIn">Sign in</button></div>
       <div class="err" id="acctErr"></div>
     </div>
     <div id="acctIn2" hidden>
       <div class="who" id="acctWho"></div>
       <div class="sync-note" id="syncNote"></div>
+      <div id="kidMaker" hidden>
+        <span class="lbl" style="margin:8px 0 0">His login (a username, not an email)</span>
+        <input type="text" id="kidUser" placeholder="Username, like mharris0624" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <input type="password" id="kidPass" placeholder="Password for him (6+ characters)" autocomplete="new-password">
+        <div class="row"><button class="btn" id="acctMakeKid">Create his login</button></div>
+        <div class="err" id="kidErr"></div>
+      </div>
       <div class="row"><button class="linkbtn" id="acctOutBtn">Sign out of the Study on this device</button></div>
     </div>
   </div>
@@ -1697,7 +1704,9 @@ holdToOpen($('kidGrown'), 2000, 'grown');
    anything that couldn't be saved is retried. Microphone sensitivity stays per device (every microphone is different). */
 const SB_URL = 'https://wpgclwmssnmiidvnekml.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZ2Nsd21zc25taWlkdm5la21sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzE4NDUsImV4cCI6MjEwOTE0Nzg0NX0.o19X9l7zS1bk34DpR3id0gt6mAB42ZZb6olRr8ohzTc';
-const KID_EMAIL = 'dylan.l.cosmos+maverick@gmail.com';
+const KID_DOMAIN = 'kids.thatonedrawer.com';   // usernames become <username>@kids.thatonedrawer.com behind the scenes (never emailed)
+const loginEmail = id => { id = id.trim().toLowerCase(); return id.includes('@') ? id : `${id}@${KID_DOMAIN}`; };
+const shownName = email => email.endsWith('@' + KID_DOMAIN) ? email.slice(0, -KID_DOMAIN.length - 1) : email;
 const SYNC = { 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent' };
 const cloud = { sb: null, user: null, role: null, pulling: false, timers: {} };
 const cloudMember = () => !!(cloud.sb && cloud.user && cloud.role);
@@ -1819,7 +1828,7 @@ function renderAll(fromCloud) {
 async function cloudSetUser(user) {
   cloud.user = user || null; cloud.role = null;
   if (cloud.user && cloud.sb) {
-    try { const { data } = await cloud.sb.from('study_members').select('role').maybeSingle(); cloud.role = data ? data.role : null; } catch (e) { }
+    try { const { data } = await cloud.sb.from('study_members').select('role').eq('email', cloud.user.email.toLowerCase()).maybeSingle(); cloud.role = data ? data.role : null; } catch (e) { }
   }
   renderAccount();
   if (cloudMember()) { await cloudFlush(); await cloudPull(); }
@@ -1829,29 +1838,36 @@ function renderAccount() {
   const inside = !!cloud.user;
   $('acctOut').hidden = inside; $('acctIn2').hidden = !inside;
   if (!inside) return;
+  $('kidMaker').hidden = cloud.role !== 'grownup';
   $('acctWho').innerHTML = cloud.role === 'grownup' ? `Signed in as <b>${esc(cloud.user.email)}</b> (grown-up). Today’s words, results and recordings are shared with his device.`
-    : cloud.role === 'kid' ? `This is <b>his device</b> (${esc(cloud.user.email)}). It shows him “Start today’s words”. Set the words from your own device.`
+    : cloud.role === 'kid' ? `This is <b>his device</b> (signed in as ${esc(shownName(cloud.user.email))}). It shows him “Start today’s words”. Set the words from your own device.`
     : `Signed in as ${esc(cloud.user.email)}, but this account isn’t set up for the Study. (Run study-setup.sql in Supabase, or check the email.)`;
 }
 $('acctIn').onclick = async () => {
   const sb = cloudClient(); $('acctErr').textContent = '';
   if (!sb) { $('acctErr').textContent = 'Couldn’t load the sign-in (no internet?).'; return; }
-  const email = $('acctEmail').value.trim(), password = $('acctPass').value;
-  if (!email || !password) { $('acctErr').textContent = 'Type the email and password.'; return; }
+  const email = loginEmail($('acctEmail').value), password = $('acctPass').value;
+  if (!$('acctEmail').value.trim() || !password) { $('acctErr').textContent = 'Type the email (or his username) and password.'; return; }
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) { $('acctErr').textContent = error.message === 'Invalid login credentials' ? 'That email and password don’t match. (Your Study login is the same as your Recipe Box one.)' : error.message; return; }
+  if (error) { $('acctErr').textContent = error.message === 'Invalid login credentials' ? 'That doesn’t match. You: your Recipe Box email and password. Him: his username and password.' : /not confirmed/i.test(error.message) ? 'His login needs a one-time OK in Supabase: Authentication → Users → click his username → Confirm user. (Or turn off “Confirm email” under Authentication → Sign In / Providers → Email.)' : error.message; return; }
   $('acctPass').value = ''; await cloudSetUser(data.user);
 };
 $('acctOutBtn').onclick = async () => { if (cloud.sb) await cloud.sb.auth.signOut(); grownMode = false; await cloudSetUser(null); show('setup'); };
-// Make his login without signing you out: a throwaway client that doesn't keep the session
+// Make his login without signing you out: a throwaway client makes the account, then your session adds him to the Study as "kid"
 $('acctMakeKid').onclick = async () => {
-  const password = $('acctPass').value; $('acctErr').textContent = '';
-  if (!window.supabase) { $('acctErr').textContent = 'Couldn’t load the sign-in (no internet?).'; return; }
-  if (!password || password.length < 6) { $('acctErr').textContent = `Type the password you want for his login (6+ characters) in the password box, then tap “Create his login”. His email will be ${KID_EMAIL}.`; return; }
+  const user = $('kidUser').value.trim().toLowerCase(), password = $('kidPass').value, say2 = t => { $('kidErr').textContent = t; };
+  say2('');
+  if (!/^[a-z0-9._-]{3,30}$/.test(user)) return say2('Pick a username of 3–30 letters or numbers (dots, dashes and underscores are OK), with no spaces or @.');
+  if (password.length < 6) return say2('Pick a password with at least 6 characters.');
+  if (!window.supabase || !cloudMember() || cloud.role !== 'grownup') return say2('Sign in as yourself first.');
+  const email = `${user}@${KID_DOMAIN}`;
   const temp = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-temp', persistSession: false, autoRefreshToken: false } });
-  const { error } = await temp.auth.signUp({ email: KID_EMAIL, password });
-  $('acctErr').textContent = error ? (/registered/i.test(error.message) ? 'His login already exists. Sign in with it on his device.' : `Couldn’t create it: ${error.message}. You can add him in Supabase instead: Authentication → Users → Add user.`)
-    : `His login is ready: ${KID_EMAIL}. On his device, sign in with that email and this password.`;
+  const { error } = await temp.auth.signUp({ email, password });
+  if (error && !/registered|exists/i.test(error.message)) return say2(`Couldn’t create it: ${error.message}. You can add him in Supabase instead (Authentication → Users → Add user, email ${email}), then tap Create his login again to add him to the Study.`);
+  const m = await cloud.sb.from('study_members').upsert({ email, role: 'kid' });
+  if (m.error) return say2(`His account ${error ? 'already exists' : 'was made'}, but I couldn’t add him to the Study: ${m.error.message}. (Run the small study-setup update in Supabase, then try again.)`);
+  say2(error ? `“${user}” already existed. It’s now set up for the Study. If you don’t know its password, pick another username.` : `His login is ready: username “${user}”. On his device, sign in with that username and password.`);
+  $('kidPass').value = '';
 };
 // keep his device up to date: when the page comes back into view, and every minute on the start screen
 document.addEventListener('visibilitychange', () => { if (!document.hidden && cloudMember() && !daily) cloudPull(); });
