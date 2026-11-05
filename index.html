@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First Grade Fun Worksheets</title>
+<meta name="description" content="Free printable first grade worksheets: sight word practice, spelling mastery checks, spelling test fix-ups, question-reading practice, daily step charts and more.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='14' width='56' height='40' rx='8' fill='%233C7DD9' stroke='%2317201A' stroke-width='4'/%3E%3Crect x='22' y='30' width='20' height='7' rx='3.5' fill='%2317201A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== App (screen) ===== */
+/* App screen is always dark. The printed sheets below keep their own light colors. */
+:root { color-scheme: dark; --navy: #8DB8F2; --ink: #E5ECF4; --muted: #9AABBF; --line: #2B3A4D; --bg: #0E151D; --accent: #7FB0F0;
+  --study: #3C7DD9; --surface: #16202B; --surface-2: #1C2836; --field: #0F1822; --field-line: #3A4B60; --warn-ink: #FBBF24; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: Andika, system-ui, sans-serif; }
+a { color: var(--accent); }
+.sheet { --navy: #1E3A5F; --ink: #1F2937; --muted: #475569; --line: #E2E8F0; --accent: #1D4ED8; }
+.app-header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.app-header h1 { margin: 0; font-family: Fredoka, sans-serif; font-weight: 700; font-size: 26px; color: var(--navy); }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 24px 0; }
+.tabs button { font: 600 16px Fredoka, sans-serif; border: 2px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 8px 16px; cursor: pointer; min-height: 44px; }
+.tabs button:hover { border-color: var(--field-line); }
+.tabs button[aria-selected="true"] { background: var(--study); color: #FFFFFF; border-color: var(--study); }
+.tabs button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #F59E0B; outline-offset: 2px; }
+.workspace { display: grid; grid-template-columns: 380px 1fr; gap: 24px; padding: 18px 24px 40px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+.panel h2 { margin: 0 0 4px; font: 700 21px Fredoka, sans-serif; color: var(--navy); }
+.panel p.help { margin: 0 0 14px; color: var(--muted); font-size: 15px; line-height: 1.4; }
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.field label, .field .lbl { font-weight: 700; font-size: 15px; }
+.field small { color: var(--muted); font-size: 13px; line-height: 1.3; }
+input[type=text], textarea, select { font: 16px Andika, sans-serif; border: 2px solid var(--field-line); border-radius: 10px; padding: 8px 10px; width: 100%; background: var(--field); color: var(--ink); }
+input::placeholder, textarea::placeholder { color: #6B7C90; }
+textarea { resize: vertical; min-height: 44px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 15px; margin-bottom: 10px; }
+.check input { width: 20px; height: 20px; accent-color: var(--study); }
+.qlist input { accent-color: var(--study); }
+.word-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin-bottom: 10px; background: var(--surface-2); }
+.word-card .wc-top { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.word-card .wc-top b { font: 700 18px Andika, sans-serif; flex: 1; }
+.word-card .wc-top select { width: auto; padding: 4px 8px; font-size: 14px; }
+.btn { font: 600 17px Fredoka, sans-serif; border: 0; border-radius: 12px; padding: 12px 18px; cursor: pointer; min-height: 44px; }
+.btn-print { background: var(--study); color: #FFFFFF; width: 100%; margin-top: 6px; }
+.btn-small { font-size: 14px; padding: 6px 12px; min-height: 36px; background: #2A3A4E; color: var(--ink); }
+.btn-small:hover { background: #34475E; } .btn-print:hover { background: #4A8BE6; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.note { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.4; }
+.qlist { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.qlist label { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.3; }
+.step-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin-bottom: 10px; background: var(--surface-2); display: flex; flex-direction: column; gap: 6px; }
+.step-card .sc-top { display: flex; gap: 6px; align-items: center; }
+.step-card .sc-top b { font: 700 16px Fredoka, sans-serif; color: var(--navy); }
+.step-card .sc-top .sp { flex: 1; }
+.step-card .row2 { display: flex; gap: 6px; }
+.step-card .row2 select { width: auto; }
+.preview { display: flex; flex-direction: column; align-items: center; gap: 20px; min-width: 0; }
+.preview .page-label { font: 600 14px Fredoka, sans-serif; color: var(--muted); align-self: center; margin-bottom: -12px; }
+.scaler { width: calc(816px * var(--z)); height: calc(1056px * var(--z)); }
+.scaler .sheet { transform: scale(var(--z)); transform-origin: top left; box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
+.warn { background: #3A2E0C; color: #FDE68A; border: 1px solid #B7791F; border-radius: 10px; padding: 8px 10px; font-size: 14px; margin-bottom: 10px; }
+@media (max-width: 900px) { .workspace { grid-template-columns: 1fr; } .panel { position: static; max-height: none; } }
+
+/* ===== Printed pages ===== */
+.sheet { width: 816px; height: 1056px; background: #FFFFFF; position: relative; overflow: hidden; font-family: Andika, sans-serif; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.sheet b { font-weight: 700; }
+.stripe { position: absolute; left: 0; top: 0; right: 0; height: 12px; background: repeating-linear-gradient(90deg, #1D4ED8 0 40px, #0F766E 40px 80px, #7E22CE 80px 120px); }
+.stripe-eagle { background: repeating-linear-gradient(90deg, #2563EB 0 40px, #F59E0B 40px 80px, #EA580C 80px 120px, #16A34A 120px 160px); }
+.sheet-body { position: absolute; inset: 0; padding: 40px 40px 36px; display: flex; flex-direction: column; }
+.namedate { display: flex; gap: 32px; font-size: 20px; font-weight: 700; align-items: flex-end; flex: none; }
+.namedate > div { flex: 1; display: flex; align-items: flex-end; gap: 10px; }
+.namedate .date { flex: none; width: 230px; }
+.namedate span { flex: 1; border-bottom: 2px solid var(--ink); height: 26px; }
+.title { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 52px; flex: none; }
+.title-text { flex: none; display: flex; flex-direction: column; align-items: center; }
+.title h1 { margin: 0; white-space: nowrap; font-family: Fredoka, sans-serif; font-weight: 700; line-height: 1; color: var(--navy); }
+.title-text > span { white-space: nowrap; font-size: 17px; font-weight: 700; color: var(--muted); margin-top: 4px; }
+.badge { flex: none; border-radius: 50%; color: #FFFFFF; font-family: Fredoka, sans-serif; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.blank { display: inline-block; border-bottom: 2.5px solid var(--navy); height: 28px; vertical-align: bottom; flex: none; }
+.col { display: flex; flex-direction: column; }
+.row-c { display: flex; align-items: center; gap: 8px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px 18px; }
+.num { flex: none; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; width: 22px; }
+.box { border: 3px solid; border-radius: 18px; padding: 8px 16px 10px; display: flex; flex-direction: column; gap: 6px; flex: none; }
+.box.grow { flex: 1; padding: 12px 16px 14px; justify-content: space-around; gap: 10px; }
+.sec { display: flex; align-items: center; gap: 10px; }
+.sec > b { font-family: Fredoka, sans-serif; font-size: 23px; white-space: nowrap; }
+.sec > span { font-size: 16px; color: #334155; }
+.navybar { background: var(--navy); color: #FFFFFF; border-radius: 16px; padding: 9px 16px; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; text-align: center; flex: none; }
+.nb-sub { font-family: Andika, sans-serif; font-weight: 400; font-size: 16px; }
+.parent { border: 2px dashed #94A3B8; border-radius: 14px; padding: 8px 14px; font-size: 15px; line-height: 1.35; color: #334155; flex: none; }
+.parent b { color: var(--navy); }
+.pill { padding: 1px 11px; border: 2px solid #94A3B8; border-radius: 999px; background: #FFFFFF; font-size: 19px; font-weight: 700; white-space: nowrap; }
+.pill.ip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 5px; font-size: 17px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+/* sight words */
+.sw-head { display: flex; gap: 8px; padding: 0 15px; flex: none; }
+.sw-h { display: flex; align-items: center; gap: 6px; }
+.sw-h b { font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; color: var(--navy); white-space: nowrap; }
+.sw-head small { font-size: 14px; color: var(--muted); line-height: 1.2; }
+.sw-check-h { width: 54px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.sw-check-h b { font-family: Fredoka, sans-serif; font-weight: 600; font-size: 16px; color: var(--navy); }
+.sw-row { border: 3px solid; border-radius: 16px; display: flex; gap: 8px; align-items: center; }
+.sw-look { width: 184px; flex: none; display: flex; flex-direction: column; gap: 3px; }
+.sw-word { font-weight: 700; line-height: 1.05; letter-spacing: 1px; white-space: nowrap; }
+.sw-look small { font-size: 14px; color: #334155; line-height: 1.2; }
+.hl { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
+.dots { display: flex; gap: 6px; margin-top: 2px; }
+.dots i { width: 18px; height: 18px; border: 2px solid; border-radius: 50%; background: #FFFFFF; }
+.sw-box { background: #FFFFFF; border-radius: 10px; padding: 4px 3px; flex: none; }
+.sw-cover { flex: 1; border-left: 3px dashed #94A3B8; padding-left: 10px; }
+.sw-cover .sw-box { display: inline-block; }
+.sw-tip { margin-top: 4px; font-size: 14px; color: #334155; line-height: 1.2; }
+.sw-tip b { font-family: Fredoka, sans-serif; font-weight: 600; }
+.sw-check { width: 54px; flex: none; display: flex; justify-content: center; }
+.sw-check span { width: 44px; height: 44px; border: 3px solid; border-radius: 12px; background: #FFFFFF; }
+.bank-line { display: flex; align-items: center; justify-content: center; gap: 7px; flex-wrap: wrap; background: #FFFBEB; border: 3px dashed #F59E0B; border-radius: 16px; padding: 6px 12px; flex: none; }
+.bank-line > b { font-family: Fredoka, sans-serif; font-size: 18px; color: var(--navy); white-space: nowrap; }
+.miss { display: flex; gap: 3px; align-items: center; }
+.mbox { width: 26px; height: 38px; border: 2.5px dashed; border-radius: 6px; background: #FFFFFF; flex: none; }
+.mlet { width: 26px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; flex: none; }
+.sent { display: flex; align-items: flex-end; gap: 8px; font-size: 20px; line-height: 1.2; }
+.sn { flex: none; font-family: Fredoka, sans-serif; font-weight: 600; color: #7E22CE; width: 22px; }
+/* word master */
+.oops { flex: none; width: 92px; text-align: center; padding: 6px 0; border: 2px dashed #F87171; border-radius: 12px; background: #FFF1F2; font-weight: 700; color: #9F1239; white-space: nowrap; overflow: hidden; }
+.picbox { flex: none; width: 64px; height: 64px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; }
+.psent { font-size: 21px; line-height: 1.6; }
+.turn { text-align: center; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 19px; color: #7E22CE; flex: none; }
+.choice { flex: 1; text-align: center; padding: 10px 0; border: 2px solid #CBD5E1; border-radius: 14px; background: #FFFFFF; font-size: 32px; font-weight: 700; white-space: nowrap; }
+.stars { background: #FFFBEB; border: 3px dashed #F59E0B; border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; flex: none; }
+.stars b { font-family: Fredoka, sans-serif; font-size: 24px; color: var(--navy); }
+.stars span { font-size: 17px; color: #334155; }
+.stars div { display: flex; gap: 18px; }
+/* question asking */
+.qsteps { display: flex; justify-content: center; gap: 18px; font-size: 16px; flex: none; }
+.qsteps > div { display: flex; align-items: center; gap: 7px; }
+.qbank { border: 3px dashed #F59E0B; background: #FFFBEB; border-radius: 16px; padding: 6px 14px 8px; display: flex; flex-direction: column; gap: 4px; flex: none; }
+.qbank .sec > b { font-size: 19px; }
+.qbank .sec > span { font-size: 15px; color: var(--muted); }
+.qbank .pill { font-size: 17px; padding: 2px 10px; }
+.dash { border-top: 2px dashed #FCD34D; margin: 3px 0; }
+.qex { background: #FFFBEB; border: 3px solid #F59E0B; border-radius: 18px; padding: 8px 16px; display: flex; flex-direction: column; gap: 4px; flex: none; }
+.qex-t { font-family: Fredoka, sans-serif; font-size: 19px; color: #92400E; }
+.qex-q { font-size: 21px; font-weight: 700; }
+.circ { border: 3px solid #1D4ED8; border-radius: 999px; padding: 0 8px; }
+.qex-a { display: flex; gap: 28px; font-size: 18px; align-items: baseline; }
+.qrow { border: 3px solid; border-radius: 16px; padding: 4px 14px 5px; display: flex; flex-direction: column; gap: 2px; }
+.qq { font-size: 20px; font-weight: 700; line-height: 1.2; }
+.qlines { display: flex; align-items: flex-end; gap: 10px; padding-left: 40px; font-size: 17px; }
+.qlines span { padding-bottom: 6px; white-space: nowrap; }
+/* daily steps */
+.srow { border: 3px solid; border-radius: 18px; padding: 9px 14px; display: flex; align-items: center; gap: 14px; }
+.sicon { flex: none; width: 46px; height: 46px; border-radius: 12px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; }
+.stext { flex: 1; display: flex; flex-direction: column; }
+.stext > span { font-size: 20px; font-weight: 700; line-height: 1.2; }
+.em { font-size: 1.25em; text-decoration: underline; }
+.snote { margin-top: 6px; display: flex; gap: 10px; align-items: flex-start; border-radius: 10px; padding: 6px 12px; font-size: 16px; line-height: 1.3; }
+.snote b { flex: none; font-family: Fredoka, sans-serif; font-weight: 600; }
+.snote.tip { background: #FEF3C7; } .snote.tip b { color: #92400E; }
+.snote.parent { background: #F3E8FF; } .snote.parent b { color: #6B21A8; }
+.remind { margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 14px; background: var(--navy); border-radius: 18px; padding: 9px 16px; flex: none; }
+.remind > b { font-family: Fredoka, sans-serif; font-weight: 600; font-size: 20px; color: #FDE68A; white-space: nowrap; }
+.remind > span { display: flex; align-items: center; gap: 5px; color: #FFFFFF; font-family: Fredoka, sans-serif; font-weight: 600; font-size: 18px; white-space: nowrap; }
+.remind .badge { color: var(--navy); }
+/* count the eagles */
+.ce-steps { background: #FEF3C7; border: 3px solid #F59E0B; border-radius: 18px; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; line-height: 1.3; flex: none; }
+.ce-steps > div { display: flex; align-items: center; gap: 12px; }
+.ce-table { width: 356px; border: 3px solid #1E3A8A; border-radius: 16px; overflow: hidden; background: #FFFFFF; }
+.ce-h { display: flex; height: 48px; border-bottom: 3px solid #1E3A8A; }
+.ce-h > div { box-sizing: border-box; padding: 6px 4px; background: #EEF2FF; color: #1E3A8A; font-weight: 700; font-size: 15px; line-height: 1.15; text-align: center; display: flex; align-items: center; justify-content: center; }
+.ce-h .has { background: #DBEAFE; color: #1E40AF; } .ce-h .no { background: #FFEDD5; color: #C2410C; }
+.ce-r { display: flex; height: 106px; border-bottom: 2px solid #CBD5E1; }
+.ce-q { width: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #1E3A8A; }
+.ce-q small { font-size: 14px; font-weight: 700; } .ce-q b { font-family: Fredoka, sans-serif; font-size: 40px; line-height: 1; }
+.ce-coin { width: 120px; display: flex; align-items: center; justify-content: center; border-left: 2px solid #CBD5E1; border-right: 2px solid #CBD5E1; }
+.ce-coin span { width: 96px; height: 96px; border: 3px dashed #94A3B8; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; color: #64748B; line-height: 1.2; }
+.ce-x { width: 76px; display: flex; align-items: center; justify-content: center; }
+.ce-x.has { background: #EFF6FF; } .ce-x.no { background: #FFF7ED; }
+.ce-x span { width: 50px; height: 50px; border: 3px solid; border-radius: 10px; background: #FFFFFF; }
+.ce-ans { display: flex; align-items: center; justify-content: center; gap: 18px; background: #EFF6FF; border: 3px solid #2563EB; border-radius: 18px; padding: 10px 20px; flex: none; }
+.ce-ans b { font-family: Fredoka, sans-serif; font-weight: 600; font-size: 28px; color: #1E3A8A; }
+.ce-ans span { width: 92px; height: 64px; background: #FFFFFF; border: 3px solid #1E3A8A; border-radius: 12px; }
+
+/* spelling fix-up */
+.fx-pick { display: flex; align-items: center; gap: 10px; }
+.fx-opt { flex: 1; text-align: center; border: 2px solid #CBD5E1; border-radius: 14px; background: #FFFFFF; font-weight: 700; white-space: nowrap; }
+.fx-chunks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 22px; }
+.fx-chunk { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.fx-say { width: 112px; flex: none; display: flex; flex-direction: column; }
+.fx-say b { font-size: 24px; line-height: 1.1; white-space: nowrap; }
+.fx-say small { font-size: 13px; color: #334155; line-height: 1.15; }
+.fx-cb { height: 48px; border: 2.5px dashed #94A3B8; border-radius: 10px; background: #FFFFFF; flex: none; }
+.fx-cb.t { border-style: solid; border-width: 3px; background: #FFFBEB; }
+.fx-legend { font-size: 15px; color: #334155; display: flex; align-items: center; gap: 8px; }
+.fx-legend i { width: 20px; height: 14px; border: 3px solid #7E22CE; background: #FFFBEB; border-radius: 4px; }
+.fx-rw { display: flex; align-items: center; gap: 12px; flex: 1; min-height: 0; }
+.fx-rw b { width: 150px; flex: none; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
+.fx-lines { flex: 1; display: flex; gap: 14px; align-self: stretch; padding: 3px 0; }
+.fx-line { flex: 1; position: relative; border-top: 2px solid var(--navy); border-bottom: 2px solid var(--navy); background: #FFFFFF; min-height: 34px; max-height: 58px; align-self: center; height: 100%; }
+.fx-line::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dashed #94A3B8; }
+.fx-crayons { display: flex; gap: 6px; align-items: center; font-size: 15px; color: #334155; flex: none; }
+.fx-crayons i { width: 16px; height: 16px; border-radius: 50%; }
+.fx-fix { display: flex; align-items: flex-end; gap: 10px; font-size: 20px; line-height: 1.3; }
+.fx-bad { text-decoration: underline wavy #EF4444; text-underline-offset: 5px; font-weight: 700; }
+.fx-ans { margin-left: auto; display: flex; align-items: flex-end; gap: 6px; font-size: 16px; color: #334155; white-space: nowrap; flex: none; }
+.fx-ans span { width: 150px; border-bottom: 2.5px solid var(--navy); height: 30px; }
+.fx-ws { display: flex; gap: 24px; align-items: center; justify-content: center; }
+.fx-grid { display: grid; gap: 3px; flex: none; }
+.fx-grid div { display: flex; align-items: center; justify-content: center; font-weight: 700; border: 1.5px solid #CBD5E1; border-radius: 8px; background: #FFFFFF; }
+.fx-find { display: flex; flex-direction: column; gap: 9px; }
+.fx-find label { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 700; }
+.fx-find label span { width: 24px; height: 24px; border: 3px solid; border-radius: 7px; background: #FFFFFF; flex: none; }
+.fx-find small { font-size: 14px; color: #334155; max-width: 170px; line-height: 1.25; }
+.fx-test { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 30px; }
+.fx-trow { display: flex; align-items: center; gap: 10px; }
+.fx-trow .fx-line { height: 44px; }
+.fx-chk { width: 34px; height: 34px; border: 3px solid #15803D; border-radius: 10px; flex: none; background: #FFFFFF; }
+
+/* ===== Printing ===== */
+@page { size: letter; margin: 0; }
+@media print {
+  body { background: #FFFFFF; }
+  #tod-nav, .app-header, .tabs, .panel, .page-label { display: none !important; }
+  .workspace { display: block; padding: 0; }
+  .preview { display: block; }
+  .scaler { width: auto; height: auto; }
+  .scaler .sheet { transform: none; box-shadow: none; }
+  .sheet { width: 8.5in; height: 11in; break-after: page; page-break-after: always; }
+  .scaler:last-child .sheet { break-after: auto; page-break-after: auto; }
+}
+@media (max-width: 600px) { .tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; } .tabs button { flex: none; } .app-header h1 { font-size: 22px; } }
+
+</style>
+</head>
+<body>
+<header class="app-header">
+  <h1>First Grade Fun Worksheets</h1>
+</header>
+<nav class="tabs" role="tablist" aria-label="Worksheet makers">
+  <button role="tab" data-tool="sight">Sight Word Practice</button>
+  <button role="tab" data-tool="master">Word Master Challenge</button>
+  <button role="tab" data-tool="fixup">Spelling Fix-Up</button>
+  <button role="tab" data-tool="question">What Is the Question Asking?</button>
+  <button role="tab" data-tool="steps">Daily Steps Chart</button>
+  <button role="tab" data-tool="eagles">Count the Eagles</button>
+</nav>
+<main class="workspace">
+  <aside class="panel" id="panel" aria-label="Worksheet options"></aside>
+  <div class="preview" id="preview" aria-label="Worksheet preview"></div>
+</main>
+<script>
+/* First Grade Fun Worksheets — built-in data.
+   Everything here is plain data: edit it to add words, sentences, questions or pictures. */
+
+const D = '#1F2937';
+
+/* Pictures: each is the inside of a 48x48 SVG. */
+const ICONS = {
+  ball: `<circle cx="24" cy="24" r="18" fill="#FCA5A5" stroke="${D}" stroke-width="2.5"/><path d="M8 20 C18 26 30 26 40 20 M10 32 C20 26 30 28 38 34" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="24" r="18" fill="none" stroke="${D}" stroke-width="2.5"/>`,
+  cat: `<path d="M10 20 L12 6 L21 14 M38 20 L36 6 L27 14" fill="#FDBA74" stroke="${D}" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="24" cy="27" rx="16" ry="14" fill="#FDBA74" stroke="${D}" stroke-width="2.5"/><circle cx="18" cy="25" r="2" fill="${D}"/><circle cx="30" cy="25" r="2" fill="${D}"/><path d="M22 31 L24 33 L26 31" fill="none" stroke="${D}" stroke-width="2" stroke-linecap="round"/><path d="M8 30 H16 M32 30 H40" stroke="${D}" stroke-width="1.5" stroke-linecap="round"/>`,
+  dog: `<ellipse cx="24" cy="26" rx="13" ry="14" fill="#D6B48A" stroke="${D}" stroke-width="2.5"/><path d="M12 14 C6 16 6 28 10 32 C13 28 13 20 14 16 Z M36 14 C42 16 42 28 38 32 C35 28 35 20 34 16 Z" fill="#92400E" stroke="${D}" stroke-width="2.5" stroke-linejoin="round"/><circle cx="19" cy="24" r="2" fill="${D}"/><circle cx="29" cy="24" r="2" fill="${D}"/><ellipse cx="24" cy="31" rx="4" ry="3" fill="${D}"/><path d="M24 34 V37" stroke="${D}" stroke-width="2"/>`,
+  bird: `<ellipse cx="22" cy="28" rx="15" ry="11" fill="#93C5FD" stroke="${D}" stroke-width="2.5"/><circle cx="33" cy="19" r="8" fill="#93C5FD" stroke="${D}" stroke-width="2.5"/><path d="M40 18 L46 20 L40 22 Z" fill="#F59E0B" stroke="${D}" stroke-width="1.5" stroke-linejoin="round"/><circle cx="35" cy="18" r="1.8" fill="${D}"/><path d="M12 26 C18 22 24 26 22 32" fill="none" stroke="${D}" stroke-width="2.5" stroke-linecap="round"/><path d="M18 39 V44 M26 39 V44" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>`,
+  elephant: `<path d="M10 34 C6 34 4 30 4 25 C4 16 12 10 22 10 C32 10 38 16 38 24 V34 Z" fill="#CBD5E1" stroke="${D}" stroke-width="2.5" stroke-linejoin="round"/><path d="M38 22 C44 24 45 32 42 40" fill="none" stroke="${D}" stroke-width="3" stroke-linecap="round"/><path d="M10 34 V42 M18 34 V42 M28 34 V42 M36 34 V42" stroke="${D}" stroke-width="4" stroke-linecap="round"/><circle cx="31" cy="19" r="1.8" fill="${D}"/><path d="M24 16 C20 18 20 24 24 26" fill="none" stroke="${D}" stroke-width="2"/>`,
+  house: `<path d="M6 22 L24 7 L42 22" fill="none" stroke="#B91C1C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20 V42 H38 V20" fill="#FDE68A" stroke="${D}" stroke-width="2.5" stroke-linejoin="round"/><rect x="20" y="28" width="8" height="14" fill="#93C5FD" stroke="${D}" stroke-width="2"/><rect x="13" y="25" width="5" height="5" fill="#FFFFFF" stroke="${D}" stroke-width="1.5"/><rect x="30" y="25" width="5" height="5" fill="#FFFFFF" stroke="${D}" stroke-width="1.5"/>`,
+  gift: `<rect x="8" y="18" width="32" height="24" rx="2" fill="#C4B5FD" stroke="${D}" stroke-width="2.5"/><rect x="6" y="13" width="36" height="7" rx="2" fill="#A78BFA" stroke="${D}" stroke-width="2.5"/><path d="M24 13 V42" stroke="#F43F5E" stroke-width="4"/><path d="M24 13 C18 4 10 8 16 13 M24 13 C30 4 38 8 32 13" fill="none" stroke="#F43F5E" stroke-width="3" stroke-linecap="round"/>`,
+  moon: `<path d="M30 6 C18 8 12 18 14 28 C16 38 26 44 36 40 C26 38 20 30 22 20 C23 13 26 9 30 6 Z" fill="#FDE68A" stroke="#A16207" stroke-width="2.5" stroke-linejoin="round"/><circle cx="38" cy="12" r="1.8" fill="#A16207"/><circle cx="42" cy="22" r="1.4" fill="#A16207"/>`,
+  book: `<path d="M4 10 C10 8 18 8 24 12 C30 8 38 8 44 10 V38 C38 36 30 36 24 40 C18 36 10 36 4 38 Z" fill="#BFDBFE" stroke="${D}" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 12 V40" stroke="${D}" stroke-width="2.5"/><path d="M9 17 H19 M9 23 H19 M29 17 H39 M29 23 H39" stroke="#1D4ED8" stroke-width="2" stroke-linecap="round"/>`,
+  sun: `<path d="M24 3 V9 M24 39 V45 M3 24 H9 M39 24 H45 M9 9 L13 13 M35 35 L39 39 M9 39 L13 35 M35 13 L39 9" stroke="#EA580C" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="24" r="11" fill="#FACC15" stroke="#CA8A04" stroke-width="2.5"/>`,
+  apple: `<path d="M24 14 C18 10 8 12 8 24 C8 34 16 42 21 42 C22.6 42 23.2 41 24 41 C24.8 41 25.4 42 27 42 C32 42 40 34 40 24 C40 12 30 10 24 14 Z" fill="#EF4444" stroke="#991B1B" stroke-width="2.5"/><path d="M24 14 C24 10 25 7 27 5" stroke="#78350F" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M27 9 C30 5 36 5 37 7 C34 10 30 11 27 9 Z" fill="#22C55E"/>`,
+  hand: `<path d="M14 26 V12 C14 9.5 18 9.5 18 12 V22 M18 21 V8 C18 5.5 22 5.5 22 8 V21 M22 21 V9 C22 6.5 26 6.5 26 9 V22 M26 22 V13 C26 10.5 30 10.5 30 13 V30 C30 38 25 42 20 42 C15 42 12 39 10 35 L6 27 C5 25 8 23 10 25 L14 30" fill="#FDE2C4" stroke="${D}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`,
+  heart: `<path d="M24 41 C10 31 5 24 5 16 C5 10 10 6 15 6 C19 6 22 8 24 12 C26 8 29 6 33 6 C38 6 43 10 43 16 C43 24 38 31 24 41 Z" fill="#F87171" stroke="#991B1B" stroke-width="2.5" stroke-linejoin="round"/>`,
+  eyes: `<ellipse cx="14" cy="24" rx="10" ry="12" fill="#FFFFFF" stroke="${D}" stroke-width="2.5"/><ellipse cx="34" cy="24" rx="10" ry="12" fill="#FFFFFF" stroke="${D}" stroke-width="2.5"/><circle cx="16" cy="26" r="4.5" fill="#1D4ED8"/><circle cx="36" cy="26" r="4.5" fill="#1D4ED8"/>`,
+  clock: `<circle cx="24" cy="24" r="18" fill="#FFFFFF" stroke="${D}" stroke-width="3"/><path d="M24 12 V24 L32 29" stroke="#C2410C" stroke-width="3" stroke-linecap="round" fill="none"/><circle cx="24" cy="24" r="2" fill="${D}"/>`,
+  tree: `<rect x="21" y="30" width="6" height="14" fill="#92400E" stroke="${D}" stroke-width="2"/><circle cx="24" cy="20" r="14" fill="#4ADE80" stroke="#166534" stroke-width="2.5"/><circle cx="18" cy="17" r="2" fill="#EF4444"/><circle cx="29" cy="22" r="2" fill="#EF4444"/>`,
+  flower: `<path d="M24 26 V44" stroke="#16A34A" stroke-width="3"/><path d="M24 38 C18 34 14 36 12 38 C16 40 20 40 24 38" fill="#4ADE80" stroke="#166534" stroke-width="1.5"/><circle cx="24" cy="10" r="6" fill="#F9A8D4" stroke="#BE185D" stroke-width="2"/><circle cx="15" cy="17" r="6" fill="#F9A8D4" stroke="#BE185D" stroke-width="2"/><circle cx="33" cy="17" r="6" fill="#F9A8D4" stroke="#BE185D" stroke-width="2"/><circle cx="18" cy="26" r="6" fill="#F9A8D4" stroke="#BE185D" stroke-width="2"/><circle cx="30" cy="26" r="6" fill="#F9A8D4" stroke="#BE185D" stroke-width="2"/><circle cx="24" cy="19" r="5" fill="#FACC15" stroke="#A16207" stroke-width="2"/>`,
+  juice: `<path d="M30 4 L26 18" stroke="#2563EB" stroke-width="3" stroke-linecap="round"/><path d="M12 14 H36 L33 44 H15 Z" fill="#FFFFFF" stroke="${D}" stroke-width="2.5" stroke-linejoin="round"/><path d="M13 22 H35 L33 44 H15 Z" fill="#FB923C"/><path d="M12 14 H36 L33 44 H15 Z" fill="none" stroke="${D}" stroke-width="2.5" stroke-linejoin="round"/>`,
+  water: `<path d="M24 5 C30 15 38 23 38 31 C38 39 31.7 44 24 44 C16.3 44 10 39 10 31 C10 23 18 15 24 5 Z" fill="#5EEAD4" stroke="#0F766E" stroke-width="2.5"/><path d="M17 31 C17 35 19.5 37.5 22 38" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none"/>`,
+  baby: `<circle cx="24" cy="25" r="17" fill="#FDE2C4" stroke="${D}" stroke-width="2.5"/><path d="M20 9 C22 5 27 6 26 10" fill="none" stroke="${D}" stroke-width="2.5" stroke-linecap="round"/><circle cx="18" cy="23" r="2" fill="${D}"/><circle cx="30" cy="23" r="2" fill="${D}"/><circle cx="24" cy="33" r="4.5" fill="#93C5FD" stroke="${D}" stroke-width="2"/><circle cx="13" cy="29" r="2.5" fill="#FBCFE8"/><circle cx="35" cy="29" r="2.5" fill="#FBCFE8"/>`,
+  talk: `<path d="M6 8 H42 V32 H22 L12 41 V32 H6 Z" fill="#E9D5FF" stroke="#7E22CE" stroke-width="2.5" stroke-linejoin="round"/><circle cx="16" cy="20" r="2.5" fill="#7E22CE"/><circle cx="24" cy="20" r="2.5" fill="#7E22CE"/><circle cx="32" cy="20" r="2.5" fill="#7E22CE"/>`,
+  star: `<path d="M24 4 L29.8 17.2 L44 18.6 L33.2 28 L36.4 42 L24 34.6 L11.6 42 L14.8 28 L4 18.6 L18.2 17.2 Z" fill="#FACC15" stroke="#A16207" stroke-width="2.5" stroke-linejoin="round"/>`,
+  pig: `<path d="M10 10 L16 16 M38 10 L32 16" stroke="#BE185D" stroke-width="4" stroke-linecap="round"/><circle cx="24" cy="26" r="17" fill="#F9A8D4" stroke="#BE185D" stroke-width="2.5"/><ellipse cx="24" cy="30" rx="7" ry="5" fill="#F472B6" stroke="#BE185D" stroke-width="2"/><circle cx="21.5" cy="30" r="1.5" fill="#831843"/><circle cx="26.5" cy="30" r="1.5" fill="#831843"/><circle cx="18" cy="21" r="2" fill="${D}"/><circle cx="30" cy="21" r="2" fill="${D}"/>`,
+  cow: `<path d="M8 16 L4 10 M40 16 L44 10" stroke="${D}" stroke-width="3" stroke-linecap="round"/><ellipse cx="24" cy="22" rx="15" ry="13" fill="#FFFFFF" stroke="${D}" stroke-width="2.5"/><path d="M12 14 C16 12 18 18 14 20 C11 21 10 17 12 14 Z" fill="${D}"/><ellipse cx="24" cy="34" rx="11" ry="8" fill="#FBCFE8" stroke="${D}" stroke-width="2.5"/><circle cx="20" cy="34" r="1.6" fill="${D}"/><circle cx="28" cy="34" r="1.6" fill="${D}"/><circle cx="19" cy="21" r="2" fill="${D}"/><circle cx="29" cy="21" r="2" fill="${D}"/>`,
+  banana: `<path d="M8 12 C10 30 22 40 40 36 C42 35 42 32 40 32 C26 32 16 24 14 10 C13 7 8 8 8 12 Z" fill="#FDE047" stroke="#A16207" stroke-width="2.5" stroke-linejoin="round"/><path d="M8 12 L6 8" stroke="#78350F" stroke-width="3" stroke-linecap="round"/>`,
+  snow: `<path d="M24 4 V44 M6.7 14 L41.3 34 M6.7 34 L41.3 14" stroke="#1D4ED8" stroke-width="3.5" stroke-linecap="round"/><path d="M19 8 L24 13 L29 8 M19 40 L24 35 L29 40" fill="none" stroke="#1D4ED8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`,
+  cube: `<path d="M8 16 L24 8 L40 16 L40 34 L24 42 L8 34 Z" fill="#BFDBFE" stroke="#1D4ED8" stroke-width="2.5" stroke-linejoin="round"/><path d="M8 16 L24 24 L40 16 M24 24 V42" fill="none" stroke="#1D4ED8" stroke-width="2.5" stroke-linejoin="round"/>`,
+  circle: `<circle cx="24" cy="24" r="17" fill="#A7F3D0" stroke="#047857" stroke-width="3"/>`,
+  three: `<circle cx="24" cy="24" r="19" fill="#FEF3C7" stroke="${D}" stroke-width="2.5"/><text x="24" y="33" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="700" font-size="26" fill="#B45309">3</text>`,
+  green: `<path d="M24 6 C32 6 42 12 42 22 C42 28 38 30 34 29 C30 28 28 32 30 36 C32 40 28 42 24 42 C14 42 6 34 6 24 C6 14 14 6 24 6 Z" fill="#22C55E" stroke="#166534" stroke-width="2.5"/><circle cx="16" cy="20" r="3" fill="#BBF7D0"/><circle cx="24" cy="15" r="3" fill="#BBF7D0"/><circle cx="32" cy="18" r="3" fill="#BBF7D0"/>`,
+  blue: `<path d="M24 6 C32 6 42 12 42 22 C42 28 38 30 34 29 C30 28 28 32 30 36 C32 40 28 42 24 42 C14 42 6 34 6 24 C6 14 14 6 24 6 Z" fill="#3B82F6" stroke="#1E3A8A" stroke-width="2.5"/><circle cx="16" cy="20" r="3" fill="#BFDBFE"/><circle cx="24" cy="15" r="3" fill="#BFDBFE"/><circle cx="32" cy="18" r="3" fill="#BFDBFE"/>`,
+  laptop: `<rect x="8" y="8" width="32" height="22" rx="3" fill="#DBEAFE" stroke="${D}" stroke-width="2.5"/><path d="M4 38 H44" stroke="${D}" stroke-width="3" stroke-linecap="round"/><path d="M19 19 L23 23 L30 15" stroke="#1D4ED8" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  pencil: `<rect x="8" y="6" width="22" height="34" rx="3" fill="#FFFFFF" stroke="${D}" stroke-width="2.5"/><path d="M13 15 H25 M13 22 H22" stroke="#64748B" stroke-width="2.5" stroke-linecap="round"/><path d="M42 18 L30 34 L28 40 L34 38 L46 22 Z" fill="#FACC15" stroke="${D}" stroke-width="2.5" stroke-linejoin="round"/>`,
+  music: `<path d="M18 36 V12 L38 8 V32" fill="none" stroke="${D}" stroke-width="3" stroke-linejoin="round"/><circle cx="13" cy="36" r="5" fill="#A78BFA" stroke="${D}" stroke-width="2.5"/><circle cx="33" cy="32" r="5" fill="#A78BFA" stroke="${D}" stroke-width="2.5"/>`,
+  checklist: `<rect x="10" y="6" width="28" height="36" rx="4" fill="#FFFFFF" stroke="${D}" stroke-width="2.5"/><path d="M16 16 L19 19 L24 13 M16 28 L19 31 L24 25" stroke="#15803D" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M28 17 H32 M28 29 H32" stroke="${D}" stroke-width="2.5" stroke-linecap="round"/>`
+};
+
+function icon(name, size = 40) {
+  if (!name || !ICONS[name]) return '';
+  return `<svg width="${size}" height="${size}" viewBox="0 0 48 48" aria-hidden="true">${ICONS[name]}</svg>`;
+}
+
+/* Sentence bank: "___" marks where the word goes. Pictures are optional. */
+const SENTENCES = {
+  // Dolch pre-primer
+  a: ['I have ___ red ball.', 'ball'], and: ['I like cats ___ dogs.', 'cat'], away: ['The bird flew ___.', 'bird'],
+  big: ['An elephant is very ___.', 'elephant'], blue: ['The sky is ___.', 'blue'], can: ['I ___ jump high.', ''],
+  come: ['Can you ___ to my house?', 'house'], down: ['The ball rolled ___ the hill.', 'ball'], find: ['Can you ___ my shoe?', ''],
+  for: ['This gift is ___ you.', 'gift'], funny: ['The clown is so ___!', ''], go: ['It is time to ___ to bed.', 'moon'],
+  help: ['Can you ___ me lift this box?', ''], here: ['Come over ___, please.', ''], i: ['Mom and ___ like to read.', 'book'],
+  in: ['The cat is ___ the box.', 'cat'], is: ['The dog ___ happy.', 'dog'], it: ['I threw the ball and he caught ___.', 'ball'],
+  jump: ['Frogs can ___ high.', ''], little: ['A mouse is very ___.', ''], look: ['I ___ at the sky.', 'eyes'],
+  make: ["Let's ___ a cake.", ''], me: ['Please give the ball to ___.', 'ball'], my: ['This is ___ dog.', 'dog'],
+  not: ['A cat is ___ a dog.', 'cat'], one: ['I have ___ nose.', ''], play: ["Let's ___ outside!", 'ball'],
+  red: ['An apple can be ___.', 'apple'], run: ['I like to ___ fast.', ''], said: ['Mom ___ it is time to eat.', 'talk'],
+  see: ['I can ___ the moon.', 'moon'], the: ['I love ___ sun.', 'sun'], three: ['A triangle has ___ sides.', 'three'],
+  to: ['We walk ___ school.', ''], two: ['I have ___ hands.', 'hand'], up: ['The balloon went ___ in the sky.', ''],
+  we: ['My friend and ___ play tag.', ''], where: ['Do you know ___ my hat is?', ''], yellow: ['The sun is ___.', 'sun'],
+  you: ['I like ___!', 'heart'],
+  // Dolch primer
+  all: ['We ate ___ the cookies.', ''], am: ['I ___ six years old.', ''], are: ['You ___ my best friend.', 'heart'],
+  at: ['Look ___ the bird!', 'bird'], ate: ['The dog ___ his food.', 'dog'], be: ['I want to ___ a doctor.', ''],
+  black: ['My cat is ___.', 'cat'], brown: ['A bear is ___.', ''], but: ['I am small, ___ I am strong.', ''],
+  came: ['Grandma ___ to visit.', 'house'], did: ['I ___ my homework.', 'book'], do: ['I can ___ it!', ''],
+  eat: ['I like to ___ apples.', 'apple'], four: ['A dog has ___ legs.', 'dog'], get: ['Please ___ your shoes.', ''],
+  good: ['This cake is so ___!', ''], have: ['I ___ a pet dog.', 'dog'], he: ['Dad says ___ loves me.', 'heart'],
+  into: ['The frog jumped ___ the pond.', ''], like: ['I ___ to read books.', 'book'], must: ['You ___ wash your hands.', 'hand'],
+  new: ['I got a ___ book.', 'book'], no: ['I said ___, thank you.', ''], now: ['Time for bed ___!', 'clock'],
+  on: ['The cat sat ___ the mat.', 'cat'], our: ['This is ___ house.', 'house'], out: ['The dog went ___ to play.', 'dog'],
+  please: ['May I have a cookie, ___?', ''], pretty: ['The flower is so ___.', 'flower'], ran: ['The dog ___ fast.', 'dog'],
+  ride: ['I like to ___ my bike.', ''], saw: ['I ___ a bird in the tree.', 'bird'], say: ['What did you ___?', 'talk'],
+  she: ['Mom said ___ is proud of me.', 'heart'], so: ['I am ___ happy!', ''], soon: ['We will eat lunch ___.', 'clock'],
+  that: ['I want ___ toy.', ''], there: ['The ball is over ___.', 'ball'], they: ['My friends said ___ want to play.', ''],
+  this: ['I like ___ book.', 'book'], too: ['I want to play ___!', ''], under: ['The cat is ___ the bed.', 'cat'],
+  want: ['I ___ a drink of water.', 'water'], was: ['The cake ___ yummy.', ''], well: ['She sings very ___.', 'music'],
+  went: ['We ___ to the park.', 'tree'], what: ['Do you know ___ time it is?', 'clock'], white: ['Snow is ___.', 'snow'],
+  who: ['Do you know ___ is at the door?', 'house'], will: ['I ___ help you.', ''], with: ['Come and play ___ me.', 'ball'],
+  yes: ['I said ___, please!', ''],
+  // Dolch first grade
+  after: ['We play ___ lunch.', ''], again: ['Read it ___, please!', 'book'], an: ['I ate ___ apple.', 'apple'],
+  any: ['Do you have ___ milk?', ''], as: ['He is as tall ___ his dad.', ''], ask: ['I can ___ for help.', 'talk'],
+  by: ['The cat sat ___ the door.', 'cat'], could: ['I ___ not find my shoe.', ''], every: ['I brush my teeth ___ day.', ''],
+  fly: ['Birds can ___.', 'bird'], from: ['I got a gift ___ Grandma.', 'gift'], give: ['I will ___ you a hug.', 'heart'],
+  going: ['We are ___ to the park.', 'tree'], had: ['I ___ fun today.', ''], has: ['The dog ___ a bone.', 'dog'],
+  her: ['I gave ___ a flower.', 'flower'], him: ['I gave ___ a ball.', 'ball'], his: ['The boy lost ___ hat.', ''],
+  how: ['Do you know ___ to swim?', ''], just: ['I ___ want one cookie.', ''], know: ['I ___ my ABCs.', 'book'],
+  let: ['Please ___ me play.', 'ball'], live: ['I ___ in a house.', 'house'], may: ['You ___ go outside now.', 'tree'],
+  of: ['I ate a bowl ___ soup.', ''], old: ['My dog is very ___.', 'dog'], once: ['I have been to the zoo ___.', ''],
+  open: ['Please ___ the door.', 'house'], over: ['The cow jumped ___ the moon.', 'moon'], put: ['Please ___ your toys away.', ''],
+  round: ['A ball is ___.', 'ball'], some: ['May I have ___ juice?', 'juice'], stop: ['Red means ___.', ''],
+  take: ['Please ___ one cookie.', ''], thank: ['I say ___ you.', 'heart'], them: ['I play with my friends. I like ___.', 'heart'],
+  then: ['First we eat, ___ we play.', ''], think: ['I ___ it will rain.', ''], walk: ['I ___ my dog every day.', 'dog'], more: ['Can I have ___ milk, please?', 'juice'],
+  were: ['We ___ at the park.', 'tree'], when: ['Do you know ___ lunch is?', 'clock'],
+  // Other words we've used
+  even: ['2, 4, and 6 are ___ numbers.', ''], first: ['I came in ___ place in the race.', 'star'],
+  against: ['I leaned my bike ___ the wall.', ''], while: ['Mom read a book ___ I took a nap.', 'book'],
+  follow: ['Please ___ me to the park.', 'tree'], baby: ['The ___ is crying.', 'baby'], love: ['I ___ my mom.', 'heart'],
+  very: ['An elephant is ___ big.', 'elephant'], talk: ['I like to ___ to Dad.', 'talk']
+};
+
+/* Tricky parts we already know: word -> [letter positions to underline, tip]. Other words are worked out by pattern. */
+const TRICKY = {
+  even: [[0, 2], 'Two e’s: e-v-e-n'], down: [[1, 2], 'ow, like “ow!”'], first: [[1, 2], 'ir says “er”'],
+  against: [[2, 3], 'a · gain · st'], while: [[0, 1, 4], 'wh at the start, quiet e at the end'],
+  follow: [[2, 3, 4, 5], 'two l’s, then ow says “oh”'], said: [[1, 2], 'ai says “e” here'], of: [[1], 'f says “v” here'],
+  one: [[0, 1, 2], 'sounds like “won”'], once: [[0, 1, 2, 3], 'sounds like “wunss”'], the: [[0, 1], 'th together'],
+  was: [[1, 2], 'a says “u”, s says “z”'], are: [[2], 'quiet e at the end'], do: [[1], 'o says “oo”'],
+  to: [[1], 'o says “oo”'], two: [[1], 'quiet w'], who: [[0, 1], 'wh says “h” here'], could: [[1, 2, 3], 'ou says “oo”, quiet l'],
+  know: [[0], 'quiet k at the start'], any: [[0], 'a says “e”'], every: [[0, 2], 'e-v-e-r-y'], they: [[2, 3], 'ey says “ay”'],
+  where: [[0, 1], 'wh at the start'], what: [[0, 1], 'wh at the start'],
+  more: [[1, 2, 3], 'or, then a quiet e'], very: [[3], 'y says “ee”'], baby: [[3], 'y says “ee”'], talk: [[1, 2], 'al says “aw”, quiet l'], walk: [[1, 2], 'al says “aw”, quiet l'],
+  love: [[1, 3], 'o says “u”, quiet e'], look: [[1, 2], 'two o’s say “oo”'], now: [[1, 2], 'ow, like “ow!”'],
+  friend: [[2, 3], 'ie says “e”'], because: [[3, 4], 'au says “o”'], there: [[2, 3, 4], 'ere at the end'], people: [[2], 'quiet o'], pretty: [[3, 4], 'two t’s']
+};
+
+/* Common letter patterns, used to find the tricky part of any other word. Checked in this order. */
+const PATTERNS = [
+  ['igh', 'igh says “i”'], ['tch', 'tch together'], ['wh', 'wh at the start'], ['th', 'th together'], ['sh', 'sh together'],
+  ['ch', 'ch together'], ['ck', 'ck together'], ['ph', 'ph says “f”'], ['kn', 'quiet k'], ['wr', 'quiet w'],
+  ['ai', 'ai says “ay”'], ['ay', 'ay says “ay”'], ['ee', 'ee says “ee”'], ['ea', 'ea together'], ['oa', 'oa says “oh”'],
+  ['oo', 'oo together'], ['ou', 'ou together'], ['ow', 'ow together'], ['oi', 'oi says “oy”'], ['oy', 'oy says “oy”'],
+  ['ir', 'ir says “er”'], ['ur', 'ur says “er”'], ['er', 'er together'], ['ar', 'ar together'], ['or', 'or together'],
+  ['al', 'al together'], ['ll', 'two l’s'], ['ss', 'two s’s'], ['ff', 'two f’s'], ['tt', 'two t’s'], ['pp', 'two p’s'], ['nn', 'two n’s']
+];
+
+function trickyFor(word) {
+  if (TRICKY[word]) return { idx: TRICKY[word][0], tip: TRICKY[word][1] };
+  for (const [p, tip] of PATTERNS) {
+    const i = word.indexOf(p);
+    if (i >= 0) return { idx: [...Array(p.length).keys()].map(k => k + i), tip };
+  }
+  if (word.length > 2 && /[^aeiou]e$/.test(word)) return { idx: [word.length - 1], tip: 'quiet e at the end' };
+  if (word.length > 1 && word.endsWith('y')) return { idx: [word.length - 1], tip: 'y at the end' };
+  return { idx: [], tip: '' };
+}
+
+/* Misspellings for "Fix It!" and "Spelling Detective": simple rules, no dictionary needed.
+   REAL_WORDS stops a "misspelling" from accidentally being a real word (like here → her). */
+const REAL_WORDS = new Set(('her here were where well will wall now know knew new note not nut net one on won ate at eight rid red read ride rode ' +
+  'run ran thin then than them theme the they their there fat sea see sun son soon butt but bot pot put most must fur fore for four ' +
+  'hem him ham hum hut hot hat hit bit bet bat cut cat cot mat met man men mad mud bed bad bud bid sit sat set pin pen pan pun fin fan fun ' +
+  'tin ten tan top tip tap mop map sip sap lot lit let got get gut wet wit hug hog dog dig dug pet pit pat bye by buy to too two toe no ' +
+  'so sew sow be bee eye inn in is as us use an and it up am are any ant ask give live love move have hive came come cam same some sum ' +
+  'son sin song all awl ill tall talk walk what when ever even over oven open hi he me my we wee she shoe who how hoe do doe due go goo ' +
+  'was wise wish wash his hiss off of if fly flee free three tree there play pay say sea saw sew slow show snow blow blue glue ' +
+  'came cane can cone one bone done gone tone lone line lane like lake lick luck look lock took take tuck tick ' +
+  'find fond fund fine five dive done down dawn town tone torn turn first fast fist burst black block brown crown drown ' +
+  'little lot loft far fir fern yes yet yell yellow fellow follow hollow eat at ate meat seat sat heat hat beat bat out our hour').split(' '));
+function misspellings(word) {
+  const out = [];
+  const add = w => { if (w && w !== word && !out.includes(w) && !REAL_WORDS.has(w) && !SENTENCES[w]) out.push(w); };
+  const swaps = [['ow', 'ou'], ['ou', 'ow'], ['al', 'aw'], ['ai', 'a'], ['ay', 'a'], ['ee', 'ea'], ['ea', 'ee'], ['oo', 'u'],
+    ['ir', 'ur'], ['ur', 'er'], ['er', 'ur'], ['wh', 'w'], ['ck', 'k'], ['ph', 'f'], ['kn', 'n'], ['wr', 'r'], ['igh', 'i'],
+    ['ll', 'l'], ['ss', 's'], ['tt', 't'], ['ff', 'f'], ['pp', 'p'], ['ch', 'sh'], ['ey', 'ay'], ['ie', 'ee']];
+  for (const [a, b] of swaps) if (word.includes(a)) add(word.replace(a, b));
+  if (/[^aeiou]y$/.test(word) && word.length > 2) { add(word.slice(0, -1) + 'ee'); add(word.slice(0, -1) + 'ey'); }
+  if (/[^aeiou]e$/.test(word) && word.length > 2) add(word.slice(0, -1));
+  const vowelSwap = { a: 'u', e: 'i', i: 'e', o: 'u', u: 'o' };
+  for (let i = 0; i < word.length; i++) {
+    const c = word[i];
+    if (vowelSwap[c]) add(word.slice(0, i) + vowelSwap[c] + word.slice(i + 1));
+  }
+  for (let i = word.length - 1; i >= 1; i--) {
+    const c = word[i];
+    if (!'aeiouy'.includes(c) && word[i - 1] !== c && word[i + 1] !== c) add(word.slice(0, i) + c + word.slice(i));
+  }
+  if (word.length > 3 && /[aeiouy]/.test(word.slice(0, 1) + word.slice(2))) add(word.slice(0, 1) + word.slice(2));
+  if (!/e$/.test(word)) add(word + 'e');
+  if (word.length <= 2) { add(word + word.slice(-1)); add(word.split('').reverse().join('')); add(word + 'h'); }
+  // Still short of three? Try every other vowel in each vowel spot.
+  for (let i = 0; out.length < 3 && i < word.length; i++) {
+    if ('aeiou'.includes(word[i])) for (const v of 'aeiou') add(word.slice(0, i) + v + word.slice(i + 1));
+  }
+  if (out.length < 3) add(word + 'h');
+  if (out.length < 3) add(word[0] + word);
+  return out;
+}
+
+/* "What Is the Question Asking?" questions. kind = what the answer is; icon = picture next to the answer. */
+const QUESTIONS = [
+  { q: 'What animal is pink and says “oink”?', kind: 'animal', answer: 'pig', icon: 'pig' },
+  { q: 'What fruit is red and grows on a tree?', kind: 'fruit', answer: 'apple', icon: 'apple' },
+  { q: 'What color is grass?', kind: 'color', answer: 'green', icon: 'green' },
+  { q: 'What season has hot, sunny days?', kind: 'season', answer: 'summer', icon: 'sun' },
+  { q: 'What liquid do we squeeze out of oranges?', kind: 'liquid', answer: 'juice', icon: 'juice' },
+  { q: 'What type of matter is a rock?', kind: 'type of matter', answer: 'solid', icon: 'cube' },
+  { q: 'What liquid, when heated, will change into water vapor?', kind: 'liquid', answer: 'water', icon: 'water' },
+  { q: 'What animal says “moo”?', kind: 'animal', answer: 'cow', icon: 'cow' },
+  { q: 'What fruit is yellow and long?', kind: 'fruit', answer: 'banana', icon: 'banana' },
+  { q: 'What color is the sky on a sunny day?', kind: 'color', answer: 'blue', icon: 'blue' },
+  { q: 'What season is cold and snowy?', kind: 'season', answer: 'winter', icon: 'snow' },
+  { q: 'What animal has feathers and says “tweet”?', kind: 'animal', answer: 'bird', icon: 'bird' },
+  { q: 'What animal barks and wags its tail?', kind: 'animal', answer: 'dog', icon: 'dog' },
+  { q: 'What shape is a ball?', kind: 'shape', answer: 'circle', icon: 'circle' },
+  { q: 'What number comes after two?', kind: 'number', answer: 'three', icon: 'three' },
+  { q: 'What body part do you see with?', kind: 'body part', answer: 'eyes', icon: 'eyes' }
+];
+
+/* Pictures you can pick for the Daily Steps chart. */
+const STEP_ICONS = ['laptop', 'book', 'pencil', 'house', 'checklist', 'talk', 'music', 'clock', 'apple', 'ball', 'star', 'heart', 'sun', 'moon', 'hand', 'tree'];
+
+</script>
+<script>
+/* First Grade Fun Worksheets — the printable pages. Each function returns HTML for one or more Letter-size sheets. */
+
+const COLORS = [['#1D4ED8', '#EFF6FF'], ['#0F766E', '#F0FDFA'], ['#7E22CE', '#FAF5FF'], ['#C2410C', '#FFF7ED'], ['#BE185D', '#FDF2F8'], ['#15803D', '#F0FDF4'], ['#4338CA', '#EEF2FF'], ['#B45309', '#FFFBEB']];
+const NAVY = '#1E3A5F';
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const displayWord = w => (w === 'i' ? 'I' : w);
+
+/* Measure text with the real font, so long words shrink to fit their boxes. */
+const _ctx = document.createElement('canvas').getContext('2d');
+function textWidth(text, px, family = 'Andika', weight = 400) {
+  _ctx.font = `${weight} ${px}px ${family}, sans-serif`;
+  return _ctx.measureText(text).width;
+}
+function fitSize(text, maxPx, maxWidth, family, weight) {
+  const w = textWidth(text, maxPx, family, weight);
+  return w <= maxWidth ? maxPx : Math.max(14, Math.floor(maxPx * maxWidth / w));
+}
+
+/* ---------- shared pieces ---------- */
+function sheet(body, opts = {}) {
+  return `<section class="sheet"><div class="stripe ${opts.stripe || ''}"></div><div class="sheet-body" style="gap:${opts.gap ?? 14}px">${body}</div></section>`;
+}
+const nameDate = () => `<div class="namedate"><div>Name:<span></span></div><div class="date">Date:<span></span></div></div>`;
+const star = (c, s = 30) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14.9 8.6 L22 9.3 L16.6 14 L18.2 21 L12 17.3 L5.8 21 L7.4 14 L2 9.3 L9.1 8.6 Z" fill="${c}"/></svg>`;
+const trophy = `<svg width="44" height="44" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3 H17 V9 C17 12 15 14 12 14 C9 14 7 12 7 9 Z" fill="#FACC15" stroke="#A16207" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 5 H4 C4 8 5 10 7.5 10.5 M17 5 H20 C20 8 19 10 16.5 10.5" fill="none" stroke="#A16207" stroke-width="1.5"/><path d="M12 14 V17 M8 21 H16 L15 17 H9 Z" fill="#FDE68A" stroke="#A16207" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+const mag = `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="${NAVY}" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="#FEF3C7"/><path d="M15 15 L21 21"/></svg>`;
+function title(text, sub, left = star('#F59E0B'), right = star('#1D4ED8'), size = 44) {
+  const fs = fitSize(text, size, 560, 'Fredoka', 700);
+  return `<div class="title">${left}<div class="title-text"><h1 style="font-size:${fs}px">${esc(text)}</h1>${sub ? `<span>${esc(sub)}</span>` : ''}</div>${right}</div>`;
+}
+const badge = (n, c, s = 30) => `<span class="badge" style="background:${c};width:${s}px;height:${s}px;font-size:${Math.round(s * 0.56)}px">${n}</span>`;
+const blank = (w = 100) => `<span class="blank" style="width:${w}px"></span>`;
+
+/* Handwriting lines (top, dashed middle, baseline, dotted tail line), with optional gray word to trace. */
+function writebox(w, word, S = 48) {
+  const TOP = 6, BASE = TOP + Math.round(0.8 * S), MID = BASE - Math.round(0.58 * S), DESC = BASE + Math.round(0.24 * S), H = DESC + 5;
+  const lines = `<line x1="0" x2="${w}" y1="${TOP}" y2="${TOP}" stroke="${NAVY}" stroke-width="2"/><line x1="0" x2="${w}" y1="${MID}" y2="${MID}" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 5"/><line x1="0" x2="${w}" y1="${BASE}" y2="${BASE}" stroke="${NAVY}" stroke-width="2"/><line x1="0" x2="${w}" y1="${DESC}" y2="${DESC}" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="2 4"/>`;
+  const t = word ? `<text x="8" y="${BASE}" font-family="Andika, sans-serif" font-size="${S}" fill="#CBD5E1" letter-spacing="2">${esc(word)}</text>` : '';
+  return `<svg class="writebox" width="${w}" height="${H}" viewBox="0 0 ${w} ${H}" aria-hidden="true">${lines}${t}</svg>`;
+}
+/* A short writing strip: top line, dashed middle, baseline. */
+function strip(w, h = 32) {
+  return `<svg class="writebox" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><line x1="0" x2="${w}" y1="1" y2="1" stroke="${NAVY}" stroke-width="2"/><line x1="0" x2="${w}" y1="${h / 2}" y2="${h / 2}" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 5"/><line x1="0" x2="${w}" y1="${h - 1}" y2="${h - 1}" stroke="${NAVY}" stroke-width="2"/></svg>`;
+}
+/* Pick a writing size so the word fits the box (letter-spacing included). */
+function writeSize(word, w) {
+  const avail = w - 16 - 2 * word.length;
+  return Math.min(48, Math.floor(48 * avail / textWidth(word, 48)));
+}
+function highlight(word, idx, c) {
+  return [...word].map((ch, i) => idx.includes(i) ? `<span class="hl" style="color:${c}">${esc(ch)}</span>` : esc(ch)).join('');
+}
+function shuffle(arr, seed) {
+  const a = [...arr]; let s = seed || 1;
+  for (let i = a.length - 1; i > 0; i--) { s = (s * 9301 + 49297) % 233280; const j = Math.floor(s / 233280 * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const seedOf = words => words.join('').split('').reduce((a, c) => a + c.charCodeAt(0), 7);
+
+/* ================= 1. Sight Word Practice ================= */
+function sightPractice({ words, label, sentences, showParent }) {
+  const W = words.map(w => ({ w, ...trickyFor(w) }));
+  const stepc = ['#1D4ED8', '#0F766E', '#7E22CE', '#15803D'];
+  const heads = [['Look &amp; Say', 'Say it 3 times. Color a dot each time.', 184], ['Trace', 'Say each letter as you trace.', 196], ['Cover &amp; Write', 'Fold back. Write it from memory.', 0]];
+  const header = `<div class="sw-head">${heads.map(([t, sub, w], i) => `<div style="${w ? `width:${w}px;flex:none` : 'flex:1'}"><div class="sw-h">${badge(i + 1, stepc[i], 24)}<b>${t}</b></div><small>${sub}</small></div>`).join('')}<div class="sw-check-h">${badge(4, stepc[3], 24)}<b>Check</b></div></div>`;
+  const rowH = W.length > 5 ? 0 : 6;
+  const rows = W.map(({ w, idx, tip }, k) => {
+    const [c, t] = COLORS[k % COLORS.length];
+    const dw = displayWord(w), fs = fitSize(dw, 40, 176, 'Andika', 700), S = writeSize(dw, 190);
+    return `<div class="sw-row" style="background:${t};border-color:${c};padding:${8 + rowH}px 12px">
+      <div class="sw-look"><span class="sw-word" style="font-size:${fs}px">${highlight(dw, idx, c)}</span><div class="dots">${`<i style="border-color:${c}"></i>`.repeat(3)}</div></div>
+      <div class="sw-box">${writebox(190, dw, S)}</div>
+      <div class="sw-cover"><div class="sw-box">${writebox(190, '', Math.max(S, 40))}</div>${tip ? `<div class="sw-tip"><b style="color:${c}">Tip:</b> ${esc(tip)}</div>` : ''}</div>
+      <div class="sw-check"><span style="border-color:${c}"></span></div></div>`;
+  }).join('');
+  const tipbar = `<div class="navybar"><span><b style="color:#FDE68A">Look</b> · <b style="color:#99F6E4">Say</b> · <b style="color:#E9D5FF">Cover</b> · <b style="color:#FDE68A">Write</b> · <b style="color:#BBF7D0">Check</b></span><span class="nb-sub">If it’s wrong, look again and fix the tricky part!</span></div>`;
+  const front = sheet(nameDate() + title('My Sight Words', `${label ? label + ' · ' : ''}Look, Say, Cover, Write, Check`) + header + `<div class="col" style="gap:10px">${rows}</div>` + tipbar);
+
+  // Back
+  const bank = `<div class="bank-line"><b>Word Bank:</b>${W.map(({ w }, i) => `<span class="pill" style="border-color:${COLORS[i % 8][0]}">${esc(displayWord(w))}</span>`).join('')}</div>`;
+  const TALL = 'bdfhklt', TAIL = 'gjpqy';
+  const shape = (word, c) => {
+    const u = word.length > 7 ? 24 : 30; let x = 0, r = '';
+    for (const ch of word) {
+      const [y, h] = (ch === 'I' || TALL.includes(ch)) ? [0, 46] : TAIL.includes(ch) ? [18, 46] : [18, 28];
+      r += `<rect x="${x + 1.5}" y="${y + 1.5}" width="${u - 3}" height="${h - 3}" rx="4" fill="#FFFFFF" stroke="${c}" stroke-width="2.5"/>`; x += u;
+    }
+    return `<svg width="${x}" height="66" viewBox="0 0 ${x} 66" aria-hidden="true">${r}</svg>`;
+  };
+  const order = shuffle(W.map((_, i) => i), seedOf(words));
+  const shapes = `<div class="grid2" style="gap:4px 24px">${order.map((k, n) => `<div class="row-c">${badge(n + 1, COLORS[n % 8][0], 28)}${shape(displayWord(W[k].w), COLORS[n % 8][0])}</div>`).join('')}</div>`;
+  const missing = ({ w, idx }, c) => {
+    let b = idx.length ? idx.slice(0, 3) : [Math.floor(w.length / 2)];
+    if (b.length >= w.length) b = [w.length - 1];
+    return `<div class="miss">${[...displayWord(w)].map((ch, i) => b.includes(i) ? `<span class="mbox" style="border-color:${c}"></span>` : `<span class="mlet">${esc(ch)}</span>`).join('')}</div>`;
+  };
+  const morder = shuffle(W.map((_, i) => i).filter(i => W[i].w.length > 1), seedOf(words) + 3);
+  const miss = `<div class="grid3">${morder.map(k => missing(W[k], COLORS[k % 8][0])).join('')}</div>`;
+  const withS = W.map(({ w }) => ({ w, s: (sentences[w] || '').trim() })).filter(x => x.s.includes('___'));
+  const sorder = shuffle(withS.map((_, i) => i), seedOf(words) + 5);
+  const sl = sorder.map((k, n) => {
+    const [a, b] = withS[k].s.split('___');
+    const tail = b.trim(), glue = /^[.!?,;:]/.test(tail);
+    return `<div class="sent"><b class="sn">${n + 1}.</b><span>${esc(a.trim())}</span><span style="display:flex;align-items:flex-end;gap:${glue ? 2 : 8}px">${blank(150)}<span>${esc(tail)}</span></span></div>`;
+  }).join('');
+  const box = (c, t, inner) => `<div class="box" style="background:${t};border-color:${c}">${inner}</div>`;
+  const sec = (t, sub, c) => `<div class="sec"><b style="color:${c}">${t}</b><span>${sub}</span></div>`;
+  const parent = showParent ? `<div class="parent"><b>For the parent:</b> Keep your show-and-say routine for reading. For spelling, add: spell it aloud while looking, trace it, then cover and write from memory and check letter by letter. Re-test missed words the next day.</div>` : '';
+  const back = sheet(title('My Sight Words', `${label ? label + ' · ' : ''}Word Fun`) + bank
+    + box('#1D4ED8', '#EFF6FF', sec('Word Shapes', 'Which word fits each shape? Write one letter in each box.', '#1D4ED8') + shapes)
+    + (morder.length ? box('#0F766E', '#F0FDFA', sec('Missing Letters', 'Fill in the tricky part.', '#0F766E') + miss) : '')
+    + (withS.length ? box('#7E22CE', '#FAF5FF', sec('Finish the Sentence', 'Write a word from the Word Bank.', '#7E22CE') + `<div class="col" style="gap:8px">${sl}</div>`) : '')
+    + parent);
+  return front + back;
+}
+
+/* ================= 2. Word Master Challenge ================= */
+function wordMaster({ words, sentences, icons }) {
+  const seed = seedOf(words);
+  const W = words.map(w => { const m = misspellings(w); return { w, fix: m[0] || w + 'e', wrong: [m[1] || w + w.slice(-1), m[2] || w.slice(0, -1) + 'e'] }; });
+  const arrow = `<svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true"><path d="M2 8 H22 M15 2 L23 8 L15 14" stroke="#1D4ED8" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const fixOrder = shuffle(W.map((_, i) => i), seed);
+  const fixes = `<div class="grid2" style="gap:16px 24px">${fixOrder.map((k, n) => {
+    const fw = displayWord(W[k].fix), fs = fitSize(fw, 27, 84, 'Andika', 700);
+    return `<div class="row-c"><b class="num" style="color:#1D4ED8">${n + 1}.</b><span class="oops" style="font-size:${fs}px">${esc(fw)}</span>${arrow}<div class="sw-box">${writebox(150, '', 40)}</div></div>`;
+  }).join('')}</div>`;
+  const sOrder = shuffle(W.map((_, i) => i), seed + 1).filter(k => (sentences[W[k].w] || '').includes('___'));
+  const sents = `<div class="col" style="gap:6px">${sOrder.map((k, n) => {
+    const [a, b] = sentences[W[k].w].split('___'); const ic = icons[W[k].w];
+    return `<div class="row-c" style="gap:10px"><b class="num" style="color:#0F766E">${n + 1}.</b><div class="picbox" style="${ic ? '' : 'background:none'}">${ic ? icon(ic, 56) : ''}</div><span class="psent">${esc(a.trim())} ${blank(100)}${/^[.!?,;:]/.test(b.trim()) ? '' : ' '}${esc(b.trim())}</span></div>`;
+  }).join('')}</div>`;
+  const box = (c, t, inner) => `<div class="box grow" style="background:${t};border-color:${c}">${inner}</div>`;
+  const sec = (n, t, sub, c) => `<div class="sec">${badge(n, c)}<b style="color:${c}">${t}</b><span>${sub}</span></div>`;
+  const front = sheet(nameDate() + title('Word Master Challenge', 'Show what you know! No peeking.', trophy, trophy)
+    + box('#1D4ED8', '#EFF6FF', sec(1, 'Fix It!', 'Each word is spelled wrong. Write it the right way.', '#1D4ED8') + fixes)
+    + (sOrder.length ? box('#0F766E', '#F0FDFA', sec(2, 'Picture Sentences', 'Write the missing word.', '#0F766E') + sents) : '')
+    + `<div class="turn">Done? Turn the page over for the last part!</div>`);
+  const dOrder = shuffle(W.map((_, i) => i), seed + 2);
+  const det = `<div class="col" style="gap:${W.length > 4 ? 22 : 34}px">${dOrder.map((k, n) => {
+    const opts = shuffle([W[k].w, ...W[k].wrong], seed + n * 7).map(displayWord);
+    return `<div class="row-c" style="gap:10px"><b class="num" style="color:#7E22CE">${n + 1}.</b>${opts.map(o => `<span class="choice">${esc(o)}</span>`).join('')}</div>`;
+  }).join('')}</div>`;
+  const stars = `<div class="stars"><b>My Word Master Stars</b><span>Color a star for every word you got right in all parts!</span><div>${Array(W.length).fill(`<svg width="56" height="56" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14.9 8.6 L22 9.3 L16.6 14 L18.2 21 L12 17.3 L5.8 21 L7.4 14 L2 9.3 L9.1 8.6 Z" fill="#FFFFFF" stroke="#F59E0B" stroke-width="1.5" stroke-linejoin="round"/></svg>`).join('')}</div></div>`;
+  const back = sheet(title('Word Master Challenge', 'Last part · Do this part last!', trophy, trophy)
+    + box('#7E22CE', '#FAF5FF', sec(sOrder.length ? 3 : 2, 'Spelling Detective', 'Circle the word that is spelled right.', '#7E22CE') + det) + stars);
+  return front + back;
+}
+
+/* ================= Spelling Fix-Up (words missed on a test) ================= */
+/* Split a word into boxes: the tricky part(s) get their own box; other letters go in groups of 2–3. */
+function chunksFor(w) {
+  const { idx } = trickyFor(w);
+  const segs = [];
+  [...w].forEach((ch, i) => {
+    const t = idx.includes(i), last = segs[segs.length - 1];
+    if (last && last.t === t) last.s += ch; else segs.push({ s: ch, t });
+  });
+  const out = [];
+  for (const g of segs) {
+    if (g.t || g.s.length <= 3) { out.push(g); continue; }
+    let s = g.s; while (s.length > 3) { out.push({ s: s.slice(0, 2), t: false }); s = s.slice(2); }
+    out.push({ s, t: false });
+  }
+  return out;
+}
+function wordSearch(words, seed) {
+  let s = seed || 1; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  const longest = Math.max(...words.map(w => w.length));
+  for (let N = Math.min(10, Math.max(7, longest + 1, 6 + Math.ceil(words.length / 2))); N <= 12; N++) {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const g = Array.from({ length: N }, () => Array(N).fill(''));
+      let ok = true;
+      for (const w of [...words].sort((a, b) => b.length - a.length)) {
+        if (w.length > N) { ok = false; break; }
+        let placed = false;
+        for (let t = 0; t < 150 && !placed; t++) {
+          const down = rnd() < 0.5, r = Math.floor(rnd() * (down ? N - w.length + 1 : N)), c = Math.floor(rnd() * (down ? N : N - w.length + 1));
+          let fits = true;
+          for (let k = 0; k < w.length; k++) { const ch = g[down ? r + k : r][down ? c : c + k]; if (ch && ch !== w[k]) { fits = false; break; } }
+          if (!fits) continue;
+          for (let k = 0; k < w.length; k++) g[down ? r + k : r][down ? c : c + k] = w[k];
+          placed = true;
+        }
+        if (!placed) { ok = false; break; }
+      }
+      if (!ok) continue;
+      const fill = 'abcdeghklmnoprtuwy';
+      return { N, grid: g.map(row => row.map(ch => ch || fill[Math.floor(rnd() * fill.length)])) };
+    }
+  }
+  return null;
+}
+function spellingFixUp({ words, label, wrote, sentences, showParent }) {
+  const seed = seedOf(words), n = words.length;
+  const W = words.map((w, k) => {
+    const his = (wrote[w] || '').trim().toLowerCase().replace(/[^a-z']/g, '');
+    const wrong = [...new Set([his, ...misspellings(w)].filter(x => x && x !== w))];
+    while (wrong.length < 3) wrong.push(w + 'e'.repeat(wrong.length + 1));
+    const [c, t] = COLORS[k % COLORS.length];
+    return { w, dw: displayWord(w), his, wrong: wrong.slice(0, 3), bad: his || wrong[0], c, t, tip: trickyFor(w).tip };
+  });
+  const box = (c, t, inner, grow) => `<div class="box${grow ? ' grow' : ''}" style="background:${t};border-color:${c}">${inner}</div>`;
+  const sec = (num, txt, sub, c) => `<div class="sec">${badge(num, c)}<b style="color:${c}">${txt}</b><span>${sub}</span></div>`;
+
+  // Front
+  const optFs = n > 4 ? 24 : 28;
+  const pick = W.map((x, i) => {
+    const opts = shuffle([x.w, ...x.wrong], seed + i * 5).map(displayWord);
+    const fs = Math.min(optFs, ...opts.map(o => fitSize(o, optFs, 135, 'Andika', 700)));
+    return `<div class="fx-pick"><b class="num" style="color:${x.c}">${i + 1}.</b>${opts.map(o => `<span class="fx-opt" style="font-size:${fs}px;padding:${n > 4 ? 2 : 5}px 0">${esc(o)}</span>`).join('')}</div>`;
+  }).join('');
+  const chunks = `<div class="fx-chunks">${W.map(x => {
+    const parts = chunksFor(x.dw), unit = parts.reduce((a, g) => a + 22 + g.s.length * 18, 0) > 220 ? 15 : 18;
+    return `<div class="fx-chunk"><div class="fx-say"><b style="color:${x.c};font-size:${fitSize(x.dw, 24, 110, 'Andika', 700)}px">${esc(x.dw)}</b>${x.tip ? `<small>${esc(x.tip)}</small>` : ''}</div>${parts.map(g => `<span class="fx-cb${g.t ? ' t' : ''}" style="width:${20 + g.s.length * unit}px;${g.t ? `border-color:${x.c}` : ''}"></span>`).join('')}</div>`;
+  }).join('')}</div>`;
+  const anyTricky = W.some(x => chunksFor(x.w).some(g => g.t));
+  const reps = n >= 4 ? 1 : Math.ceil(4 / n);
+  const rainbow = W.flatMap(x => Array(reps).fill(x)).map(x => `<div class="fx-rw"><b style="color:${x.c};font-size:${fitSize(x.dw, 34, 150, 'Andika', 700)}px">${esc(x.dw)}</b><div class="fx-lines"><span class="fx-line"></span><span class="fx-line"></span><span class="fx-line"></span></div></div>`).join('');
+  const crayons = `<div class="fx-crayons">Try: ${['#EF4444', '#F59E0B', '#22C55E', '#3B82F6', '#A855F7'].map(c => `<i style="background:${c}"></i>`).join('')}</div>`;
+  const front = sheet(nameDate() + title('Spelling Fix-Up', label || 'Let’s fix the tricky words from my spelling test!')
+    + box('#1D4ED8', '#F8FAFF', sec(1, 'Pick the Right One', 'Circle the word that is spelled right.', '#1D4ED8') + `<div class="col" style="gap:${n > 4 ? 6 : 8}px">${pick}</div>`)
+    + box('#7E22CE', '#FDFAFF', sec(2, 'Chunk It', 'Say each part. Write one part in each box.', '#7E22CE') + chunks
+      + (anyTricky ? `<div class="fx-legend"><i></i>The colored box is the tricky part. Go slow on that one!</div>` : ''))
+    + box('#0F766E', '#F7FEFC', sec(3, 'Rainbow Write', reps > 1 ? 'Write it on every line. Use a new crayon each time.' : 'Write each word 3 times. Use a new crayon each time.', '#0F766E') + rainbow + crayons, true), { gap: 12 });
+
+  // Back
+  const fixable = shuffle(W.map((_, i) => i), seed + 1).filter(k => (sentences[W[k].w] || '').includes('___'));
+  const fixes = fixable.map((k, i) => {
+    const x = W[k], [a, b] = sentences[x.w].split('___');
+    return `<div class="fx-fix"><b class="num" style="color:${x.c}">${i + 1}.</b><span>${esc(a.trim())} <span class="fx-bad">${esc(x.bad)}</span>${/^[.!?,;:]/.test(b.trim()) ? '' : ' '}${esc(b.trim())}</span><span class="fx-ans">Fix it: <span></span></span></div>`;
+  }).join('');
+  const ws = wordSearch(W.map(x => x.w), seed + 3);
+  const cell = ws ? (ws.N <= 8 ? 40 : ws.N === 9 ? 36 : ws.N === 10 ? 33 : 29) : 0;
+  const search = ws ? `<div class="fx-ws"><div class="fx-grid" style="grid-template-columns:repeat(${ws.N},${cell}px)">${ws.grid.flat().map(ch => `<div style="width:${cell}px;height:${cell}px;font-size:${Math.round(cell * 0.62)}px">${ch}</div>`).join('')}</div>
+    <div class="fx-find">${W.map(x => `<label><span style="border-color:${x.c}"></span><b style="color:${x.c}">${esc(x.dw)}</b></label>`).join('')}<small>Words go across → or down ↓. Check the box when you find it.</small></div></div>` : '';
+  const test = `<div class="fx-test">${W.map((_, i) => `<div class="fx-trow"><b class="num" style="color:#15803D">${i + 1}.</b><span class="fx-line"></span><span class="fx-chk"></span></div>`).join('')}</div>`;
+  let num = 4;
+  const parent = showParent ? `<div class="parent"><b>For the parent:</b> Missed on the test: <b>${W.map(x => esc(x.dw)).join(', ')}</b>. Read the Practice Test words in a mixed-up order. Any he still misses: spell it out loud while tracing, then retry tomorrow.</div>` : '';
+  const back = sheet(title('Spelling Fix-Up', 'Back side · Do this side second!')
+    + (fixable.length ? box('#C2410C', '#FFFBF7', sec(num++, 'Oops! Fix the Sentence', 'One word is spelled wrong. Write it the right way.', '#C2410C') + `<div class="col" style="gap:${n > 4 ? 4 : 8}px">${fixes}</div>`) : '')
+    + (ws ? box('#1D4ED8', '#F8FAFF', sec(num++, 'Word Search', `Find all ${n} word${n > 1 ? 's' : ''}.`, '#1D4ED8') + search) : '')
+    + box('#15803D', '#F7FEF9', sec(num++, 'Practice Test', 'Fold the top of this page back so you can’t peek. A grown-up says each word, you write it.', '#15803D') + test
+      + `<div style="font-size:15px;color:#334155">Check each one with your grown-up. Got it right? Color the box green!</div>`, true)
+    + parent, { gap: 12 });
+  return front + back;
+}
+
+/* ================= 3. What Is the Question Asking? ================= */
+function questionAsking({ items, wordBank, example, sheetTitle }) {
+  if (example) items = items.filter(x => !(x.answer === 'cow' && x.kind === 'animal'));
+  const sc = ['#1D4ED8', '#C2410C', '#15803D'];
+  const steps = wordBank ? ['Circle the <b>What ___</b> words.', 'Pick the <b>kind</b> of answer.', 'Pick the <b>answer</b>.'] : ['Circle the <b>What ___</b> words.', 'Write what <b>kind</b> of answer it wants.', 'Write your answer.'];
+  const stepsHtml = `<div class="qsteps">${steps.map((s, i) => `<div>${badge(i + 1, sc[i], 26)}<span>${s}</span></div>`).join('')}</div>`;
+  let bankHtml = '';
+  if (wordBank) {
+    const kinds = [...new Set(items.map(x => x.kind))];
+    const twice = kinds.filter(k => items.filter(x => x.kind === k).length > 1);
+    const answers = [...items].sort((a, b) => a.answer.localeCompare(b.answer));
+    bankHtml = `<div class="qbank"><div class="sec"><b style="color:${NAVY}">“It wants” words</b><span>${twice.length ? esc(twice.join(', ')) + (twice.length > 1 ? ' are' : ' is') + ' used more than once.' : 'Use each one once.'}</span></div>
+      <div class="pills">${kinds.map(k => `<span class="pill">${esc(k)}</span>`).join('')}</div><div class="dash"></div>
+      <div class="sec"><b style="color:${NAVY}">Answer Bank</b><span>Use each word once.</span></div>
+      <div class="pills">${answers.map(a => `<span class="pill ip">${icon(a.icon, 26)}${esc(a.answer)}</span>`).join('')}</div></div>`;
+  }
+  const exHtml = example ? `<div class="qex"><b class="qex-t">Watch me do one!</b><span class="qex-q"><span class="circ">What animal</span> says “moo”?</span><div class="qex-a"><span>It wants: <b style="color:#C2410C">an animal</b></span><span>Answer: <b style="color:#15803D;font-size:21px">cow</b></span><span style="color:#475569">Not “moo”! Moo is not an animal.</span></div></div>` : '';
+  const rows = items.map((it, i) => {
+    const [c, t] = COLORS[i % 8];
+    return `<div class="qrow" style="background:${t};border-color:${c}"><div class="row-c" style="gap:10px">${badge(i + 1, c)}<span class="qq">${esc(it.q)}</span></div>
+      <div class="qlines"><span>It wants:</span>${strip(190)}<span style="margin-left:14px">Answer:</span>${strip(220)}</div></div>`;
+  }).join('');
+  const tip = (!wordBank && items.length < 7) ? `<div class="navybar">Detective tip: The <b style="color:#FDE68A;margin:0 6px">What ___</b> words tell you what kind of answer to give!</div>` : '';
+  return sheet(nameDate() + title(sheetTitle || 'What Is the Question Asking?', '', mag, mag) + stepsHtml + bankHtml + exHtml + `<div class="col" style="gap:8px">${rows}</div>` + tip);
+}
+
+/* ================= 4. Daily Steps chart ================= */
+function dailySteps({ heading, sub, steps, reminders }) {
+  const ic = (p) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  const remIcons = [ic('<circle cx="12" cy="13" r="8"/><path d="M12 9 V13 L15 15"/><path d="M9 2 H15"/>'), ic('<path d="M6 3 H18 M6 21 H18"/><path d="M7 3 C7 9 17 9 17 12 C17 15 7 15 7 21 M17 3 C17 9 7 9 7 12 C7 15 17 15 17 21"/>'), ic('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L21 21"/><path d="M7.5 10.5 L9.8 12.8 L13.5 8.5"/>')];
+  const rows = steps.map((s, i) => {
+    const [c, t] = COLORS[i % 8];
+    const note = s.noteText && s.noteType !== 'none' ? `<div class="snote ${s.noteType}"><b>${s.noteType === 'tip' ? 'Tip' : 'Parent'}:</b><span>${esc(s.noteText)}</span></div>` : '';
+    const text = esc(s.text).replace(/\*([^*]+)\*/g, '<b class="em">$1</b>');
+    return `<div class="srow" style="background:${t};border-color:${c}">${badge(i + 1, c, 48)}<span class="sicon">${icon(s.icon, 38)}</span><div class="stext"><span>${text}</span>${note}</div></div>`;
+  }).join('');
+  const rem = reminders.filter(r => r.trim());
+  const foot = rem.length ? `<div class="remind"><b>Remember:</b>${rem.map((r, i) => `<span>${badge(i + 1, '#F59E0B', 24)}${remIcons[i % 3]}${esc(r)}</span>`).join('')}</div>` : '';
+  return sheet(title(heading || 'My School Day Steps', sub) + `<div class="col" style="gap:9px">${rows}</div>` + foot, { gap: 9 });
+}
+
+/* ================= 5. Count the Eagles (coins) ================= */
+function countEagles() {
+  const eagle = (w, h) => `<svg width="${w}" height="${h}" viewBox="0 0 140 110" aria-hidden="true"><path d="M70 58 C50 40 28 30 4 34 C16 42 18 48 14 54 C26 52 30 58 26 64 C40 60 50 66 58 72 Z" fill="#8B5A2B" stroke="#4A2C12" stroke-width="3" stroke-linejoin="round"/><path d="M70 58 C90 40 112 30 136 34 C124 42 122 48 126 54 C114 52 110 58 114 64 C100 60 90 66 82 72 Z" fill="#8B5A2B" stroke="#4A2C12" stroke-width="3" stroke-linejoin="round"/><ellipse cx="70" cy="72" rx="18" ry="24" fill="#8B5A2B" stroke="#4A2C12" stroke-width="3"/><path d="M58 92 L52 104 M64 94 L62 106 M82 92 L88 104 M76 94 L78 106" stroke="#D97706" stroke-width="4" stroke-linecap="round"/><circle cx="70" cy="40" r="17" fill="#FFFFFF" stroke="#4A2C12" stroke-width="3"/><circle cx="64" cy="37" r="3.2" fill="#1F2937"/><circle cx="76" cy="37" r="3.2" fill="#1F2937"/><path d="M64 44 L76 44 L70 54 Z" fill="#F59E0B" stroke="#B45309" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  const steps = ['Collect <b>8 quarters</b>.', 'Place them <b>tails-up</b> on the page, one in each box.', 'Place an <b>X</b> in the <b style="color:#1E40AF">“Has an Eagle”</b> column if it has an eagle.', 'Place an <b>X</b> in the <b style="color:#C2410C">“No Eagle”</b> column if it doesn’t have an eagle.', 'Count the number of <b>X’s</b> in the <b style="color:#1E40AF">“Has an Eagle”</b> column.'];
+  const bc = ['#2563EB', '#EA580C', '#16A34A', '#9333EA', '#D97706'];
+  const table = ns => `<div class="ce-table"><div class="ce-h"><div style="width:84px">Quarter</div><div style="width:120px">Put it<br>here</div><div class="has" style="width:76px">Has an<br>eagle</div><div class="no" style="width:76px">No<br>eagle</div></div>${ns.map((n, i) => `<div class="ce-r" ${i === ns.length - 1 ? 'style="border-bottom:0"' : ''}><div class="ce-q"><small>Quarter</small><b>${n}</b></div><div class="ce-coin"><span>tails<br>up</span></div><div class="ce-x has"><span style="border-color:#2563EB"></span></div><div class="ce-x no"><span style="border-color:#EA580C"></span></div></div>`).join('')}</div>`;
+  return sheet(nameDate() + `<div class="title">${eagle(118, 93)}<div class="title-text"><h1 style="font-size:52px">Count the Eagles!</h1><div style="display:flex;gap:8px;margin-top:6px">${star('#F59E0B', 20)}${star('#EA580C', 20)}${star('#2563EB', 20)}${star('#16A34A', 20)}${star('#F59E0B', 20)}</div></div><div style="transform:scaleX(-1)">${eagle(118, 93)}</div></div>`
+    + `<div class="ce-steps">${steps.map((s, i) => `<div>${badge(i + 1, bc[i], 28)}<span>${s}</span></div>`).join('')}</div>`
+    + `<div style="display:flex;justify-content:space-between">${table([1, 2, 3, 4])}${table([5, 6, 7, 8])}</div>`
+    + `<div class="ce-ans">${eagle(70, 55)}<b>How many eagles did you have?</b><span></span></div>`, { stripe: 'stripe-eagle' });
+}
+
+</script>
+<script>
+/* First Grade Fun Worksheets — the page you use to make worksheets. */
+
+const MAX_WORDS = 6;
+const DEFAULT_STEPS = {
+  heading: 'My School Day Steps',
+  sub: 'Do them in order, one at a time, every school day.',
+  steps: [
+    { text: 'Complete i-Ready before classes.', icon: 'laptop', noteType: 'none', noteText: '' },
+    { text: 'Attend classes.', icon: 'talk', noteType: 'none', noteText: '' },
+    { text: 'Complete lessons.', icon: 'book', noteType: 'none', noteText: '' },
+    { text: 'Do worksheets.', icon: 'pencil', noteType: 'tip', noteText: 'If you do not understand something, skip it and go to the next thing.' },
+    { text: 'Go to your parent at home to check your worksheets *BEFORE* doing quizzes.', icon: 'house', noteType: 'parent', noteText: 'Your parent will check and have you correct what is wrong, and go over where the disconnect is.' },
+    { text: 'Do quizzes.', icon: 'checklist', noteType: 'none', noteText: '' },
+    { text: 'Tell your parent your quiz grade.', icon: 'talk', noteType: 'parent', noteText: 'If the grade is not Mastered, your parent will review to see where the disconnect is so you can retry.' },
+    { text: 'Do the rest of your courses: PE, then Music, then Sight Words.', icon: 'music', noteType: 'none', noteText: '' }
+  ],
+  reminders: ['Do not rush', 'Take your time', 'Check your work']
+};
+const DEFAULTS = {
+  tool: 'sight',
+  sight: { label: 'Monday', words: 'even, down, first, against, while, follow', sentences: {}, showParent: true },
+  master: { words: 'baby, now, love, look, very, talk', sentences: {}, icons: {} },
+  fixup: { label: '', words: 'first, while, more, against', wrote: {}, sentences: {}, showParent: true },
+  question: { title: '', wordBank: true, example: false, picked: [0, 1, 2, 3, 4, 5, 6], custom: [] },
+  steps: DEFAULT_STEPS
+};
+
+let state;
+try { state = Object.assign(structuredClone(DEFAULTS), JSON.parse(localStorage.getItem('fgfw-state') || '{}')); }
+catch (e) { state = structuredClone(DEFAULTS); }
+const save = () => { try { localStorage.setItem('fgfw-state', JSON.stringify(state)); } catch (e) { /* storage unavailable: keep working */ } };
+
+const $panel = document.getElementById('panel');
+const $preview = document.getElementById('preview');
+
+function parseWords(text) {
+  const seen = new Set();
+  return String(text).split(/[\s,;]+/).map(w => w.replace(/[^A-Za-z']/g, '').toLowerCase()).filter(w => w && !seen.has(w) && seen.add(w)).slice(0, MAX_WORDS);
+}
+const sentenceFor = (tool, w) => (state[tool].sentences[w] ?? (SENTENCES[w] ? SENTENCES[w][0] : ''));
+const iconFor = w => (state.master.icons[w] ?? (SENTENCES[w] ? SENTENCES[w][1] : ''));
+const iconOptions = sel => `<option value="">No picture</option>` + Object.keys(ICONS).sort().map(k => `<option value="${k}" ${k === sel ? 'selected' : ''}>${k}</option>`).join('');
+
+/* ---------- preview ---------- */
+let renderTimer;
+function scheduleRender() { clearTimeout(renderTimer); renderTimer = setTimeout(renderPreview, 120); }
+
+function buildSheets() {
+  const t = state.tool;
+  if (t === 'sight') {
+    const words = parseWords(state.sight.words);
+    if (!words.length) return '';
+    const sentences = Object.fromEntries(words.map(w => [w, sentenceFor('sight', w)]));
+    return sightPractice({ words, label: state.sight.label.trim(), sentences, showParent: state.sight.showParent });
+  }
+  if (t === 'master') {
+    const words = parseWords(state.master.words);
+    if (!words.length) return '';
+    const sentences = Object.fromEntries(words.map(w => [w, sentenceFor('master', w)]));
+    const icons = Object.fromEntries(words.map(w => [w, iconFor(w)]));
+    return wordMaster({ words, sentences, icons });
+  }
+  if (t === 'fixup') {
+    const words = parseWords(state.fixup.words);
+    if (!words.length) return '';
+    const sentences = Object.fromEntries(words.map(w => [w, sentenceFor('fixup', w)]));
+    return spellingFixUp({ words, label: state.fixup.label.trim(), wrote: state.fixup.wrote, sentences, showParent: state.fixup.showParent });
+  }
+  if (t === 'question') {
+    const all = [...QUESTIONS, ...state.question.custom];
+    const items = state.question.picked.map(i => all[i]).filter(Boolean);
+    if (!items.length) return '';
+    return questionAsking({ items, wordBank: state.question.wordBank, example: state.question.example, sheetTitle: state.question.title.trim() });
+  }
+  if (t === 'steps') return dailySteps(state.steps);
+  if (t === 'eagles') return countEagles();
+  return '';
+}
+
+function renderPreview() {
+  const html = buildSheets();
+  if (!html) { $preview.innerHTML = '<p class="help">Add some words or questions to see your worksheet here.</p>'; return; }
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  const sheets = [...tmp.querySelectorAll('.sheet')];
+  const z = Math.min(0.8, Math.max(0.3, ($preview.clientWidth - 8) / 816));
+  $preview.innerHTML = '';
+  let shrunk = false;
+  sheets.forEach((s, i) => {
+    if (sheets.length > 1) { const l = document.createElement('div'); l.className = 'page-label'; l.textContent = i === 0 ? 'Front' : 'Back'; $preview.appendChild(l); }
+    const wrap = document.createElement('div'); wrap.className = 'scaler'; wrap.style.setProperty('--z', z);
+    wrap.appendChild(s); $preview.appendChild(wrap);
+    // If anything spills past the page, shrink that page to fit instead of cutting it off.
+    const body = s.querySelector('.sheet-body');
+    if (body.scrollHeight > body.clientHeight + 1) {
+      const f = body.clientHeight / body.scrollHeight;
+      body.style.zoom = Math.max(0.6, f - 0.01); shrunk = true;
+    }
+  });
+  const w = document.getElementById('fitwarn');
+  if (w) w.hidden = !shrunk;
+}
+
+/* ---------- panels ---------- */
+const printBlock = (twoSided) => `<div id="fitwarn" class="warn" hidden>This page had a lot on it, so it was shrunk a little to fit. Try fewer or shorter items for bigger print.</div>
+  <button class="btn btn-print" id="printBtn">Print</button>
+  <p class="note">${twoSided ? 'This makes a front and a back. Print two-sided, or print the front, flip the paper over and print the back. ' : ''}In the print window choose Letter paper, Scale 100% and turn on “Background graphics” for the colors.</p>`;
+
+function wordCards(tool) {
+  const words = parseWords(state[tool].words);
+  return words.map(w => {
+    const s = sentenceFor(tool, w);
+    const ok = s.includes('___');
+    const pic = tool === 'master' ? `<select data-icon="${w}" aria-label="Picture for ${w}">${iconOptions(iconFor(w))}</select>`
+      : tool === 'fixup' ? `<input type="text" data-wrote="${w}" value="${esc(state.fixup.wrote[w] || '')}" placeholder="He wrote…" aria-label="How he spelled ${w}" style="width:130px;padding:4px 8px;font-size:15px">` : '';
+    return `<div class="word-card"><div class="wc-top"><b>${esc(displayWord(w))}</b>${pic}</div>
+      <input type="text" data-sent="${w}" value="${esc(s)}" aria-label="Sentence for ${w}" placeholder="Type a sentence with ___ where the word goes">
+      ${ok ? '' : `<small style="color:var(--warn-ink)">${s ? 'Put ___ where the word goes.' : 'No sentence yet. Type one with ___ where the word goes, or leave it blank to skip it.'}</small>`}</div>`;
+  }).join('');
+}
+
+function panelSight() {
+  const st = state.sight;
+  return `<h2>Sight Word Practice</h2><p class="help">Type up to 6 words. You get a front (Look, Say, Cover, Write, Check) and a back (word shapes, missing letters and sentences). Tricky parts are underlined for you.</p>
+  <div class="field"><label for="sLabel">Label</label><input type="text" id="sLabel" value="${esc(st.label)}" placeholder="Monday"><small>Shows under the title, like “Monday” or “Week 3”.</small></div>
+  <div class="field"><label for="sWords">Words</label><textarea id="sWords" rows="2">${esc(st.words)}</textarea><small>Separate with commas or spaces. Up to 6.</small></div>
+  <div class="field"><span class="lbl">Sentences for the back</span><small>Most first-grade sight words already have one. Change any you like.</small></div>
+  <div id="cards">${wordCards('sight')}</div>
+  <label class="check"><input type="checkbox" id="sParent" ${st.showParent ? 'checked' : ''}> Include the note for the parent</label>
+  ${printBlock(true)}`;
+}
+function panelMaster() {
+  const st = state.master;
+  return `<h2>Word Master Challenge</h2><p class="help">For words he already knows. Checks they’re really mastered, with no word bank. The front has “Fix It!” and picture sentences. The back has “Spelling Detective”, so he can’t peek.</p>
+  <div class="field"><label for="mWords">Mastered words</label><textarea id="mWords" rows="2">${esc(st.words)}</textarea><small>Separate with commas or spaces. Up to 6.</small></div>
+  <div class="field"><span class="lbl">Picture sentences</span><small>Change a sentence or picture if you like. Leave a sentence blank to skip that word in this part.</small></div>
+  <div id="cards">${wordCards('master')}</div>
+  ${printBlock(true)}`;
+}
+function panelFixup() {
+  const st = state.fixup;
+  return `<h2>Spelling Fix-Up</h2><p class="help">For words he got wrong on a spelling test. The front has Pick the Right One, Chunk It and Rainbow Write. The back has Fix the Sentence, a word search and a practice test.</p>
+  <div class="field"><label for="fLabel">Label</label><input type="text" id="fLabel" value="${esc(st.label)}" placeholder="Week 3 spelling test"><small>Shows under the title. Leave blank for “Let’s fix the tricky words from my spelling test!”</small></div>
+  <div class="field"><label for="fWords">Words he missed</label><textarea id="fWords" rows="2">${esc(st.words)}</textarea><small>Separate with commas or spaces. Up to 6.</small></div>
+  <div class="field"><span class="lbl">How he spelled it, and a sentence</span><small>Type what he actually wrote (optional). His spelling shows up in “Pick the Right One” and “Oops!” so he fixes his own mistake.</small></div>
+  <div id="cards">${wordCards('fixup')}</div>
+  <label class="check"><input type="checkbox" id="fParent" ${st.showParent ? 'checked' : ''}> Include the note for the parent</label>
+  ${printBlock(true)}`;
+}
+function panelQuestion() {
+  const st = state.question;
+  const all = [...QUESTIONS, ...st.custom];
+  const max = st.wordBank ? 7 : (st.example ? 6 : 7);
+  return `<h2>What Is the Question Asking?</h2><p class="help">Practice reading what a question wants. Every question has a tempting word that is not the answer.</p>
+  <div class="field"><label for="qTitle">Title</label><input type="text" id="qTitle" value="${esc(st.title)}" placeholder="What Is the Question Asking?"></div>
+  <label class="check"><input type="checkbox" id="qBank" ${st.wordBank ? 'checked' : ''}> Word Bank with pictures (easier)</label>
+  <label class="check"><input type="checkbox" id="qEx" ${st.example ? 'checked' : ''}> Show a worked example first (uses the “moo” question)</label>
+  <div class="field"><span class="lbl">Questions (pick up to ${max})</span>
+  <div class="qlist">${all.map((q, i) => `<label><input type="checkbox" data-q="${i}" ${st.picked.includes(i) ? 'checked' : ''}> <span>${esc(q.q)} <i style="color:var(--muted)">(${esc(q.answer)})</i></span></label>`).join('')}</div></div>
+  <div class="btn-row" style="margin-bottom:12px"><button class="btn btn-small" id="qShuffle">Shuffle order</button></div>
+  <details><summary style="cursor:pointer;font-weight:700;margin-bottom:8px">Add your own question</summary>
+    <div class="field"><label for="cq">Question</label><input type="text" id="cq" placeholder="What animal says “quack”?"></div>
+    <div class="field"><label for="ck">It wants a…</label><input type="text" id="ck" placeholder="animal"></div>
+    <div class="field"><label for="ca">Answer</label><input type="text" id="ca" placeholder="duck"></div>
+    <div class="field"><label for="ci">Picture</label><select id="ci">${iconOptions('')}</select></div>
+    <button class="btn btn-small" id="cAdd">Add question</button>
+  </details>
+  ${printBlock(false)}`;
+}
+function stepCards() {
+  return state.steps.steps.map((s, i) => `<div class="step-card"><div class="sc-top"><b>Step ${i + 1}</b><span class="sp"></span>
+    <button class="btn btn-small" data-up="${i}" aria-label="Move step ${i + 1} up" ${i === 0 ? 'disabled' : ''}>↑</button>
+    <button class="btn btn-small" data-down="${i}" aria-label="Move step ${i + 1} down" ${i === state.steps.steps.length - 1 ? 'disabled' : ''}>↓</button>
+    <button class="btn btn-small" data-del="${i}" aria-label="Remove step ${i + 1}">Remove</button></div>
+    <input type="text" data-stext="${i}" value="${esc(s.text)}" aria-label="Step ${i + 1} text">
+    <div class="row2"><select data-sicon="${i}" aria-label="Step ${i + 1} picture">${iconOptions(s.icon)}</select>
+    <select data-stype="${i}" aria-label="Step ${i + 1} note type"><option value="none" ${s.noteType === 'none' ? 'selected' : ''}>No note</option><option value="tip" ${s.noteType === 'tip' ? 'selected' : ''}>Tip</option><option value="parent" ${s.noteType === 'parent' ? 'selected' : ''}>Parent note</option></select></div>
+    ${s.noteType !== 'none' ? `<textarea data-snote="${i}" rows="2" aria-label="Step ${i + 1} note">${esc(s.noteText)}</textarea>` : ''}</div>`).join('');
+}
+function panelSteps() {
+  const st = state.steps;
+  return `<h2>Daily Steps Chart</h2><p class="help">A chart to print once and hang up. Put *stars* around a word to make it big and bold, like *BEFORE*.</p>
+  <div class="field"><label for="tHead">Title</label><input type="text" id="tHead" value="${esc(st.heading)}"></div>
+  <div class="field"><label for="tSub">Line under the title</label><input type="text" id="tSub" value="${esc(st.sub)}"></div>
+  <div id="stepCards">${stepCards()}</div>
+  <div class="btn-row" style="margin-bottom:12px"><button class="btn btn-small" id="addStep" ${st.steps.length >= 8 ? 'disabled' : ''}>+ Add a step</button><button class="btn btn-small" id="resetSteps">Start over</button></div>
+  <div class="field"><span class="lbl">Reminders at the bottom</span>${[0, 1, 2].map(i => `<input type="text" data-rem="${i}" value="${esc(st.reminders[i] || '')}" aria-label="Reminder ${i + 1}" style="margin-bottom:6px">`).join('')}<small>Leave all three empty to hide the strip.</small></div>
+  ${printBlock(false)}`;
+}
+function panelEagles() {
+  return `<h2>Count the Eagles</h2><p class="help">A coin activity: he places 8 quarters tails-up and marks which ones have an eagle. Each box is a little bigger than a real quarter.</p>${printBlock(false)}`;
+}
+
+function renderPanel() {
+  const t = state.tool;
+  $panel.innerHTML = { sight: panelSight, master: panelMaster, fixup: panelFixup, question: panelQuestion, steps: panelSteps, eagles: panelEagles }[t]();
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tool === t));
+  document.getElementById('printBtn').onclick = () => window.print();
+  scheduleRender();
+}
+
+/* ---------- events ---------- */
+document.querySelector('.tabs').addEventListener('click', e => {
+  const b = e.target.closest('button[data-tool]'); if (!b) return;
+  state.tool = b.dataset.tool; save(); history.replaceState(null, '', '#' + state.tool); renderPanel();
+});
+
+let cardsTimer;
+$panel.addEventListener('input', e => {
+  const el = e.target, t = state.tool;
+  if (t === 'sight') {
+    if (el.id === 'sLabel') state.sight.label = el.value;
+    if (el.id === 'sWords') { state.sight.words = el.value; clearTimeout(cardsTimer); cardsTimer = setTimeout(() => { document.getElementById('cards').innerHTML = wordCards('sight'); }, 400); }
+    if (el.dataset.sent) state.sight.sentences[el.dataset.sent] = el.value;
+  } else if (t === 'master') {
+    if (el.id === 'mWords') { state.master.words = el.value; clearTimeout(cardsTimer); cardsTimer = setTimeout(() => { document.getElementById('cards').innerHTML = wordCards('master'); }, 400); }
+    if (el.dataset.sent) state.master.sentences[el.dataset.sent] = el.value;
+  } else if (t === 'fixup') {
+    if (el.id === 'fLabel') state.fixup.label = el.value;
+    if (el.id === 'fWords') { state.fixup.words = el.value; clearTimeout(cardsTimer); cardsTimer = setTimeout(() => { document.getElementById('cards').innerHTML = wordCards('fixup'); }, 400); }
+    if (el.dataset.sent) state.fixup.sentences[el.dataset.sent] = el.value;
+    if (el.dataset.wrote) state.fixup.wrote[el.dataset.wrote] = el.value;
+  } else if (t === 'question') {
+    if (el.id === 'qTitle') state.question.title = el.value;
+  } else if (t === 'steps') {
+    const st = state.steps;
+    if (el.id === 'tHead') st.heading = el.value;
+    if (el.id === 'tSub') st.sub = el.value;
+    if (el.dataset.stext) st.steps[+el.dataset.stext].text = el.value;
+    if (el.dataset.snote) st.steps[+el.dataset.snote].noteText = el.value;
+    if (el.dataset.rem) st.reminders[+el.dataset.rem] = el.value;
+  }
+  save(); scheduleRender();
+});
+
+$panel.addEventListener('change', e => {
+  const el = e.target, t = state.tool;
+  if (t === 'sight' && el.id === 'sParent') state.sight.showParent = el.checked;
+  if (t === 'fixup' && el.id === 'fParent') state.fixup.showParent = el.checked;
+  if (t === 'master' && el.dataset.icon) state.master.icons[el.dataset.icon] = el.value;
+  if (t === 'question') {
+    const q = state.question;
+    if (el.id === 'qBank' || el.id === 'qEx') {
+      q[el.id === 'qBank' ? 'wordBank' : 'example'] = el.checked;
+      const max = q.wordBank ? 7 : (q.example ? 6 : 7);
+      q.picked = q.picked.slice(0, max); save(); renderPanel(); return;
+    }
+    if (el.dataset.q !== undefined) {
+      const i = +el.dataset.q, max = q.wordBank ? 7 : (q.example ? 6 : 7);
+      if (el.checked) { if (q.picked.length >= max) { el.checked = false; alert(`You can pick up to ${max} questions for one page.`); return; } q.picked.push(i); }
+      else q.picked = q.picked.filter(x => x !== i);
+    }
+  }
+  if (t === 'steps') {
+    const st = state.steps;
+    if (el.dataset.sicon) st.steps[+el.dataset.sicon].icon = el.value;
+    if (el.dataset.stype) { st.steps[+el.dataset.stype].noteType = el.value; save(); document.getElementById('stepCards').innerHTML = stepCards(); }
+  }
+  save(); scheduleRender();
+});
+
+$panel.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return;
+  const st = state.steps;
+  if (el.id === 'qShuffle') { state.question.picked = shuffle(state.question.picked, Date.now() % 9973); }
+  else if (el.id === 'cAdd') {
+    const q = document.getElementById('cq').value.trim(), k = document.getElementById('ck').value.trim(), a = document.getElementById('ca').value.trim();
+    if (!q || !k || !a) { alert('Please fill in the question, what it wants, and the answer.'); return; }
+    state.question.custom.push({ q, kind: k, answer: a, icon: document.getElementById('ci').value });
+    const idx = QUESTIONS.length + state.question.custom.length - 1;
+    const max = state.question.wordBank ? 7 : (state.question.example ? 6 : 7);
+    if (state.question.picked.length < max) state.question.picked.push(idx);
+    save(); renderPanel(); return;
+  }
+  else if (el.dataset.up) { const i = +el.dataset.up; [st.steps[i - 1], st.steps[i]] = [st.steps[i], st.steps[i - 1]]; }
+  else if (el.dataset.down) { const i = +el.dataset.down; [st.steps[i + 1], st.steps[i]] = [st.steps[i], st.steps[i + 1]]; }
+  else if (el.dataset.del) { st.steps.splice(+el.dataset.del, 1); }
+  else if (el.id === 'addStep') { if (st.steps.length < 8) st.steps.push({ text: 'New step', icon: 'star', noteType: 'none', noteText: '' }); }
+  else if (el.id === 'resetSteps') { if (!confirm('Start the chart over with the example steps?')) return; state.steps = structuredClone(DEFAULT_STEPS); save(); renderPanel(); return; }
+  else return;
+  save();
+  if (state.tool === 'steps') document.getElementById('stepCards').innerHTML = stepCards(), document.getElementById('addStep').disabled = st.steps.length >= 8;
+  scheduleRender();
+});
+
+window.addEventListener('resize', scheduleRender);
+const fromHash = location.hash.slice(1);
+if (['sight', 'master', 'fixup', 'question', 'steps', 'eagles'].includes(fromHash)) state.tool = fromHash;
+renderPanel();
+// Re-draw once the fonts arrive, so long words are measured with the real font.
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderPreview);
+
+</script>
+<script src="/nav.js" defer></script>
+</body>
+</html>
