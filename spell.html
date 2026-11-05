@@ -58,6 +58,7 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
 .pe.team b { background: rgba(196, 181, 253, .14); outline: 2px solid rgba(196, 181, 253, .45); border-radius: 8px; padding: 0 6px; }
 .pe.wholeword { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .rec-note { color: var(--try); }
+.trk { font: 600 12px Fredoka, sans-serif; color: var(--try); border: 1px solid var(--try); border-radius: 999px; padding: 1px 8px; }
 /* letter teams on the child screen: boxes joined in one band = one sound */
 .part.team .boxes { gap: 3px; padding: 4px; border-radius: 17px; background: rgba(196, 181, 253, .12); outline: 2px solid rgba(196, 181, 253, .4); }
 .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
@@ -342,11 +343,11 @@ const EXCEPT = {
 };
 function soundUnits(word) {
   const w = word.toLowerCase(), n = w.length, out = [];
-  if (EXCEPT[w]) { let i = 0; return EXCEPT[w].map(([len, say, clue, quiet]) => { const u = { s: word.slice(i, i + len), say, clue, quiet: !!quiet }; i += len; return u; }); }
+  if (EXCEPT[w]) { let i = 0; return EXCEPT[w].map(([len, say, clue, quiet]) => { const u = { s: word.slice(i, i + len), say, clue, quiet: !!quiet, fixed: true, at: i }; i += len; return u; }).map(u => finishClue(u, w)); }
   // magic e: vowel + one consonant + e at the end (bike, while, home)
   const vce = n >= 3 && /[aeiou][^aeiouwxy]e$/.test(w) && !/[aeiou]{2}[^aeiou]e$/.test(w) ? n - 3 : -1;
   let i = 0;
-  const push = (len, say, clue, quiet = false) => { out.push({ s: word.slice(i, i + len), say, clue, quiet }); i += len; };
+  const push = (len, say, clue, quiet = false, bank) => { out.push({ s: word.slice(i, i + len), say, clue, quiet, at: i, bank }); i += len; };
   while (i < n) {
     const r = w.slice(i), c = w[i];
     if (vce >= 0 && i === vce + 2 && c === 'e') { push(1, '', '', true); continue; }                       // quiet e
@@ -358,7 +359,7 @@ function soundUnits(word) {
     if (r.startsWith('ow')) { const oh = i + 2 === n && i >= 2 && !/[aeiou]/.test(w[i - 1]) && !/[aeiou]/.test(w[i - 2] || 'a'); push(2, oh ? 'oh' : 'ow', oh ? 'snow' : 'cow'); continue; }
     const t3 = TEAMS[r.slice(0, 3)], t2 = TEAMS[r.slice(0, 2)];
     if (r.length >= 3 && t3) { push(3, t3[0], t3[1]); continue; }
-    if (r.startsWith('or') && w[i - 1] === 'w') { push(2, 'er', 'her'); continue; }   // world, work, word
+    if (r.startsWith('or') && w[i - 1] === 'w') { push(2, 'er', 'her', false, 'or|er'); continue; }   // world, work, word
     if (r.length >= 2 && t2 && !(i + 1 === vce)) { push(2, t2[0], t2[1]); continue; }
     if (r.length >= 2 && r[0] === r[1] && !'aeiou'.includes(c)) { push(2, '', DOUBLE_WORD[c] || KEYWORD[c]); continue; }
     if ('aeiou'.includes(c)) {
@@ -367,23 +368,70 @@ function soundUnits(word) {
       push(1, '', KEYWORD[c]); continue;                                                     // short: apple, egg…
     }
     if (c === 'y') { if (i === 0) push(1, '', 'yo-yo'); else push(1, 'eye', 'fly'); continue; }
-    if (c === 'c' && /[eiy]/.test(w[i + 1] || '')) { push(1, '', 'city'); continue; }
-    if (c === 'g' && (w.slice(i + 1) === 'e' || w[i + 1] === 'y')) { push(1, '', 'gem'); continue; }   // page, gym (not give, girl)
+    if (c === 'c' && /[eiy]/.test(w[i + 1] || '')) { push(1, '', 'city', false, 'c|s'); continue; }
+    if (c === 'g' && (w.slice(i + 1) === 'e' || w[i + 1] === 'y')) { push(1, '', 'gem', false, 'g|j'); continue; }   // page, gym (not give, girl)
     if (c === 'x') { push(1, '', 'fox'); continue; }
     push(1, '', KEYWORD[c] || c);
   }
-  // A clue word shouldn't be the word he's spelling ("me" → "ee, like he")
-  for (const u of out) if (u.clue === w && ALT[w]) u.clue = ALT[w];
-  return out;
+  return out.map(u => finishClue(u, w));
 }
-const ALT = { me: 'he', go: 'no', hi: 'I', her: 'fur', car: 'star', bird: 'third', tree: 'free', more: 'store', night: 'light', hear: 'near',
-  cake: 'lake', bike: 'like', home: 'bone', play: 'day', rain: 'train', boat: 'coat', moon: 'soon', cow: 'now', snow: 'slow', ship: 'shop',
-  thumb: 'thin', chip: 'chop', duck: 'luck', ring: 'sing', queen: 'quit', knee: 'knot', write: 'wrap', match: 'catch', badge: 'edge',
-  chair: 'hair', care: 'dare', eat: 'seat', out: 'loud', coin: 'join', boy: 'toy', saw: 'paw', new: 'few', blue: 'glue', corn: 'fork',
-  turn: 'burn', zoo: 'too', fly: 'sky', bell: 'well', kiss: 'miss', puff: 'off', buzz: 'fizz', cube: 'mule', these: 'Pete', this: 'that',
-  sun: 'sock', top: 'tub', cat: 'cup', dog: 'duck', fish: 'fan', hat: 'hop', lion: 'leg', nest: 'net', pig: 'pan', red: 'run', van: 'vet',
-  web: 'wet', jam: 'jet', kite: 'kid', ball: 'bat', goat: 'gum', up: 'us', egg: 'end', fox: 'box', zebra: 'zip', book: 'look', city: 'cent', gem: 'gym' };
-const unitPhrase = u => u.quiet ? 'This letter is quiet. You can’t hear it.' : (u.say ? `${u.say}. Like ${u.clue}.` : `Like ${u.clue}.`);
+
+/* ---- Picking a clue word that SPELLS the sound the same way ----
+   "ear" in Earth gets "early", not "her" (same sound, but spelled er, so he might write "erth").
+   Each sound has a few candidate words. The pick must contain the same letters and not be the word itself,
+   and preferably has them in the same spot (start / middle / end). If no word fits, the sound is marked
+   tricky and he hears "Tricky! It sounds like egg, but it's spelled a different way." */
+const BANK = {
+  'tch|': ['match', 'catch', 'itch'], 'igh|eye': ['night', 'light', 'high', 'right'], 'air|air': ['chair', 'hair', 'fair'],
+  'eer|ear': ['deer', 'cheer', 'steer'], 'dge|': ['badge', 'edge', 'fudge'],
+  'th|': ['thumb', 'this', 'bath', 'math'], 'sh|shh': ['ship', 'shop', 'fish', 'wash'], 'ch|': ['chip', 'chin', 'lunch', 'much'],
+  'wh|': ['whale', 'when', 'white'], 'ph|': ['phone', 'photo', 'graph'], 'ck|': ['duck', 'sock', 'back', 'truck'],
+  'ng|': ['ring', 'sing', 'long', 'king'], 'kn|': ['knee', 'knot', 'knock'], 'wr|': ['write', 'wrap', 'wrist'], 'qu|': ['queen', 'quit', 'quack'],
+  'ee|ee': ['tree', 'feet', 'see', 'green'], 'ea|ee': ['eat', 'seat', 'team', 'sea'], 'ai|ay': ['rain', 'train', 'paint', 'wait'],
+  'ay|ay': ['play', 'day', 'say', 'stay'], 'oa|oh': ['boat', 'coat', 'road', 'soap'], 'oo|oo': ['moon', 'soon', 'food', 'zoo'],
+  'ou|ow': ['out', 'loud', 'house', 'mouse'], 'ow|ow': ['cow', 'now', 'town', 'how'], 'ow|oh': ['snow', 'slow', 'grow', 'show'],
+  'oi|oy': ['coin', 'join', 'oil', 'boil'], 'oy|oy': ['boy', 'toy', 'joy'], 'au|aw': ['sauce', 'haul', 'launch'],
+  'aw|aw': ['saw', 'paw', 'draw', 'claw'], 'ew|oo': ['new', 'few', 'chew', 'grew'], 'ue|oo': ['blue', 'glue', 'true'],
+  'ar|ar': ['car', 'star', 'farm', 'arm'], 'or|or': ['corn', 'fork', 'horse', 'for'], 'er|er': ['her', 'fern', 'herd'],
+  'ir|er': ['bird', 'girl', 'shirt', 'first'], 'ur|er': ['turn', 'burn', 'fur', 'hurt'], 'or|er': ['work', 'word', 'worm'],
+  'ear|er': ['early', 'learn', 'pearl', 'heard'], 'ear|ear': ['hear', 'near', 'year', 'dear'],
+  'are|air': ['care', 'dare', 'share'], 'ore|or': ['more', 'store', 'core', 'score'],
+  'll|': ['bell', 'hill', 'ball', 'well'], 'ss|': ['kiss', 'mess', 'dress'], 'ff|': ['puff', 'off', 'cliff'], 'zz|': ['buzz', 'fizz', 'jazz'],
+  'tt|': ['mitt', 'butter'], 'pp|': ['happy', 'puppy'], 'dd|': ['add', 'odd'], 'gg|': ['egg'], 'nn|': ['funny', 'bunny'], 'mm|': ['summer'], 'rr|': ['carrot', 'purr'], 'bb|': ['bubble'],
+  'a|': ['apple', 'ant', 'cat', 'hat'], 'e|': ['egg', 'end', 'bed', 'pet'], 'i|': ['igloo', 'it', 'pig', 'sit'],
+  'o|': ['octopus', 'on', 'hot', 'dog'], 'u|': ['umbrella', 'up', 'bug', 'sun'],
+  'a|ay': ['cake', 'lake', 'game', 'name'], 'e|ee': ['these', 'Pete', 'me', 'he', 'we'], 'i|eye': ['bike', 'kite', 'hike', 'five', 'hi'],
+  'o|oh': ['home', 'bone', 'go', 'no', 'so'], 'u|you': ['cube', 'mule', 'cute'], 'u|oo': ['flu', 'tune'], 'a|ah': ['pa', 'spa'],
+  'y|eye': ['fly', 'sky', 'my', 'cry'], 'y|': ['yo-yo', 'yes', 'yell'],
+  'b|': ['ball', 'bat', 'tub', 'web'], 'c|': ['cat', 'cup', 'cot'], 'c|s': ['city', 'cent', 'ice', 'nice'], 'd|': ['dog', 'duck', 'bed', 'red'],
+  'f|': ['fish', 'fan', 'leaf', 'if'], 'g|': ['goat', 'gum', 'dog', 'big'], 'g|j': ['gem', 'gym', 'page', 'cage'], 'h|': ['hat', 'hop', 'hen'],
+  'j|': ['jam', 'jet', 'jump'], 'k|': ['kite', 'kid', 'book', 'look'], 'l|': ['lion', 'leg', 'pal', 'owl'], 'm|': ['moon', 'man', 'ham', 'gum'],
+  'n|': ['nest', 'net', 'sun', 'pen'], 'p|': ['pig', 'pan', 'cup', 'map'], 'q|': ['queen'], 'r|': ['red', 'run', 'rug', 'car'],
+  's|': ['sun', 'sock', 'bus', 'yes'], 't|': ['top', 'tub', 'cat', 'hat'], 'v|': ['van', 'vet', 'give'], 'w|': ['web', 'wet', 'wig'],
+  'x|': ['fox', 'box', 'six'], 'z|': ['zebra', 'zip', 'zoo']
+};
+function spotOf(idx, len, total) { return idx === 0 ? 'start' : idx + len === total ? 'end' : 'mid'; }
+function finishClue(u, w) {
+  if (u.quiet) { u.key = `s:${u.s.toLowerCase()}|quiet`; u.oldKey = u.key; return u; }
+  const letters = u.s.toLowerCase();
+  u.oldKey = `s:${letters}|${u.clue}`;   // key used before Nov 5 clue update, so old recordings still work
+  if (u.fixed) {   // hand-written sight word sound: keep its clue, but say so if the spelling differs
+    u.tricky = !u.clue.toLowerCase().includes(letters);
+    u.key = `s:${letters}|x:${u.clue}`; return u;
+  }
+  const bk = u.bank || `${letters}|${u.say}`;
+  u.key = `s:${bk}`;
+  const pos = spotOf(u.at, letters.length, w.length);
+  const cands = [...(BANK[bk] || []), u.clue].filter(c => c && c.toLowerCase() !== w);
+  const fits = cands.filter(c => c.toLowerCase().includes(letters));
+  const same = fits.find(c => spotOf(c.toLowerCase().indexOf(letters), letters.length, c.length) === pos);
+  if (same || fits.length) { u.clue = same || fits[0]; u.tricky = false; }
+  else { u.clue = cands[0] || u.clue; u.tricky = true; }
+  return u;
+}
+const unitPhrase = u => u.quiet ? 'This letter is quiet. You can’t hear it.'
+  : u.tricky ? `Tricky! It sounds like ${u.clue}, but it’s spelled a different way.`
+  : (u.say ? `${u.say}. Like ${u.clue}.` : `Like ${u.clue}.`);
 
 /* Letters that are easy to mix up, by sound or by shape. */
 const CONFUSE = { a: 'eu', b: 'dp', c: 'ks', d: 'bt', e: 'ia', f: 'vp', g: 'jk', h: 'ny', i: 'ey', j: 'gy', k: 'cg', l: 'rw', m: 'nw', n: 'mu', o: 'ua', p: 'bq', q: 'kp', r: 'wl', s: 'cz', t: 'dk', u: 'oa', v: 'fb', w: 'ru', x: 'kz', y: 'ie', z: 'sx' };
@@ -417,8 +465,12 @@ function buildPlan(input) {
     let wpos = 0;
     pieces.forEach(pc => {
       const pIdx = parts.length;
-      const unit = bySound ? { say: pc.say, clue: pc.clue, quiet: pc.quiet } : null;
-      const key = unit ? `s:${pc.s.toLowerCase()}|${unit.quiet ? 'quiet' : unit.clue}` : pc.s.toLowerCase();
+      const unit = bySound ? { say: pc.say, clue: pc.clue, quiet: pc.quiet, tricky: !!pc.tricky } : null;
+      const key = unit ? pc.key : pc.s.toLowerCase();
+      if (unit && pc.oldKey !== key) {   // move recordings / typed sounds saved under the old key
+        if (voices[pc.oldKey] && !voices[key]) { voices[key] = voices[pc.oldKey]; delete voices[pc.oldKey]; try { localStorage.setItem('spell-voice', JSON.stringify(voices)); } catch (e) { } }
+        if (sounds[pc.oldKey] && !sounds[key]) { sounds[key] = sounds[pc.oldKey]; delete sounds[pc.oldKey]; store('spell-sounds', sounds); }
+      }
       parts.push({ text: pc.s, unit, key, say: sounds[key] || '', word: wi, team: bySound && pc.s.length > 1 });
       [...pc.s].forEach(ch => {
         const isLetter = /[a-z]/i.test(ch);
@@ -468,7 +520,7 @@ function renderSetup() {
   const mine = key => voices[key] ? `<span class="mine">✓ your voice <button data-delvoice="${esc(key)}">remove</button></span>` : '';
   const wk = wordKey(pl.text);
   $('partsEdit').innerHTML = `<div class="pe wholeword"><div class="pe-top"><span>Whole word: <b>${esc(pl.text)}</b></span><button data-hearword aria-label="Hear the whole word">${spk}</button>${recBtn(wk, 'the whole word')}</div>${mine(wk)}</div>`
-    + pl.parts.map((p, i) => `<div class="pe${p.team ? ' team' : ''}"><div class="pe-top"><b>${esc(p.text)}</b><button data-hear="${i}" aria-label="Hear ${esc(p.text)}">${spk}</button>${recBtn(p.key, p.text)}</div>`
+    + pl.parts.map((p, i) => `<div class="pe${p.team ? ' team' : ''}"><div class="pe-top"><b>${esc(p.text)}</b>${p.unit && p.unit.tricky ? '<span class="trk" title="No common word spells this sound the same way">tricky</span>' : ''}<button data-hear="${i}" aria-label="Hear ${esc(p.text)}">${spk}</button>${recBtn(p.key, p.text)}</div>`
       + `<input type="text" data-say="${esc(p.key)}" value="${esc(p.say)}" placeholder="${esc(p.unit ? unitPhrase(p.unit) : p.text.toLowerCase())}" aria-label="What ${esc(p.text)} should say">${mine(p.key)}</div>`).join('');
 }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
