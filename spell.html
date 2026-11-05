@@ -1828,7 +1828,8 @@ function renderAll(fromCloud) {
 async function cloudSetUser(user) {
   cloud.user = user || null; cloud.role = null;
   if (cloud.user && cloud.sb) {
-    try { const { data } = await cloud.sb.from('study_members').select('role').eq('email', cloud.user.email.toLowerCase()).maybeSingle(); cloud.role = data ? data.role : null; } catch (e) { }
+    cloud.roleErr = '';
+    try { const { data, error } = await cloud.sb.from('study_members').select('role').eq('email', cloud.user.email.toLowerCase()).maybeSingle(); cloud.role = data ? data.role : null; if (error) cloud.roleErr = error.message; } catch (e) { cloud.roleErr = String(e.message || e); }
   }
   renderAccount();
   if (cloudMember()) { await cloudFlush(); await cloudPull(); }
@@ -1841,7 +1842,7 @@ function renderAccount() {
   $('kidMaker').hidden = cloud.role !== 'grownup';
   $('acctWho').innerHTML = cloud.role === 'grownup' ? `Signed in as <b>${esc(cloud.user.email)}</b> (grown-up). Today’s words, results and recordings are shared with his device.`
     : cloud.role === 'kid' ? `This is <b>his device</b> (signed in as ${esc(shownName(cloud.user.email))}). It shows him “Start today’s words”. Set the words from your own device.`
-    : `Signed in as ${esc(cloud.user.email)}, but this account isn’t set up for the Study. (Run study-setup.sql in Supabase, or check the email.)`;
+    : `Signed in as ${esc(cloud.user.email)}, but this account isn’t set up for the Study. (Run study-setup.sql in Supabase, or check the email.)${cloud.roleErr ? `<br><small>Supabase said: ${esc(cloud.roleErr)}</small>` : ''}`;
 }
 $('acctIn').onclick = async () => {
   const sb = cloudClient(); $('acctErr').textContent = '';
