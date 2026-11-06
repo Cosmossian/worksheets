@@ -170,6 +170,8 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .rp-try { display: flex; align-items: center; gap: 10px; } .rp-try small { font: 600 16px Fredoka, sans-serif; color: var(--muted); width: 54px; text-align: right; }
 .rp-box { width: 50px; height: 62px; border-radius: 12px; border: 3px solid var(--line); background: var(--surface-2); display: inline-grid; place-items: center; font: 700 38px Andika, sans-serif; margin: 0 3px; }
 .rp-box.g { border-color: var(--good); background: #0F2E25; color: #fff; } .rp-box.b { border-color: #F87171; background: #3A1717; color: #FCA5A5; } .rp-box.e { border-style: dashed; }
+.rp-heard { display: flex; flex-direction: column; gap: 6px; align-items: center; margin: 8px 0; } .rp-heard .btn { max-width: 100%; text-align: left; }
+.rp-chunks { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; } .rp-chunk { display: flex; flex-direction: column; align-items: center; gap: 4px; } .rp-chunk small { color: var(--muted); font-size: 14px; } .rp-chunk > div { display: flex; gap: 4px; } .rp-arrow { color: var(--muted); font-size: 22px; }
 .rp-keys { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; } .rp-keys span { width: 48px; height: 48px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface-2); display: grid; place-items: center; font: 700 26px Andika, sans-serif; }
 .rp-bank { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; } .rp-bank span { border: 2px solid var(--line); border-radius: 999px; padding: 3px 14px; font: 700 22px Andika, sans-serif; } .rp-bank span.r { border-color: var(--good); }
 .rp-img { max-width: min(900px, 95vw); background: #fff; border-radius: 16px; }
@@ -218,6 +220,12 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 body.only-daily #helperCard, body.only-helper #dailyCard { display: none; }
 body.embed #tod-nav, body.embed .app-header { display: none !important; }
 body.embed.playing .app-header { display: none !important; }
+.look-find { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
+.look-find button { font: 700 clamp(30px, 6vw, 46px) Andika, sans-serif; background: #fff; color: #1F2937; border: 4px solid transparent; border-radius: 18px; padding: 8px 26px; cursor: pointer; }
+.look-find button.right { border-color: #34D399; background: #D1FAE5; } .look-find button.wrong { border-color: #F87171; background: #FEE2E2; opacity: .6; }
+.look-find button:disabled { cursor: default; }
+.testbar { position: sticky; top: 0; z-index: 60; background: #33270C; color: #FBBF24; text-align: center; font: 600 15px Fredoka, sans-serif; padding: 6px 12px; display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.testbar[hidden] { display: none; }
 .kid-hold { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
 body.authwait main, body.authwait .app-header .review-btn, body.authwait .app-header .back { visibility: hidden; }
 body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-header .back { display: none; }
@@ -353,6 +361,34 @@ body.kidgrown #acctCard, body.kidgrown #dailyCard { display: none !important; }
 /* his login stays in the Study: the top bar keeps the logo (not a link) and drops the links to the other sections */
 body.kid #tod-nav .tod-links { display: none !important; }
 body.kid #tod-nav .tod-home { pointer-events: none; }
+.lbox.chk { border-color: #FBBF24 !important; box-shadow: 0 0 0 4px rgba(251,191,36,.45); transform: scale(1.12); transition: transform .12s; }
+.up { color: #34D399 !important; } .down { color: #F87171 !important; } .up i, .down i { font-style: normal; font-size: .6em; margin-right: .15em; vertical-align: .12em; }
+.pts-big .up, .pts-big .down { position: relative; display: inline-block; } .pts-big .up i, .pts-big .down i { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); margin-right: .2em; font-size: .45em; }   /* the number stays centered; the arrow sits to its left */
+.cal { max-width: 520px; margin: 12px auto; } .cal-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; } .cal-top b { font: 700 20px Fredoka, sans-serif; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; } .cal-h { text-align: center; color: var(--muted); font-size: 13px; }
+.cal-d { aspect-ratio: 1; border-radius: 12px; border: 2px solid var(--line); background: var(--surface-2); color: var(--text, #fff); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: 700 18px Fredoka, sans-serif; cursor: pointer; padding: 0; }
+.cal-d small { font-size: 12px; font-weight: 600; } .cal-d.future { opacity: .4; cursor: default; }
+.cal-d.done { background: #0F2E25; border-color: #34D399; color: #A7F3D0; } .cal-d.miss { background: #3A1717; border-color: #F87171; color: #FECACA; } .cal-d.none { background: #13233F; border-color: #3C7DD9; color: #BFDBFE; }
+.cal-d.today { outline: 3px solid #FDE68A; outline-offset: 2px; }
+.cal-key { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; align-items: center; font-size: 14px; margin-bottom: 10px; } .cal-key span::before { content: ''; display: inline-block; width: 12px; height: 12px; border-radius: 4px; margin-right: 6px; vertical-align: -1px; }
+.cal-key .done::before { background: #34D399; } .cal-key .miss::before { background: #F87171; } .cal-key .none::before { background: #3C7DD9; } .cal-key small { color: var(--muted); width: 100%; text-align: center; }
+.sheet-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; z-index: 80; background: #0B1118; }
+body.sheeton { overflow: hidden; }
+.ph-btn { margin-top: 18px; }
+.ph-wrap { position: fixed; inset: 0; z-index: 90; background: rgba(5,9,14,.85); display: grid; place-items: center; padding: 16px; overflow: auto; }
+.ph-box { background: #131C26; border: 2px solid #FBBF24; border-radius: 22px; padding: 20px 24px; max-width: 560px; width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; color: #E5E7EB; }
+.ph-box h3 { margin: 0; font: 700 26px Fredoka, sans-serif; color: #FDE68A; } .ph-box h4 { margin: 8px 0 0; font: 600 17px Fredoka, sans-serif; } .ph-box p { margin: 0; }
+.ph-word { font: 700 56px Andika, sans-serif; background: #fff; color: #1F2937; border-radius: 18px; padding: 4px 30px; }
+.ph-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.ph-in { font: 500 20px Andika, sans-serif; padding: 10px 14px; border-radius: 12px; border: 2px solid #334155; background: #0B1118; color: #fff; width: 230px; }
+.ph-msg { min-height: 1.3em; font-weight: 600; }
+.pin-wrap { position: fixed; inset: 0; z-index: 95; background: rgba(5,9,14,.88); display: grid; place-items: center; padding: 16px; }
+.pin-box { background: #131C26; border: 2px solid #FBBF24; border-radius: 22px; padding: 20px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; color: #E5E7EB; }
+.pin-box h3 { margin: 0; font: 700 24px Fredoka, sans-serif; color: #FDE68A; } .pin-msg { margin: 0; min-height: 1.2em; color: #FCA5A5; font-weight: 600; }
+.pin-dots { display: flex; gap: 14px; } .pin-dots span { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #FDE68A; } .pin-dots span.on { background: #FDE68A; }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 10px; } .pin-pad button { height: 64px; border-radius: 16px; border: 2px solid #334155; background: #1E293B; color: #fff; font: 700 26px Fredoka, sans-serif; cursor: pointer; } .pin-pad .pin-sm { font-size: 16px; }
+.pin-box.shake { animation: pinshake .3s; } @keyframes pinshake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.pin-set { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); } .pin-set input { font: 600 20px Andika, sans-serif; width: 120px; padding: 8px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--field, #0B1118); color: inherit; letter-spacing: 6px; } .pin-set small { color: var(--muted); display: block; margin-top: 6px; }
 </style>
 </head>
 <body class="authwait">
@@ -363,6 +399,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
   <button class="review-btn" id="reviewBtn" title="Hold for 2 seconds">Parent Review</button>
   <a class="back" href="./">← Back to Worksheets</a>
 </header>
+<div class="testbar" id="testBar" hidden><span>🧪 <b>Test day</b>: nothing is saved, so his real day stays the same.</span> <button class="btn btn-small" id="testEnd">End test</button></div>
 
 <div class="daily-bar" id="dailyBar" hidden><span id="dailyBarText"></span></div>
 
@@ -425,7 +462,9 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
     </div>
     <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyKeep" checked> Save his voice so I can listen later</label>
     <label class="check-row"><input type="checkbox" id="dailyPractice" checked> Then practice each word with the Spelling Helper</label>
+    <label class="check-row"><input type="checkbox" id="dailySheet" checked> Then Sight Word Practice with today’s words (trace, look &amp; say, cover &amp; write, word shapes…)</label>
     <label class="check-row"><input type="checkbox" id="dailyEmail"> Also email me his results (they’re always in Parent Review)</label>
+    <div class="pin-set" id="pinSet"><b>🔒 Grown-up PIN</b> <span id="pinState"></span><div class="row" style="align-items:center;margin-top:6px"><input id="pinIn" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"><button class="btn" id="pinSave">Save PIN</button><button class="btn" id="pinOff" hidden>Remove PIN</button></div><small>On his device, every grown-up button (Parent Help, Grown-up screen, Parent Review, Test day, Switch user, stop) asks for it after the hold.</small></div>
     <small class="note" id="emailLine">Results are emailed to <b id="mailTo"></b>. <button class="linkbtn" id="testMail">Send a test email</button></small>
     <small class="note" id="mailStatus"></small>
     <div class="row"><button class="btn primary big" id="dailyStart" disabled>Start today’s words</button></div>
@@ -546,7 +585,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
   <div class="done-today" id="kidDone" hidden></div>
   <div id="kidMicSlot" style="max-width:560px;margin:0 auto 14px"></div>
   <button class="btn big primary" id="kidStart">Start today’s words</button>
-  <div class="kid-hold"><button class="grownup" id="kidGrown">🔒 Grown-up screen <small>(hold)</small></button><button class="grownup" id="kidSwitch">↺ Switch user <small>(hold)</small></button></div>
+  <div class="kid-hold"><button class="grownup" id="kidGrown">🔒 Grown-up screen <small>(hold)</small></button><button class="grownup" id="kidSwitch">↺ Switch user <small>(hold)</small></button><button class="grownup" id="kidTest">🧪 Test day <small>(hold)</small></button></div>
 </main>
 
 <!-- Grown-up: Parent Review (recordings + results, by day) -->
@@ -561,6 +600,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 </div>
 <main class="setup" id="review" hidden>
   <div id="reviewPts"></div>
+  <div id="reviewCal"></div>
   <div class="card">
     <h2>Parent Review</h2>
     <p class="help">Everything from the daily sight words, newest first: hear how he said each word in Look &amp; Listen, and see how he spelled each word on the check and the Spelling Fix-Up. Recordings are kept on this device for 7 days.</p>
@@ -577,6 +617,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
     <div class="meter" id="meter" hidden><i id="meterFill"></i><b title="loud enough"></b></div>
     <p class="mic-hint" id="micHint" hidden>🎤 I’m listening…</p>
     <div class="row" style="justify-content:center">
+      <div class="look-find" id="lookFind" hidden></div>
       <button class="btn big primary" id="saidIt" hidden>🗣 I said it!</button>
       <button class="btn big" id="lookAgain" hidden>Hear it again</button>
       <button class="btn big primary" id="lookNext" hidden>Next word →</button>
@@ -605,6 +646,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
       <button class="btn big" id="backBtn">⌫ Back</button>
       <button class="btn big primary" id="doneBtn" disabled>Done ✓</button>
     </div>
+    <div style="text-align:center"><button class="grownup ph-btn" data-ph="1" id="checkPH">🧑 Parent Help <small>(hold)</small></button></div>
   </div>
   <div class="confirm" id="confirm" hidden role="dialog" aria-modal="true" aria-labelledby="confirmQ">
     <div class="box">
@@ -612,8 +654,8 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
       <div class="answer" id="confirmWord"></div>
       <p>Once you say yes, you can’t change it.</p>
       <div class="row">
-        <button class="btn big" id="confirmNo">Let me look again</button>
-        <button class="btn big primary" id="confirmYes">Yes, I’m sure</button>
+        <button class="btn big" id="confirmNo">Let me fix it</button>
+        <button class="btn big primary" id="confirmYes">Yes, I checked it</button>
       </div>
     </div>
   </div>
@@ -653,17 +695,32 @@ function pickVoice() {
 if (canTalk) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 function say(text, rate = 0.9) {
   if (!canTalk || !text) return Promise.resolve();
-  speechSynthesis.cancel();
+  const busy = speechSynthesis.speaking || speechSynthesis.pending; speechSynthesis.cancel();
   return new Promise(res => {
     const u = new SpeechSynthesisUtterance(text);
     if (voice) u.voice = voice;
     u.lang = (voice && voice.lang) || 'en-US'; u.rate = rate; u.pitch = 1.05;
     u.onend = u.onerror = () => res();
-    speechSynthesis.speak(u);
+    if (busy) setTimeout(() => speechSynthesis.speak(u), 120); else speechSynthesis.speak(u);   // iPads can garble or skip a word spoken right after cutting off another
     setTimeout(res, 6000);
   });
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
+/* Double-check: before an answer is locked in, each letter he typed lights up and is read out loud, and "Yes" waits until it's done */
+let dcToken = 0;
+async function doubleCheck() {
+  const my = ++dcToken, yes = $('confirmYes'), spans = [...$('confirmWord').querySelectorAll('.lbox:not(.sp)')];
+  $('confirmQ').textContent = 'Double-check your work!'; yes.disabled = true;
+  await say('Double-check your work. Look at every letter.', 0.95);
+  for (const s of spans) {
+    if (my !== dcToken || $('confirm').hidden) return;
+    spans.forEach(x => x.classList.remove('chk')); s.classList.add('chk');
+    await say(letterName(s.textContent.trim().toLowerCase()), 0.9); await wait(250);
+  }
+  if (my !== dcToken || $('confirm').hidden) return;
+  spans.forEach(x => x.classList.remove('chk')); yes.disabled = false;
+  say('Is every letter right?', 0.95);
+}
 const letterName = ch => ({ a: 'ay', e: 'ee', i: 'eye', o: 'oh', u: 'you', y: 'why', z: 'zee' }[ch] || ch.toUpperCase());
 
 /* ============ Splitting a word into sound parts ============ */
@@ -848,7 +905,8 @@ let plan = null;        // { text, parts: [{ text, say, start, end, word }], let
 let pos = 0, tries = 0, level = 0, helpedAt = new Set();
 let mustHear = new Set();   // gold Help letters he still has to listen to
 let triedSet = new Set(), lastTry = 0, triesAtHelp = 0, stats = { tries: 0, helps: 0, letters: 0 };
-const emailOn = () => { try { return (JSON.parse(localStorage.getItem('spell-settings') || '{}') || {}).email === true; } catch (e) { return false; } };   // results emails are off unless turned on (Parent Review always has them)
+const TESTDAY = () => { try { return sessionStorage.getItem('study-testday') === '1'; } catch (e) { return false; } };   // grown-up's test day: nothing saved
+const emailOn = () => { if (TESTDAY()) return false; try { return (JSON.parse(localStorage.getItem('spell-settings') || '{}') || {}).email === true; } catch (e) { return false; } };   // results emails are off unless turned on (Parent Review always has them)
 let settings = Object.assign({ need: 2, win: 60, sens: 3 }, store('spell-settings') || {});
 /* Microphone sensitivity: how much louder than the room his voice must be, the lowest level that counts, and how long it must last. */
 const SENS = { 1: { x: 2.0, min: 0.004, ms: 180 }, 2: { x: 1.6, min: 0.002, ms: 150 }, 3: { x: 1.35, min: 0.0012, ms: 120 }, 4: { x: 1.18, min: 0.0006, ms: 90 } };
@@ -926,8 +984,100 @@ function playPart(p, rate) {
   return say(partSay(p), rate ?? (p.unit ? 0.8 : 0.55));
 }
 const wordKey = t => 'w:' + t.toLowerCase();
-function playWord(text, rate = 0.9) { return voices[wordKey(text)] ? playClip(voices[wordKey(text)]) : say(text, rate); }
+function playWord(text, rate = 0.9) { const f = (store('study-wordfix') || {})[text.toLowerCase()]; if (f && f.rec) return playClip(f.rec); return voices[wordKey(text)] ? playClip(voices[wordKey(text)]) : say(f && f.say ? f.say : text, rate); }
 
+
+/* ============ Parent Help (hold 2 s on a quiz screen): see the word the page is saying, hear it, and fix how it sounds
+   (record your voice, or type how it should sound). Fixes are saved as Study state "wordfix" and used for that word everywhere. ============ */
+const wordFixes = () => store('study-wordfix') || {};
+const spoken = w => { const f = wordFixes()[String(w).toLowerCase()]; return f && f.say ? f.say : w; };   // what the computer voice should say for this word
+function saveWordFix(w, fix) {
+  const all = wordFixes(), k = w.toLowerCase(), cur = { ...(all[k] || {}), ...fix, at: Date.now() };
+  Object.keys(cur).forEach(x => { if (cur[x] === null) delete cur[x]; });
+  if (cur.rec || cur.say) all[k] = cur; else delete all[k];
+  store('study-wordfix', all); void 0;
+}
+
+/* ============ Grown-up PIN: on his device, every grown-up button asks for it after the hold (set on the grown-up's Daily Sight Words card).
+   Stored as a hash in Study settings (his device can read but not change it). 3 wrong tries = locked for a minute. ============ */
+async function pinHash(pin) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('tod-study-pin:' + pin)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+const pinSet = () => { try { return (JSON.parse(localStorage.getItem('spell-settings') || '{}') || {}).pin || ''; } catch (e) { return ''; } };
+const PIN_ROLE = () => { try { return localStorage.getItem('study-role') || ''; } catch (e) { return ''; } };
+function askPin() {
+  if (!pinSet() || PIN_ROLE() !== 'kid') return Promise.resolve(true);   // no PIN yet, or a grown-up's own device
+  return new Promise(res => {
+    let typed = '';
+    const w = document.createElement('div'); w.className = 'pin-wrap'; w.setAttribute('role', 'dialog');
+    w.innerHTML = `<div class="pin-box"><h3>🔒 Grown-up PIN</h3><div class="pin-dots"></div><p class="pin-msg"></p>
+      <div class="pin-pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-n="${n}">${n}</button>`).join('')}<button data-x="cancel" class="pin-sm">Cancel</button><button data-n="0">0</button><button data-x="back" class="pin-sm">⌫</button></div></div>`;
+    document.body.appendChild(w);
+    const q = s => w.querySelector(s), lockUntil = () => +(sessionStorage.getItem('study-pin-lock') || 0);
+    const draw = () => { q('.pin-dots').innerHTML = [0, 1, 2, 3].map(i => `<span class="${i < typed.length ? 'on' : ''}"></span>`).join(''); };
+    const done = ok => { window.removeEventListener('keydown', onKey, true); w.remove(); res(ok); };
+    const locked = () => { const s = Math.ceil((lockUntil() - Date.now()) / 1000); if (s > 0) { q('.pin-msg').textContent = `Too many tries. Wait ${s} seconds.`; return true; } return false; };
+    const press = async n => {
+      if (locked() || typed.length >= 4) return;
+      typed += n; draw();
+      if (typed.length < 4) return;
+      if (await pinHash(typed) === pinSet()) { sessionStorage.removeItem('study-pin-bad'); return done(true); }
+      const bad = +(sessionStorage.getItem('study-pin-bad') || 0) + 1; sessionStorage.setItem('study-pin-bad', bad);
+      if (bad >= 3) { sessionStorage.setItem('study-pin-lock', Date.now() + 60000); sessionStorage.setItem('study-pin-bad', 0); }
+      typed = ''; q('.pin-box').classList.remove('shake'); void q('.pin-box').offsetWidth; q('.pin-box').classList.add('shake');
+      setTimeout(draw, 300); if (!locked()) q('.pin-msg').textContent = 'That’s not it. Try again.';
+    };
+    const onKey = e => { e.stopImmediatePropagation(); e.preventDefault(); if (/^\d$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') { typed = typed.slice(0, -1); draw(); } else if (e.key === 'Escape') done(false); };
+    window.addEventListener('keydown', onKey, true);
+    w.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.n) press(b.dataset.n); else if (b.dataset.x === 'back') { typed = typed.slice(0, -1); draw(); } else done(false); });
+    draw(); locked();
+  });
+}
+function holdButton(el, ms, fn) {
+  let t = null; const cancel = () => { clearTimeout(t); el.classList.remove('holding'); };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); el.classList.add('holding'); t = setTimeout(() => { cancel(); askPin().then(ok => ok && fn()); }, ms); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.addEventListener(ev, cancel));
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+const phButton = () => `<button class="grownup ph-btn" data-ph="1">🧑 Parent Help <small>(hold)</small></button>`;
+function wireParentHelp(getWord) { document.querySelectorAll('[data-ph]:not([data-phw])').forEach(b => { b.dataset.phw = '1'; holdButton(b, 2000, () => openParentHelp(getWord())); }); }
+function openParentHelp(word) {
+  if (!word || document.querySelector('.ph-wrap')) return;
+  if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+  const k = word.toLowerCase(); let rec = null, mr = null, stream = null, chunks = [];
+  const w = document.createElement('div'); w.className = 'ph-wrap'; w.setAttribute('role', 'dialog');
+  const fx = wordFixes()[k] || {};
+  w.innerHTML = `<div class="ph-box"><h3>🧑 Parent Help</h3><p>The page is saying this word:</p><div class="ph-word">${esc(word)}</div>
+    <button class="btn big" data-a="play">🔊 Play it the way the page does</button>
+    <h4>🎙 Record your voice for “${esc(word)}”</h4>
+    <div class="ph-row"><button class="btn" data-a="rec">● Record</button><button class="btn" data-a="listen" hidden>▶ Listen</button><button class="btn primary" data-a="saverec" hidden>Save my recording</button></div>
+    <h4>⌨️ Or type how it should sound</h4>
+    <div class="ph-row"><input class="ph-in" placeholder="like: ev ree thing" value="${esc(fx.say || '')}"><button class="btn" data-a="try">🔊 Try it</button><button class="btn primary" data-a="savesay">Save</button></div>
+    <p class="ph-msg"></p>
+    <div class="ph-row"><button class="btn" data-a="undo"${fx.rec || fx.say ? '' : ' hidden'}>Remove my fix for this word</button><button class="btn big primary" data-a="close">Done, back to his screen</button></div></div>`;
+  document.body.appendChild(w);
+  const q = s => w.querySelector(s), msg = (t, bad) => { q('.ph-msg').textContent = t; q('.ph-msg').style.color = bad ? '#FCA5A5' : '#34D399'; };
+  if (fx.rec) msg('This word uses your recording now.'); else if (fx.say) msg(`The voice says “${fx.say}” for this word now.`);
+  const stopRec = () => { try { if (mr && mr.state !== 'inactive') mr.stop(); } catch (e) { } };
+  w.addEventListener('click', async e => {
+    const b = e.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a;
+    if (a === 'play') playWord(word);
+    if (a === 'rec') {
+      if (mr && mr.state === 'recording') return stopRec();
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true }); chunks = [];
+        mr = new MediaRecorder(stream); mr.ondataavailable = ev => chunks.push(ev.data);
+        mr.onstop = () => { stream.getTracks().forEach(x => x.stop()); const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' }); const fr = new FileReader(); fr.onload = () => { rec = fr.result; q('[data-a=listen]').hidden = false; q('[data-a=saverec]').hidden = false; q('[data-a=rec]').textContent = '● Record again'; msg('Listen to it, then save it.'); }; fr.readAsDataURL(blob); };
+        mr.start(); b.textContent = '■ Stop'; msg('Recording… say the word, then tap Stop.'); setTimeout(stopRec, 4000);
+      } catch (er) { msg('The microphone isn’t available here. Type how it should sound instead, or record it on your own device (Spelling Helper → Spell one word → Record).', true); }
+    }
+    if (a === 'listen' && rec) playClip(rec);
+    if (a === 'saverec' && rec) { saveWordFix(word, { rec }); q('[data-a=undo]').hidden = false; msg('Saved ✓ Your voice plays for this word from now on.'); }
+    if (a === 'try') { const s = q('.ph-in').value.trim(); if (s) say(s, 0.85); }
+    if (a === 'savesay') { const s = q('.ph-in').value.trim(); if (!s) return msg('Type how it should sound first.', true); saveWordFix(word, { say: s, rec: null }); q('[data-a=undo]').hidden = false; msg(`Saved ✓ The voice says “${s}” for this word from now on.`); }
+    if (a === 'undo') { saveWordFix(word, { rec: null, say: null }); q('.ph-in').value = ''; b.hidden = true; msg('Removed. The page uses its normal voice for this word again.'); }
+    if (a === 'close') { stopRec(); w.remove(); setTimeout(() => playWord(word), 250); }
+  });
+}
+document.addEventListener('keydown', e => { if (document.querySelector('.ph-wrap, .pin-wrap')) e.stopImmediatePropagation(); }, true);   // Parent Help open: keys go to its box, not his answer
 /* ============ Grown-up setup ============ */
 function renderSetup() {
   const v = $('wordIn').value;
@@ -1034,10 +1184,14 @@ renderNeed();
 function renderWin() { document.querySelectorAll('#winSeg [data-win]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.win === settings.win)); }
 $('winSeg').addEventListener('click', e => { const b = e.target.closest('[data-win]'); if (!b) return; settings.win = +b.dataset.win; store('spell-settings', settings); renderWin(); });
 renderWin();
+function renderPin() { const on = !!settings.pin; $('pinState').textContent = on ? 'is on ✓' : 'is off: holding a button is enough'; $('pinOff').hidden = !on; }
+$('pinSave').onclick = async () => { const v = $('pinIn').value.trim(); if (!/^\d{4}$/.test(v)) { $('pinState').textContent = 'Use exactly 4 numbers.'; return; } settings.pin = await pinHash(v); store('spell-settings', settings); $('pinIn').value = ''; renderPin(); $('pinState').textContent = 'saved ✓ It’s on his device now.'; };
+$('pinOff').onclick = () => { settings.pin = ''; store('spell-settings', settings); renderPin(); };
+renderPin();
 function holdToOpen(btn, ms, target = 'setup') {
   let t = null;
   const cancel = () => { clearTimeout(t); t = null; btn.classList.remove('holding'); };
-  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.classList.add('holding'); t = setTimeout(() => { cancel(); if (target === 'grown') { grownMode = true; show('setup'); } else if (target === 'signout') $('acctOutBtn').click(); else show(target); }, ms); });
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.classList.add('holding'); t = setTimeout(() => { cancel(); askPin().then(ok => { if (!ok) return; if (target === 'grown') { grownMode = true; show('setup'); } else if (target === 'signout') $('acctOutBtn').click(); else show(target); }); }, ms); });
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, cancel));
   btn.addEventListener('contextmenu', e => e.preventDefault());
 }
@@ -1083,6 +1237,36 @@ function bankSetCurrent(words) {   // the grown-up typed today's words: keep eac
 /* Points: a list of every gain and loss, so a grown-up can show him exactly where his points came from */
 const pointsLog = () => ((store('study-points') || {}).log || []);
 function addPoints(entries) { if (!entries.length) return; const p = store('study-points') || { log: [] }; p.log = [...(p.log || []), ...entries].slice(-3000); store('study-points', p); }
+/* A month calendar. cell(dayStr) → { cls, html, title } */
+function monthCal(y, m, cell, navId) {
+  const first = new Date(y, m, 1), n = new Date(y, m + 1, 0).getDate(), lead = first.getDay(), today = ymd(Date.now());
+  let h = `<div class="cal"><div class="cal-top"><button class="btn btn-small" data-calnav="${navId}:-1" aria-label="Previous month">‹</button><b>${first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</b><button class="btn btn-small" data-calnav="${navId}:1" aria-label="Next month">›</button></div><div class="cal-grid">`
+    + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => `<span class="cal-h">${d}</span>`).join('') + '<span></span>'.repeat(lead);
+  for (let d = 1; d <= n; d++) { const ds = ymd(new Date(y, m, d)), c = ds > today ? { cls: 'future' } : cell(ds) || {}; h += `<button class="cal-d ${c.cls || ''}${ds === today ? ' today' : ''}" data-calday="${ds}" title="${esc(c.title || '')}"><span class="cal-n">${d}</span>${c.html || ''}</button>`; }
+  return h + '</div></div>';
+}
+const calMonth = { review: null, pts: null };
+const upDown = n => n > 0 ? `<span class="up"><i>▲</i>${n}</span>` : n < 0 ? `<span class="down"><i>▼</i>${-n}</span>` : '<span>0</span>';   // points went up (green) or down (red)
+/* His day each day: what was on his agenda (saved by his device as "day:<date>") and whether he finished it */
+function recordAgenda(words, sheets) {
+  if (cloud.role !== 'kid' || TESTDAY()) return;
+  const day = ymd(Date.now()), cur = store('study-day-agenda');
+  const items = [...(words.length ? [{ id: 'check', tool: 'check', title: 'Today’s sight words' }] : []), ...sheets.map(a => ({ id: a.id, tool: a.tool, title: a.title }))];
+  const have = cur && cur.day === day ? cur.items : [], merged = [...have]; items.forEach(x => { if (!merged.some(y => y.id === x.id)) merged.push(x); });
+  if (cur && cur.day === day && merged.length === have.length) return;
+  const rec = { t: Date.now(), day, items: merged }; store('study-day-agenda', rec); cloudPutLog('day', day, rec.t, rec);
+}
+function dayStatus(ds, agendas) {
+  const L = [...(store('sheet-log') || []), ...(store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))], C = store('spell-check-log') || [];
+  const on = t => ymd(t) === ds, upTo = t => ymd(t) <= ds;
+  let items = (agendas[ds] || {}).items;
+  if (!items && ds === ymd(Date.now())) { const d = store('spell-daily') || {}, w = d.on === false ? [] : dailyWords(), sq = store('spell-queue'); items = [...(w.length ? [{ id: 'check', tool: 'check' }] : []), ...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq' }] : []), ...((store('study-sheets') || {}).list || [])]; }
+  const any = C.some(x => on(x.t)) || L.some(x => on(x.t));
+  if (!items || !items.length) return any ? { cls: 'done', title: 'He did some work' } : { cls: 'none', title: 'Nothing assigned' };
+  const done = it => it.tool === 'check' ? C.some(x => on(x.t)) : L.some(x => x.aid === it.id && (['steps', 'weather'].includes(it.tool) ? on(x.t) : upTo(x.t)));
+  const n = items.filter(done).length;
+  return n === items.length ? { cls: 'done', title: `All ${n} done` } : { cls: 'miss', title: `${n} of ${items.length} done` };
+}
 function pointsSummary(log = pointsLog()) {
   const byDay = {}; log.forEach(e => { (byDay[e.day] = byDay[e.day] || []).push(e); });
   const days = Object.keys(byDay).sort().reverse().map(day => ({ day, pts: byDay[day].reduce((a, e) => a + e.pts, 0), entries: byDay[day] }));
@@ -1340,6 +1524,8 @@ async function postForm(body, attachments = []) {
   }
 }
 const SENTENCES = {
+  // Maverick’s word bank (Nov 6)
+  nothing: ['There is ___ in the box.', ''], whether: ['I don’t know ___ it will rain.', ''], behind: ['The cat hid ___ the tree.', 'tree'], many: ['How ___ apples do you have?', 'apple'], children: ['The ___ played at the park.', ''], above: ['The moon is ___ the house.', 'moon'], held: ['I ___ the baby bird gently.', 'bird'], next: ['You can go ___.', ''], these: ['___ shoes are mine.', ''], move: ['Please ___ your chair.', ''], people: ['Lots of ___ came to the party.', ''], none: ['There are ___ left.', ''], almost: ['I am ___ done.', ''], pull: ['___ the door to open it.', 'house'], gone: ['The snow is all ___.', 'snow'], should: ['You ___ brush your teeth.', ''], number: ['Three is my lucky ___.', 'three'], father: ['My ___ reads me a book.', 'book'], because: ['I wore a coat ___ it was cold.', 'snow'], neighbor: ['Our ___ has a big dog.', 'dog'], brother: ['My ___ likes to play ball.', 'ball'], animals: ['We saw ___ at the zoo.', 'elephant'], only: ['I have ___ one sock.', ''], its: ['The dog wagged ___ tail.', 'dog'], other: ['Where is my ___ shoe?', ''], would: ['___ you like some juice?', 'juice'], mother: ['My ___ gave me a hug.', 'heart'], after: ['We play ___ school.', ''], sister: ['My ___ is reading a book.', 'book'], together: ['We sang a song ___.', 'music'], about: ['This book is ___ a cat.', 'cat'], write: ['I can ___ my name.', 'hand'], anything: ['Is there ___ to eat?', 'apple'], even: ['Two and four are ___ numbers.', ''], friend: ['My best ___ came to play.', ''], everything: ['I put ___ in my backpack.', ''], goes: ['The bus ___ to school.', ''],
   // Dolch pre-primer
   a: ['I have ___ red ball.', 'ball'], and: ['I like cats ___ dogs.', 'cat'], away: ['The bird flew ___.', 'bird'],
   big: ['An elephant is very ___.', 'elephant'], blue: ['The sky is ___.', 'blue'], can: ['I ___ jump high.', ''],
@@ -1438,9 +1624,10 @@ function renderDailySetup(fromCloud) {
   else if (saved && (!$('dailyIn').value || fromCloud)) $('dailyIn').value = saved.words || '';
   renderBankBox();
   const kid = cloud.role === 'kid';
-  ['dailyIn', 'dailyPractice', 'dailyLook', 'dailyMic', 'dailyKeep'].forEach(id => $(id).disabled = kid);
+  ['dailyIn', 'dailyPractice', 'dailySheet', 'dailyLook', 'dailyMic', 'dailyKeep'].forEach(id => $(id).disabled = kid);
   $('useSight').hidden = kid;
   if (saved && typeof saved.practice === 'boolean') $('dailyPractice').checked = saved.practice;
+  $('dailySheet').checked = !saved || saved.sheet !== false;
   if (saved && typeof saved.look === 'boolean') $('dailyLook').checked = saved.look;
   if (saved && typeof saved.mic === 'boolean') $('dailyMic').checked = saved.mic;
   if (saved && typeof saved.keep === 'boolean') $('dailyKeep').checked = saved.keep;
@@ -1451,20 +1638,21 @@ function renderDailySetup(fromCloud) {
   $('dailyStart').disabled = !parseList($('dailyIn').value).length;
   renderLastCheck();
 }
-function saveDailySetup() { store('spell-daily', { resetAt: (store('spell-daily') || {}).resetAt || 0, on: dailyOn(), words: $('dailyIn').value, practice: $('dailyPractice').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked }); }
+function saveDailySetup() { store('spell-daily', { resetAt: (store('spell-daily') || {}).resetAt || 0, on: dailyOn(), words: $('dailyIn').value, practice: $('dailyPractice').checked, sheet: $('dailySheet').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked }); }
 $('dailyIn').addEventListener('change', () => { if (sightBank()) { bankSetCurrent(parseList($('dailyIn').value)); renderBankBox(); } });
 $('dailyIn').addEventListener('input', () => { $('dailyStart').disabled = !parseList($('dailyIn').value).length; saveDailySetup(); });
 $('dailyPractice').addEventListener('change', saveDailySetup);
+$('dailySheet').addEventListener('change', saveDailySetup);
 ['dailyLook', 'dailyMic', 'dailyKeep'].forEach(id => $(id).addEventListener('change', saveDailySetup));
 $('useSight').onclick = () => { $('dailyIn').value = sightPracticeWords().join(', '); saveDailySetup(); renderDailySetup(); };
 $('dailyStart').onclick = () => {
   if (testing) stopMicTest();
   const words = parseList($('dailyIn').value); if (!words.length) return;
   stopRecord(); if (cloud.role !== 'kid') saveDailySetup();
-  startDaily(words, { practice: $('dailyPractice').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked });
+  startDaily(words, { practice: $('dailyPractice').checked, sheet: $('dailySheet').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked });
 };
 function startDaily(words, o) {
-  daily = { only: !!o.only, qid: o.qid || '', words, i: 0, phase: 'practice', practiced: o.practice !== false, looked3: o.look !== false, micWanted: o.mic !== false, keepVoice: o.keep !== false, practice: {}, results: [] };
+  daily = { only: !!o.only, qid: o.qid || '', words, i: 0, phase: 'practice', practiced: o.practice !== false, sheet: !o.only && o.sheet !== false, looked3: o.look !== false, micWanted: o.mic !== false, keepVoice: o.keep !== false && !TESTDAY(), practice: {}, results: [] };
   if (daily.looked3) startLook(); else afterLook();
 }
 
@@ -1560,10 +1748,11 @@ function saveClip(word, round, url) {
   if (!saveLookLog(log)) { sess.clips.pop(); saveLookLog(log); return; }
   cloudPutAudio(key, 'clip', url, sess.session); cloudPutLook(sess);
 }
+const findLine = f => `found the word he read ${f.first} of ${f.total} times on the first try, about ${Math.round(f.ms / Math.max(1, f.total) / 1000)} seconds per word`;
 function saveLookStats() {
   if (!daily || !daily.session) return;
   const { log, sess } = lookSession(true);
-  Object.assign(sess, { heard: daily.heard, total: daily.lookTotal, micOk: daily.micOk, micWanted: daily.micWanted, words: daily.words });
+  Object.assign(sess, { heard: daily.heard, total: daily.lookTotal, micOk: daily.micOk, micWanted: daily.micWanted, words: daily.words, find: daily.find && daily.find.total ? daily.find : null });
   saveLookLog(log); cloudPutLook(sess);
 }
 function clipButtons(sess) {
@@ -1584,7 +1773,7 @@ $('lookClips').addEventListener('click', e => { const b = e.target.closest('[dat
 
 async function startLook() {
   daily.phase = 'look'; daily.round = 1; daily.i = 0; daily.lookOrder = [...daily.words];
-  daily.session = Date.now(); daily.heard = 0; daily.lookTotal = 0; daily.micOk = false;
+  daily.session = Date.now(); daily.heard = 0; daily.lookTotal = 0; daily.micOk = false; daily.find = { first: 0, total: 0, ms: 0, slow: 0 };
   if (daily.micWanted) daily.micOk = !!(await getMic());
   show('look'); lookWord();
 }
@@ -1593,7 +1782,8 @@ async function lookWord() {
   const w = daily.lookOrder[daily.i];
   renderDailyBar();
   $('lookWord').textContent = w;
-  $('saidIt').hidden = true; $('lookAgain').hidden = true; $('lookNext').hidden = true;
+  $('saidIt').hidden = true; $('lookAgain').hidden = true; $('lookNext').hidden = true; $('lookFind').hidden = true; $('lookWord').hidden = false;
+  daily.shownAt = Date.now();
   $('meterFill').style.width = '0';
   const useMic = daily.micOk && mic;
   $('meter').hidden = !useMic; $('micHint').hidden = !useMic;
@@ -1601,7 +1791,7 @@ async function lookWord() {
   $('lookPrompt').textContent = useMic ? 'Read it out loud! 🎤' : 'Read it out loud!';
   if (daily.round === 1 && daily.i === 0) say(useMic ? 'Look at the word. Read it out loud, so I can hear you.' : 'Look at the word. Read it out loud.', 0.95);
   daily.lookTotal++;
-  if (!useMic) { lookTimer = setTimeout(() => { if (!$('look').hidden) $('saidIt').hidden = false; }, 1500); return; }   // no mic: the button, after a moment to read
+  if (!useMic) { lookTimer = setTimeout(() => { if (!$('look').hidden) $('saidIt').hidden = false; }, 2200 + 150 * w.length); return; }   // no mic: the button, after enough time to really read it
   const my = listenToken;
   await quietNow();                                     // don't let the computer's own voice count
   if (my !== listenToken || $('look').hidden) return;
@@ -1620,11 +1810,45 @@ async function heardIt() {
   $('lookPrompt').textContent = daily.micOk && mic ? 'I heard you! Now listen: this is how it sounds.' : 'Listen: this is how it sounds.';
   await playWord(w, 0.85);
   if ($('look').hidden) return;
+  if (!(daily.micOk && mic)) return lookFind(w);   // no microphone: Look & Find, so he can't just tap through
+  lookShowNext();
+}
+function lookShowNext() {
   $('lookAgain').hidden = false; $('lookNext').hidden = false;
   $('lookNext').textContent = daily.i < daily.lookOrder.length - 1 ? 'Next word →' : daily.round < 3 ? `Round ${daily.round + 1} →` : 'Done looking →';
   $('lookNext').focus();
 }
 $('saidIt').onclick = () => heardIt();
+/* Look & Find (when the microphone isn't available): the word hides, and he taps it out of 3 look-alikes.
+   The buttons wait a moment, so tapping fast doesn't help. Parent Review shows how many he found the first time. */
+function swapLetters(w) {
+  const a = [...w]; if (a.length < 3) return w + w.slice(-1);
+  for (let k = 1; k < a.length - 1; k++) if (a[k] !== a[k + 1]) { [a[k], a[k + 1]] = [a[k + 1], a[k]]; return a.join(''); }
+  return w.slice(0, -1);
+}
+function lookFind(w) {
+  const others = mixed(daily.words.filter(x => x !== w)).sort((a, b) => Math.abs(a.length - w.length) - Math.abs(b.length - w.length));
+  const fake = swapLetters(w), opts = mixed([...new Set([w, fake !== w ? fake : w + 's', others[0] || w.split('').reverse().join('')])]).slice(0, 3);
+  let missed = false; const started = Date.now();
+  $('lookWord').hidden = true; $('lookPrompt').textContent = 'Which one did you just read? Find it!';
+  $('lookFind').innerHTML = opts.map(o => `<button data-find="${esc(o)}" disabled>${esc(o)}</button>`).join('');
+  $('lookFind').hidden = false;
+  say('Which one did you just read? Find it.', 1);
+  setTimeout(() => $('lookFind').querySelectorAll('button:not(.wrong)').forEach(b => b.disabled = false), 1200);
+  $('lookFind').onclick = e => {
+    const b = e.target.closest('[data-find]'); if (!b || b.disabled) return;
+    if (b.dataset.find === w) {
+      b.classList.add('right'); $('lookFind').querySelectorAll('button').forEach(x => x.disabled = true);
+      daily.find.total++; if (!missed) daily.find.first++; daily.find.ms += Date.now() - daily.shownAt;
+      $('lookPrompt').textContent = 'Yes! That’s it.'; $('lookWord').hidden = false; lookShowNext();
+    } else {   // look again: the word comes back for a moment
+      missed = true; b.classList.add('wrong'); $('lookFind').querySelectorAll('button').forEach(x => x.disabled = true);
+      $('lookPrompt').textContent = 'Not that one. Look carefully!'; say('Not that one. Look carefully.', 1);
+      $('lookWord').hidden = false; $('lookFind').hidden = true;
+      setTimeout(() => { if ($('look').hidden) return; $('lookWord').hidden = true; $('lookFind').hidden = false; $('lookPrompt').textContent = 'Which one did you just read? Find it!'; $('lookFind').querySelectorAll('button:not(.wrong)').forEach(x => x.disabled = false); }, 2500);
+    }
+  };
+}
 $('lookAgain').onclick = () => playWord(daily.lookOrder[daily.i], 0.85);
 $('lookNext').onclick = () => {
   if (daily.i < daily.lookOrder.length - 1) { daily.i++; return lookWord(); }
@@ -1677,13 +1901,31 @@ function practiceListDone() {
 
 /* ---- The check: the word is said (and used in a sentence), never shown; no help, no right/wrong until the end ---- */
 let typed = '';
+/* Sight Word Practice with today's words (do.html's sight worksheet, full screen over this page) before the check */
+function dailySheet() {
+  const words = daily.words.map(w => w.toLowerCase()), day = ymd(Date.now());
+  store('study-sheet-daily', { id: 'daily-' + day, tool: 'sight', title: 'Sight Word Practice · today’s words', at: Date.now(),
+    data: { words, label: 'today’s words', sentences: Object.fromEntries(words.map(w => [w, SENTENCES[w] && SENTENCES[w][0].includes('___') ? SENTENCES[w][0] : ''])) } });
+  daily.phase = 'sheet'; stopMic(); renderDailyBar(); $('dailyBar').hidden = true;
+  const f = document.createElement('iframe'); f.className = 'sheet-frame'; f.id = 'sheetFrame'; f.title = 'Sight Word Practice'; f.allow = 'microphone; autoplay';
+  f.src = 'do.html?daily=1&embed=1'; document.body.appendChild(f); document.body.classList.add('sheeton');
+}
+window.addEventListener('message', e => {
+  if (e.origin !== location.origin || !e.data || !e.data.studySheetDone) return;
+  const f = $('sheetFrame'); if (f) f.remove(); document.body.classList.remove('sheeton');
+  if (!daily) return show('kidhome');
+  if (e.data.rec) { const sl = store('sheet-log') || []; if (!sl.some(x => x.id === e.data.rec.id)) { sl.push(e.data.rec); store('sheet-log', sl.slice(-40)); } }
+  if (e.data.quit) { daily = null; return show(cloud.role === 'kid' && !grownMode ? 'kidhome' : 'setup'); }
+  daily.sheetDone = true; readyForCheck();
+});
 function readyForCheck() {
+  if (daily.sheet && !daily.sheetDone) return dailySheet();
   daily.phase = 'check'; daily.i = 0; daily.results = [];
   const o = [...daily.words];   // mixed up, like a real test
   for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; }
   if (o.length > 2 && o.every((w, i) => w === daily.words[i])) o.push(o.shift());   // never exactly the practice order
   daily.order = o;
-  $('readyTitle').textContent = daily.practiced ? 'Practice done!' : daily.looked3 ? 'Great reading!' : 'Sight word check!';
+  $('readyTitle').textContent = daily.practiced || daily.sheetDone ? 'Practice done!' : daily.looked3 ? 'Great reading!' : 'Sight word check!';
   $('checkReady').hidden = false; $('checkRun').hidden = true;
   show('check'); renderDailyBar();
   say(daily.practiced ? 'Great practicing! Now the check. Spell each word all by yourself.' : 'Time for the check. Spell each word all by yourself.', 0.95);
@@ -1693,7 +1935,7 @@ function buildCheckKeys() {
   $('ckeys').innerHTML = 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<div class="key" data-k="${ch}"><button class="kpick" aria-label="${ch.toUpperCase()}">${ch}</button></div>`).join('');
   $('spaceBtn').hidden = !daily.words.some(w => w.includes(' '));
 }
-const sentenceFor = w => { const x = SENTENCES[w.toLowerCase()]; return x && x[0].includes('___') ? x[0].replace('___', w) : ''; };
+const sentenceFor = w => { const x = SENTENCES[w.toLowerCase()]; return x && x[0].includes('___') ? x[0].replace('___', spoken(w)) : ''; };
 function sayCheckWord(withSentence) {
   const w = daily.order[daily.i], sent = sentenceFor(w);
   return playWord(w, 0.85).then(() => withSentence && sent ? wait(300).then(() => say(sent, 0.85)).then(() => wait(300)).then(() => playWord(w, 0.85)) : null);
@@ -1727,7 +1969,7 @@ function askSure() {
   if (!typed.trim()) return;
   $('confirmWord').innerHTML = [...typed.trim()].map(ch => ch === ' ' ? '<span class="lbox sp"></span>' : `<span class="lbox">${esc(ch)}</span>`).join('');
   $('confirm').hidden = false;
-  say('Are you sure? Once you say yes, you can’t change it.', 0.95);
+  doubleCheck();
   $('confirmNo').focus();
 }
 $('confirmNo').onclick = () => { $('confirm').hidden = true; $('cmsg').className = 'message'; $('cmsg').textContent = 'Take your time. Look at each letter. Tap Done when you’re sure.'; };
@@ -1777,7 +2019,7 @@ function showResults() {
   const byWord = Object.fromEntries(daily.results.map(r => [r.word, r]));
   const results = daily.words.map(w => byWord[w]).filter(Boolean);
   const right = results.filter(r => r.ok).length, n = results.length;
-  const rec = { id: Date.now().toString(36), t: Date.now(), results, looked3: !!daily.looked3, look: daily.looked3 ? { micWanted: daily.micWanted, micOk: daily.micOk, heard: daily.heard, total: daily.lookTotal, kept: daily.keepVoice } : null, practiced: daily.practiced, practice: daily.practice, sent: false };
+  const rec = { id: Date.now().toString(36), t: Date.now(), results, looked3: !!daily.looked3, look: daily.looked3 ? { micWanted: daily.micWanted, micOk: daily.micOk, heard: daily.heard, total: daily.lookTotal, kept: daily.keepVoice, find: daily.find && daily.find.total ? daily.find : null } : null, practiced: daily.practiced, practice: daily.practice, sent: false };
   rec.session = daily.session || null;
   store('spell-check-latest', rec);
   if (emailOn()) { const outbox = store('spell-check-outbox') || []; outbox.push(rec); store('spell-check-outbox', outbox.slice(-20)); }
@@ -1845,7 +2087,7 @@ function emailBody(rec) {
   const lk = rec.look;
   body['Look & Listen'] = !rec.looked3 ? 'Skipped'
     : `Done: saw and heard each word 3 times. ` + (!lk || !lk.micWanted ? 'Microphone check was off.'
-      : !lk.micOk ? 'The microphone wasn’t available, so it couldn’t check that he said them.'
+      : !lk.micOk ? (lk.find ? `No microphone, so he did Look & Find instead: ${findLine(lk.find)}.` : 'The microphone wasn’t available, so it couldn’t check that he said them.')
       : `Said out loud: ${lk.heard} of ${lk.total} (the microphone heard him).${lk.kept ? ' His recordings are attached (round1-word, round2-word…), and also in Parent Review on that device.' : ''}`);
   body['Practice first'] = rec.practiced
     ? rec.results.map(r => { const p = rec.practice[r.word]; return p ? `${r.word}: ${p.tricky ? `${p.tricky} tricky letter${p.tricky > 1 ? 's' : ''}` : 'no trouble'}${p.helps ? `, Help ${p.helps}x` : ''}` : `${r.word}: skipped`; }).join(' · ')
@@ -1870,6 +2112,7 @@ function clipAttachments(rec) {
 }
 let sending = false;
 async function sendOutbox() {
+  if (TESTDAY()) return;
   if (sending || !emailOn()) return; sending = true;
   try {
     let box = store('spell-check-outbox') || [];
@@ -1929,6 +2172,12 @@ const dayKey = t => new Date(t).toDateString();
 const timeOf = t => new Date(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 /* "See every answer": what was on his screen and everything he picked or typed, in order */
 const nrm = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+/* Chunk It: split the letters he typed into the parts, in the order he was asked, marking wrong letters */
+function chunkGroups(text, keyStr) {
+  const m = String(text || '').match(/^Parts in this order: (.+)$/); if (!m || !keyStr) return null;
+  const parts = m[1].split(' → ').map(p => p.replace(/ /g, '').toLowerCase()), keys = keyStr.split(' '); let k = 0;
+  return parts.map(p => { const g = []; let pos = 0; while (pos < p.length && k < keys.length) { const c = keys[k++], ok = c === p[pos]; g.push({ c, ok }); if (ok) pos++; } return { part: p, g }; });
+}
 function answerRows(list) {
   return list.map(r => {
     const picks = r.picks && r.picks.length ? r.picks : r.typed ? [r.typed] : [], ch = r.shown && r.shown.choices;
@@ -1936,7 +2185,8 @@ function answerRows(list) {
     const chips = ch ? `<div class="ans-ch">${ch.map(c => { const n = picks.findIndex(p => nrm(p) === nrm(c)); return `<span class="${isRight(c) ? 'r' : n >= 0 ? 'w' : ''}">${n >= 0 ? `<i>${n + 1}</i>` : ''}${esc(c)}</span>`; }).join('')}</div>` : '';
     const letterKeys = /^[a-z]( [a-z])*$/.test(picks[0] || '') && picks.length === 1 && nrm(picks[0]).replace(/ /g, '') !== nrm(r.answer).replace(/ /g, '');   // a list of single letters (missing letters, chunks)
     const bank = r.shown && r.shown.bank ? `<div class="ans-ch">Word bank: ${r.shown.bank.map(c => `<span class="${isRight(c) ? 'r' : ''}">${esc(c)}</span>`).join('')}</div>` : '';
-    const tries = picks.length ? `<div class="ans-picks">${ch ? 'He tapped' : letterKeys ? 'He typed these letters, in order' : 'He typed'}: ${picks.map((v, i) => `<span class="${letterKeys || /^line \d/.test(v) ? '' : isRight(v) ? 'r' : 'w'}">${picks.length > 1 ? `${i + 1}. ` : ''}${esc(v.replace(/^letters he typed: /, ''))}</span>`).join(' → ')}</div>` : '';
+    const cg = chunkGroups(r.shown && r.shown.text, picks[0]);
+    const tries = cg ? `<div class="ans-picks">He typed each part (wrong letters crossed out): ${cg.map(x => `<b>${esc(x.part)}</b>: ${x.g.map(l => l.ok ? esc(l.c) : `<s class="w">${esc(l.c)}</s>`).join('')}`).join(' → ')}</div>` : picks.length ? `<div class="ans-picks">${ch ? 'He tapped' : letterKeys ? 'He typed these letters, in order' : 'He typed'}: ${picks.map((v, i) => `<span class="${letterKeys || /^line \d/.test(v) ? '' : isRight(v) ? 'r' : 'w'}">${picks.length > 1 ? `${i + 1}. ` : ''}${esc(v.replace(/^letters he typed: /, ''))}</span>`).join(' → ')}</div>` : '';
     return `<div class="ans-row ${r.ok ? 'ok' : 'no'}"><div class="ans-h"><span class="mk">${r.ok ? '✓' : '✗'}</span><b>${esc(r.part)}</b><span>${esc(r.label)}</span></div>
       ${r.shown && r.shown.text ? `<div class="ans-saw">On his screen: ${esc(r.shown.text)}</div>` : ''}${chips}${bank}${tries}
       ${r.answer ? `<div class="ans-right">Right answer: <b>${esc(r.answer)}</b></div>` : ''}</div>`;
@@ -1947,14 +2197,22 @@ const seeAll = (rows, extraHtml = '', key = '') => rows || extraHtml ? `<div cla
 /* ⭐ Points screen: total, today, best day, every day's points, and a Review of each gain and loss */
 function openPoints(forParent) {
   const P = pointsSummary(), nm = kidName();
-  $('ptsTitle').textContent = forParent ? `⭐ ${nm || 'His'} points` : '⭐ My points';
+  $('ptsTitle').textContent = forParent ? `⭐ ${nm || 'His'} points` : '⭐ My points'; $('ptsTitle').dataset.parent = forParent ? '1' : '';
   const nice = d => new Date(d + 'T12:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
-  $('ptsScreen').innerHTML = `<div class="pts-big"><div><small>Total</small><b>${P.total}</b></div><div><small>Today</small><b>${P.today >= 0 ? '+' : ''}${P.today}</b></div><div><small>Best day</small><b>${P.best ? P.best.pts : 0}</b>${P.best ? `<small>${esc(nice(P.best.day))}</small>` : ''}</div></div>
-    ${P.days.length ? `<div class="pts-days">${P.days.map((d, i) => `<div class="pts-day"><div class="pts-row"><b>${esc(nice(d.day))}</b><span class="${d.pts < 0 ? 'neg' : ''}">${d.pts >= 0 ? '+' : ''}${d.pts} points</span><button class="btn" data-ptsday="${i}">Review</button></div><div class="pts-list" id="ptsList${i}" hidden>${d.entries.map(e => `<div class="${e.pts > 0 ? 'gain' : e.pts < 0 ? 'loss' : 'zero'}"><b>${e.pts > 0 ? '+' : ''}${e.pts}</b> ${esc(e.why)}</div>`).join('')}</div></div>`).join('')}</div>`
+  $('ptsScreen').innerHTML = `<div class="pts-big"><div><small>Total</small><b>${P.total}</b></div><div><small>Today</small><b>${upDown(P.today)}</b></div><div><small>Best day</small><b>${P.best ? P.best.pts : 0}</b>${P.best ? `<small>${esc(nice(P.best.day))}</small>` : ''}</div></div>
+    ${(() => { const cm = calMonth.pts || (calMonth.pts = [new Date().getFullYear(), new Date().getMonth()]); const byDay = Object.fromEntries(P.days.map(d => [d.day, d.pts])); return monthCal(cm[0], cm[1], ds => ds in byDay ? { cls: byDay[ds] > 0 ? 'done' : byDay[ds] < 0 ? 'miss' : 'none', html: `<small>${byDay[ds] > 0 ? '▲' : byDay[ds] < 0 ? '▼' : ''}${Math.abs(byDay[ds])}</small>`, title: `${byDay[ds]} points` } : null, 'pts'); })()}
+    ${P.days.length ? `<div class="pts-days">${P.days.map((d, i) => `<div class="pts-day" id="ptsDay-${d.day}"><div class="pts-row"><b>${esc(nice(d.day))}</b><span class="${d.pts < 0 ? 'neg' : ''}">${upDown(d.pts)} points</span><button class="btn" data-ptsday="${i}">Review</button></div><div class="pts-list" id="ptsList${i}" hidden>${d.entries.map(e => `<div class="${e.pts > 0 ? 'gain' : e.pts < 0 ? 'loss' : 'zero'}"><b>${e.pts > 0 ? '+' : ''}${e.pts}</b> ${esc(e.why)}</div>`).join('')}</div></div>`).join('')}</div>`
       : `<p class="rp-sub">No points yet. Spell a word right on the daily quiz to earn some!</p>`}
     <p class="rp-saw">Daily quiz: a word spelled right earns 5 points on its first day on the list, 4 the next school day… down to 1. Mastered Words Test: +5 if he still remembers it, −3 if not.</p>`;
   $('pointsWrap').hidden = false;
 }
+document.addEventListener('click', e => {   // calendars: change month, or jump to a day
+  const nv = e.target.closest('[data-calnav]');
+  if (nv) { const [which, step] = nv.dataset.calnav.split(':'); const c = calMonth[which]; const d = new Date(c[0], c[1] + +step, 1); calMonth[which] = [d.getFullYear(), d.getMonth()]; return which === 'pts' ? openPoints($('ptsTitle').dataset.parent === '1') : renderReview(); }
+  const dy = e.target.closest('[data-calday]'); if (!dy) return;
+  if (dy.closest('#ptsScreen')) { const el = $('ptsDay-' + dy.dataset.calday); if (el) { const b = el.querySelector('[data-ptsday]'); if (b && b.textContent === 'Review') b.click(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } return; }
+  const el = $('rv-' + dy.dataset.calday); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 $('ptsScreen').addEventListener('click', e => { const b = e.target.closest('[data-ptsday]'); if (!b) return; const l = $('ptsList' + b.dataset.ptsday); l.hidden = !l.hidden; b.textContent = l.hidden ? 'Review' : 'Hide'; });
 $('ptsClose').onclick = () => { $('pointsWrap').hidden = true; };
 $('pointsBtn').onclick = () => openPoints(false);
@@ -1997,14 +2255,17 @@ function drawReplay() {
   else if (st.part === 'Cover & Write') saw = `<div class="rp-big">${esc(st.answer)}</div><div class="rp-saw">Then the word was covered.</div>`;
   else if (st.part === 'Missing Letters') saw = `<div class="rp-big">${esc((text.match(/“(.+)”/) || [])[1] || st.label)}</div>`;
   else if (st.part === 'Circle the What words' || /What|Which|How/.test(text) && !sh.choices) saw = `<div class="rp-sent">${esc(text)}</div>`;
-  const hear = st.hear || st.part === 'Check' ? `<button class="btn" id="rpHear">🔊 Hear what he heard</button>` : '';
+  const hear = sh.heard && sh.heard.length ? `<div class="rp-heard"><div class="rp-saw">What the page said to him, in order (tap to hear; this device’s voice can sound a little different from his iPad’s):</div>${sh.heard.map((h, q) => `<button class="btn btn-small" data-rpsay="${q}">🔊 ${h.w ? `“${esc(h.w)}” <small>(your recording)</small>` : `“${esc(h.t.length > 70 ? h.t.slice(0, 68) + '…' : h.t)}”`}</button>`).join('')}</div>`
+    : st.hear || st.part === 'Check' ? `<button class="btn" id="rpHear">🔊 Hear what he heard</button>` : '';
   const said = sh.clips && sh.clips.length ? `<div class="rp-saw">His voice:</div><div class="row" style="justify-content:center">${sh.clips.map((k, q) => `<button class="btn" data-rpclip="${esc(k)}">▶ Time ${q + 1}</button>`).join('')}</div>` : '';
   let pick = '';
   if (sh.choices) {
     const two = sh.choices.length <= 4 && sh.choices.every(c => c.length > 6);
     pick = `<div class="rp-opts${sh.choices.length === 4 && sh.choices.every(c => c.length <= 3) ? ' four' : sh.choices.length <= 2 || two ? ' two' : ''}">${sh.choices.map(c => { const k = picks.findIndex(p => n(p) === n(c)); const ph = sh.choiceHtml && sh.choiceHtml[c] ? `<div class="rp-optpic">${cleanPic(sh.choiceHtml[c])}</div>` : ''; return `<div class="rp-opt ${st.answer && isRight(c) ? 'right' : k >= 0 ? (st.answer ? 'wrong' : 'chosen') : ''}">${k >= 0 ? `<i>${k + 1}</i>` : ''}${ph}${esc(c)}</div>`; }).join('')}</div>`;
   } else if (picks.length && /^[a-z]( [a-z])*$/.test(picks[0]) && picks.length === 1 && n(picks[0]).replace(/ /g, '') !== n(st.answer).replace(/ /g, '')) {
-    pick = `<div class="rp-saw">The letters he typed, in order:</div><div class="rp-keys">${picks[0].split(' ').map(c => `<span>${esc(c)}</span>`).join('')}</div>`;
+    const cg = chunkGroups(text, picks[0]);
+    if (cg) pick = `<div class="rp-saw">What he typed for each part (red = a wrong letter he fixed):</div><div class="rp-chunks">${cg.map(x => `<div class="rp-chunk"><small>${esc(x.part)}</small><div>${x.g.map(l => `<span class="rp-box ${l.ok ? 'g' : 'b'}">${esc(l.c)}</span>`).join('')}</div></div>`).join('<span class="rp-arrow">→</span>')}</div>`;
+    else pick = `<div class="rp-saw">The letters he typed, in order:</div><div class="rp-keys">${picks[0].split(' ').map(c => `<span>${esc(c)}</span>`).join('')}</div>`;
   } else if (picks.length && st.answer && !/^line \d/.test(picks[0])) {
     const A = [...n(st.answer).replace(/ /g, '')];
     pick = picks.map((v, k) => { const L = [...String(v).toLowerCase().replace(/[^a-z0-9]/g, '')]; const cells = Array.from({ length: Math.max(L.length, A.length) }, (_, q) => L[q] ? `<span class="rp-box ${L[q] === A[q] ? 'g' : 'b'}">${esc(L[q])}</span>` : `<span class="rp-box e"></span>`).join('');
@@ -2015,6 +2276,7 @@ function drawReplay() {
     <div class="rp-verdict ${st.ok ? 'ok' : 'no'}">${st.part === 'Look & Say' ? (st.ok ? '✓ Said it 3 times' : '✗ Didn’t finish all 3') : !st.answer && !st.img ? 'His pick (nothing to check against)' : st.ok ? '✓ Right the first time' : '✗ Not the first time'}${st.answer && !st.img ? ` · right answer: ${esc(st.answer)}` : ''}</div>`;
   $('rpBack').disabled = rp.i === 0; $('rpNext').textContent = rp.i < rp.steps.length - 1 ? 'Next →' : 'Done ✓';
   $('rpScreen').querySelectorAll('[data-rpclip]').forEach(b => b.onclick = async () => { b.disabled = true; const d = await cloudGetAudio(b.dataset.rpclip); b.disabled = false; if (d) playClip(d); else b.textContent = 'Not saved'; });
+  $('rpScreen').querySelectorAll('[data-rpsay]').forEach(b => b.onclick = () => { const h = sh.heard[+b.dataset.rpsay]; h.w ? playWord(h.w) : say(h.t, h.r || 0.9); });
   if ($('rpHear')) $('rpHear').onclick = () => { const s = typeof sentenceFor === 'function' ? sentenceFor(st.answer) : ''; playWord(st.answer).then(() => s && say(s, 0.85)); };
 }
 $('rpBack').onclick = () => { if (rp && rp.i > 0) { rp.i--; drawReplay(); } };
@@ -2023,7 +2285,7 @@ $('rpClose').onclick = () => { $('replay').hidden = true; rp = null; if (canTalk
 document.addEventListener('keydown', e => { if ($('replay').hidden) return; if (e.key === 'ArrowRight') $('rpNext').click(); else if (e.key === 'ArrowLeft') $('rpBack').click(); else if (e.key === 'Escape') $('rpClose').click(); });
 async function renderReview() {
   const P0 = pointsSummary();
-  $('reviewPts').innerHTML = `<div class="pts-card"><b>⭐ ${esc(kidName() || 'His')} points: ${P0.total}</b><span>today ${P0.today >= 0 ? '+' : ''}${P0.today} · best day ${P0.best ? P0.best.pts : 0}</span><button class="btn" id="reviewPtsBtn">See every point</button></div>`;
+  $('reviewPts').innerHTML = `<div class="pts-card"><b>⭐ ${esc(kidName() || 'His')} points: ${P0.total}</b><span>today ${upDown(P0.today)} · best day ${P0.best ? P0.best.pts : 0}</span><button class="btn" id="reviewPtsBtn">See every point</button></div>`;
   $('reviewPtsBtn').onclick = () => openPoints(true);
   if (cloudMember()) { $('reviewList').innerHTML = '<p class="rv-empty">Loading…</p>'; await cloudPullLogs(); if ($('review').hidden) return; }
   const looks = lookLog(), checks = store('spell-check-log') || [], fixes = store('fixup-log') || [], sheets = store('sheet-log') || [];
@@ -2034,13 +2296,15 @@ async function renderReview() {
   fixes.forEach(x => add(x.t, { t: x.t, kind: 'fix', x }));
   sheets.forEach(x => add(x.t, { t: x.t, kind: 'sheet', x }));
   const order = Object.values(days).sort((a, b) => b.t - a.t);
+  const agendas = store('study-days') || {}, cm = calMonth.review || (calMonth.review = [new Date().getFullYear(), new Date().getMonth()]);
+  $('reviewCal').innerHTML = monthCal(cm[0], cm[1], ds => dayStatus(ds, agendas), 'review') + `<div class="cal-key"><span class="done">Done</span><span class="miss">Not done</span><span class="none">Nothing assigned</span><small>Tap a day to jump to it.</small></div>`;
   if (!order.length) { $('reviewList').innerHTML = '<p class="rv-empty">Nothing yet. Results show up here after he does the daily sight words.</p>'; return; }
   const wordList = rs => rs.map(r => r.ok ? `<span class="ok">✓ ${esc(r.word)}</span>` : `<span class="no">✗ ${esc(r.word)} (wrote “${esc(r.typed)}”)</span>`).join(' · ');
-  $('reviewList').innerHTML = order.map(d => `<div class="rv-day"><h3>${esc(new Date(d.t).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }))}</h3>`
+  $('reviewList').innerHTML = order.map(d => `<div class="rv-day" id="rv-${ymd(d.t)}"><h3>${esc(new Date(d.t).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }))}</h3>`
     + d.items.sort((a, b) => a.t - b.t).map(it => {
       const x = it.x;
       if (it.kind === 'look') return `<div class="rv-sec"><h4>Look &amp; Listen<span>${esc(timeOf(x.t))}</span></h4>
-        <div class="ln">${x.micOk === false && x.micWanted ? 'The microphone wasn’t available, so it couldn’t check.' : x.total ? `Said out loud: ${x.heard} of ${x.total}` : ''}</div>
+        <div class="ln">${x.micOk === false && x.find ? `No microphone, so he did Look &amp; Find: ${findLine(x.find)}.` : x.micOk === false && x.micWanted ? 'The microphone wasn’t available, so it couldn’t check.' : x.total ? `Said out loud: ${x.heard} of ${x.total}` : ''}</div>
         ${x.clips && x.clips.length ? `<div class="clips">${clipButtons(x)}</div><button class="del" data-delsess="${x.session}">Delete these recordings</button>` : '<div class="ln rv-empty">No recordings saved.</div>'}</div>`;
       if (it.kind === 'check') { const right = x.results.filter(r => r.ok).length, g = x.grade || gradeFor(right, x.results.length);
         return `<div class="rv-sec"><h4>Sight word check<span>${esc(timeOf(x.t))} · ${g.pct}% ${g.letter} · ${right} of ${x.results.length} right${x.sent ? ' · emailed ✓' : ''}</span></h4><div class="ln">${wordList(x.results)}</div>${seeAll(answerRows(x.results.map(r => ({ part: 'Check', label: r.word, ok: r.ok, answer: r.word, shown: { text: 'He heard the word and a sentence. The word wasn’t shown.' }, picks: [r.typed] }))), '', 'check:' + x.id)}</div>`; }
@@ -2080,9 +2344,33 @@ holdToOpen($('reviewBtn'), 2000, 'review');
 $('openReview').onclick = () => show('review');
 $('reviewDone').onclick = () => show('setup');
 $('kidSheets').addEventListener('click', e => { const a = e.target.closest('a[href="#spellq"]'); if (!a) return; e.preventDefault(); const q = store('spell-queue'); if (q && q.words && q.words.length) startDaily(q.words, { look: false, practice: true, only: true, qid: q.id }); });
+wireParentHelp(() => daily && daily.order ? daily.order[daily.i] : '');
 $('kidStart').onclick = () => { if (testing) stopMicTest(); const d = store('spell-daily') || {}; const words = d.on === false ? [] : dailyWords(); if (!words.length) return renderKidHome(); startDaily(words, d); };
 holdToOpen($('kidGrown'), 2000, 'grown');
 holdToOpen($('kidSwitch'), 2000, 'signout');   // back to the Parent / Child screen
+/* Test day (grown-up, hold): do his day exactly as he sees it, without saving anything as him.
+   This device's copy is put aside first and put back at "End test"; nothing goes to the database, no emails, no recordings. */
+const TEST_SKIP = k => k === 'spell-voice' || k === 'study-cloud-queue' || k === 'study-role' || /auth|^sb-/.test(k);
+function startTestDay() {
+  const snap = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!TEST_SKIP(k)) snap[k] = localStorage.getItem(k); }
+  try { sessionStorage.setItem('study-testday-snap', JSON.stringify(snap)); sessionStorage.setItem('study-testday', '1'); }
+  catch (e) { alert('This device doesn’t have room for a test day right now.'); return; }
+  renderTestBar(); show('kidhome'); window.scrollTo(0, 0); say('Test day. Nothing will be saved.', 1);
+}
+async function endTestDay() {
+  let snap = {}; try { snap = JSON.parse(sessionStorage.getItem('study-testday-snap') || '{}'); } catch (e) { }
+  const keys = []; for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+  keys.forEach(k => { if (!TEST_SKIP(k) && !(k in snap)) localStorage.removeItem(k); });
+  Object.entries(snap).forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch (e) { } });
+  sessionStorage.removeItem('study-testday'); sessionStorage.removeItem('study-testday-snap');
+  daily = null; renderTestBar(); await cloudPull(); show('kidhome'); window.scrollTo(0, 0);
+}
+function renderTestBar() { $('testBar').hidden = !TESTDAY(); document.body.classList.toggle('testday', TESTDAY()); }
+$('kidTest').addEventListener('pointerdown', e => { e.preventDefault(); const b = $('kidTest'); b.classList.add('holding'); b._t = setTimeout(() => { b.classList.remove('holding'); askPin().then(ok => ok && startTestDay()); }, 2000); });
+['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => $('kidTest').addEventListener(ev, () => { clearTimeout($('kidTest')._t); $('kidTest').classList.remove('holding'); }));
+$('kidTest').addEventListener('contextmenu', e => e.preventDefault());
+$('testEnd').onclick = () => endTestDay();
+renderTestBar();
 
 /* ================= Shared across devices: the Recipe Box's Supabase database =================
    Tables (study-setup.sql): study_state (today's words, settings, sounds, history, recent), study_log (checks, Fix-Ups,
@@ -2094,7 +2382,7 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const KID_DOMAIN = 'kids.thatonedrawer.com';   // usernames become <username>@kids.thatonedrawer.com behind the scenes (never emailed)
 const loginEmail = id => { id = id.trim().toLowerCase(); return id.includes('@') ? id : `${id}@${KID_DOMAIN}`; };
 const shownName = email => email.endsWith('@' + KID_DOMAIN) ? email.slice(0, -KID_DOMAIN.length - 1) : email;
-const SYNC = { 'sight-bank': 'sightbank', 'study-points': 'points', 'study-profile': 'profile', 'spell-queue': 'spellq', 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent', 'study-sheets': 'sheets' };   // sheets: on-screen worksheets assigned from the Worksheets page
+const SYNC = { 'study-wordfix': 'wordfix', 'sight-bank': 'sightbank', 'study-points': 'points', 'study-profile': 'profile', 'spell-queue': 'spellq', 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent', 'study-sheets': 'sheets' };   // sheets: on-screen worksheets assigned from the Worksheets page
 const cloud = { sb: null, user: null, role: null, pulling: false, timers: {} };
 const cloudMember = () => !!(cloud.sb && cloud.user && cloud.role);
 function cloudClient() {
@@ -2121,6 +2409,7 @@ $('syncNow').onclick = async () => {
 /* Offline queue: [{op, args}] in localStorage "study-cloud-queue", retried on open and when the network comes back */
 function cloudQueue(op, args) { const q = store('study-cloud-queue') || []; q.push({ op, args }); localStorage.setItem('study-cloud-queue', JSON.stringify(q.slice(-200))); }
 async function cloudRun(op, args, queueOnFail = true) {
+  if (TESTDAY()) return true;   // test day: nothing goes to the database
   if (!cloudMember()) { if (cloud.user && queueOnFail) cloudQueue(op, args); return false; }   // not signed in: this device only
   try {
     let r;
@@ -2140,12 +2429,12 @@ async function cloudFlush() {
 window.addEventListener('online', () => cloudFlush());
 // store() calls this for every write; synced keys go up (debounced), except while pulling
 function cloudOnStore(k) {
-  if (!SYNC[k] || cloud.pulling || !cloud.sb) return;
+  if (!SYNC[k] || cloud.pulling || !cloud.sb || TESTDAY()) return;
   if (cloud.role === 'kid' && ['spell-daily', 'spell-settings', 'spell-sounds', 'study-sheets', 'spell-queue', 'study-profile'].includes(k)) return;   // set from the grown-up's device
   clearTimeout(cloud.timers[k]);
   cloud.timers[k] = setTimeout(() => {
     let data = store(k);
-    if (k === 'spell-settings' && data) data = { need: data.need, win: data.win, email: data.email === true };   // sensitivity stays on this device
+    if (k === 'spell-settings' && data) data = { need: data.need, win: data.win, email: data.email === true, pin: data.pin || '' };   // sensitivity stays on this device
     cloudRun('state', { key: SYNC[k], data }).then(ok => { if (ok && k === 'spell-daily') syncNote(`Saved for his device ✓ (${timeOf(Date.now())})`); });
   }, 700);
 }
@@ -2166,7 +2455,7 @@ function cloudSyncVoices() {
 }
 // Pull everything small: words, settings, sounds, history, recent words, the grown-up's voices
 async function cloudPull() {
-  if (!cloudMember()) return;
+  if (!cloudMember() || TESTDAY()) return;
   cloud.pulling = true;
   try {
     const { data: rows, error } = await cloud.sb.from('study_state').select('key,data,updated_at');
@@ -2212,6 +2501,7 @@ async function cloudPullLogs() {
     localStorage.setItem('spell-check-log', JSON.stringify(merge('spell-check-log', 'check', x => x.id).slice(-30)));
     localStorage.setItem('fixup-log', JSON.stringify(merge('fixup-log', 'fixup', x => x.id).slice(-30)));
     localStorage.setItem('sheet-log', JSON.stringify(merge('sheet-log', 'sheet', x => x.id).slice(-40)));
+    const ag = store('study-days') || {}; (data || []).filter(r => r.kind === 'day').forEach(r => { ag[r.data.day] = r.data; }); localStorage.setItem('study-days', JSON.stringify(ag));
     const localLooks = lookLog(), urlByKey = {};
     localLooks.forEach(sess => (sess.clips || []).forEach(c => { if (c.key && c.url) urlByKey[c.key] = c.url; }));
     const looks = merge('spell-look-log', 'look', x => x.session).map(sess => ({ ...sess, clips: (sess.clips || []).map(c => ({ ...c, url: c.url || urlByKey[c.key] })) }));
@@ -2223,7 +2513,7 @@ function trimOldClips() {
   const kept = log.filter(sess => sess.t >= cut);
   if (kept.length !== log.length) saveLookLog(kept);
 }
-function renderAll(fromCloud) {
+function renderAll(fromCloud) { try { renderPin(); } catch (e) { }
   renderRecent(); renderSetup(); renderDailySetup(fromCloud); renderNeed(); renderWin(); renderSens(); renderAccount();
   if (!$('kidhome').hidden || (!$('setup').hidden && cloud.role === 'kid' && !grownMode)) show('setup');
 }
@@ -2339,6 +2629,7 @@ function renderKidHome() {
   $('kidSheets').hidden = !sheets.length;
   $('kidSheets').innerHTML = sheets.length ? `<h3 class="kid-h">${words.length ? 'First: worksheets' : 'Worksheets'}</h3>` + sheets.map(a => { const d = doneFor(a), g = d && d.grade;
     return `<a class="${d ? 'done' : ''}" href="${href(a)}"><span>${esc(a.title)}</span>${d ? `<small>✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'weather' ? `day ${d.extra && d.extra.day} done today` : a.tool === 'steps' ? 'done today' : 'done'}${a.tool === 'weather' ? '' : ' · again?'}</small>` : ''}</a>`; }).join('') : '';
+  recordAgenda(words, sheets);
   $('kidStart').hidden = !words.length;
   $('kidDone').hidden = !today.length;
   if (today.length) { const r = today.at(-1), g = r.grade || gradeFor(r.results.filter(x => x.ok).length, r.results.length); $('kidDone').textContent = `You already did a check today: ${g.letter} (${g.pct}%). You can practice again!`; }

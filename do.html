@@ -146,6 +146,21 @@ body.inpart .prog { margin: 0 auto; }
 /* his login stays in the Study: the top bar keeps the logo (not a link) and drops the links to the other sections */
 body.kid #tod-nav .tod-links { display: none !important; }
 body.kid #tod-nav .tod-home { pointer-events: none; }
+.lbox.chk { border-color: #FBBF24 !important; box-shadow: 0 0 0 4px rgba(251,191,36,.45); transform: scale(1.12); transition: transform .12s; }
+.ph-btn { margin-top: 18px; }
+.ph-wrap { position: fixed; inset: 0; z-index: 90; background: rgba(5,9,14,.85); display: grid; place-items: center; padding: 16px; overflow: auto; }
+.ph-box { background: #131C26; border: 2px solid #FBBF24; border-radius: 22px; padding: 20px 24px; max-width: 560px; width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; color: #E5E7EB; }
+.ph-box h3 { margin: 0; font: 700 26px Fredoka, sans-serif; color: #FDE68A; } .ph-box h4 { margin: 8px 0 0; font: 600 17px Fredoka, sans-serif; } .ph-box p { margin: 0; }
+.ph-word { font: 700 56px Andika, sans-serif; background: #fff; color: #1F2937; border-radius: 18px; padding: 4px 30px; }
+.ph-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.ph-in { font: 500 20px Andika, sans-serif; padding: 10px 14px; border-radius: 12px; border: 2px solid #334155; background: #0B1118; color: #fff; width: 230px; }
+.ph-msg { min-height: 1.3em; font-weight: 600; }
+.pin-wrap { position: fixed; inset: 0; z-index: 95; background: rgba(5,9,14,.88); display: grid; place-items: center; padding: 16px; }
+.pin-box { background: #131C26; border: 2px solid #FBBF24; border-radius: 22px; padding: 20px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; color: #E5E7EB; }
+.pin-box h3 { margin: 0; font: 700 24px Fredoka, sans-serif; color: #FDE68A; } .pin-msg { margin: 0; min-height: 1.2em; color: #FCA5A5; font-weight: 600; }
+.pin-dots { display: flex; gap: 14px; } .pin-dots span { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #FDE68A; } .pin-dots span.on { background: #FDE68A; }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 10px; } .pin-pad button { height: 64px; border-radius: 16px; border: 2px solid #334155; background: #1E293B; color: #fff; font: 700 26px Fredoka, sans-serif; cursor: pointer; } .pin-pad .pin-sm { font-size: 16px; }
+.pin-box.shake { animation: pinshake .3s; } @keyframes pinshake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 .sumlist .res .mark { min-width: 40px; }
 .mt-pts { font: 700 30px Fredoka, sans-serif; color: #FDE68A; } .mt-pts.neg { color: #FCA5A5; }
 .nextbar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--surface); border: 2px solid var(--study); border-radius: 999px; padding: 10px 22px; display: flex; align-items: center; gap: 14px; z-index: 60; font: 600 18px Fredoka, sans-serif; box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
@@ -264,7 +279,23 @@ span.dot { display: grid; place-items: center; cursor: default; }
 .wxchart td svg { background: #fff; border-radius: 8px; padding: 2px; vertical-align: middle; }
 /* his login stays in the Study: the top bar keeps the logo (not a link) and drops the links to the other sections */
 body.kid #tod-nav .tod-links { display: none !important; }
+body.emb #tod-nav { display: none !important; }
 body.kid #tod-nav .tod-home { pointer-events: none; }
+.lbox.chk { border-color: #FBBF24 !important; box-shadow: 0 0 0 4px rgba(251,191,36,.45); transform: scale(1.12); transition: transform .12s; }
+.ph-btn { margin-top: 18px; }
+.ph-wrap { position: fixed; inset: 0; z-index: 90; background: rgba(5,9,14,.85); display: grid; place-items: center; padding: 16px; overflow: auto; }
+.ph-box { background: #131C26; border: 2px solid #FBBF24; border-radius: 22px; padding: 20px 24px; max-width: 560px; width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; color: #E5E7EB; }
+.ph-box h3 { margin: 0; font: 700 26px Fredoka, sans-serif; color: #FDE68A; } .ph-box h4 { margin: 8px 0 0; font: 600 17px Fredoka, sans-serif; } .ph-box p { margin: 0; }
+.ph-word { font: 700 56px Andika, sans-serif; background: #fff; color: #1F2937; border-radius: 18px; padding: 4px 30px; }
+.ph-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.ph-in { font: 500 20px Andika, sans-serif; padding: 10px 14px; border-radius: 12px; border: 2px solid #334155; background: #0B1118; color: #fff; width: 230px; }
+.ph-msg { min-height: 1.3em; font-weight: 600; }
+.pin-wrap { position: fixed; inset: 0; z-index: 95; background: rgba(5,9,14,.88); display: grid; place-items: center; padding: 16px; }
+.pin-box { background: #131C26; border: 2px solid #FBBF24; border-radius: 22px; padding: 20px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; color: #E5E7EB; }
+.pin-box h3 { margin: 0; font: 700 24px Fredoka, sans-serif; color: #FDE68A; } .pin-msg { margin: 0; min-height: 1.2em; color: #FCA5A5; font-weight: 600; }
+.pin-dots { display: flex; gap: 14px; } .pin-dots span { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #FDE68A; } .pin-dots span.on { background: #FDE68A; }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 10px; } .pin-pad button { height: 64px; border-radius: 16px; border: 2px solid #334155; background: #1E293B; color: #fff; font: 700 26px Fredoka, sans-serif; cursor: pointer; } .pin-pad .pin-sm { font-size: 16px; }
+.pin-box.shake { animation: pinshake .3s; } @keyframes pinshake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 </style>
 </head>
 <body>
@@ -282,8 +313,8 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
     <div class="boxes" id="confirmWord"></div>
     <p>Once you say yes, you can’t change it.</p>
     <div class="row">
-      <button class="btn big" id="confirmNo">Let me look again</button>
-      <button class="btn big primary" id="confirmYes">Yes, I’m sure</button>
+      <button class="btn big" id="confirmNo">Let me fix it</button>
+      <button class="btn big primary" id="confirmYes">Yes, I checked it</button>
     </div>
   </div>
 </div>
@@ -342,6 +373,8 @@ function icon(name, size = 40) {
 
 /* Sentence bank: "___" marks where the word goes. Pictures are optional. */
 const SENTENCES = {
+  // Maverick’s word bank (Nov 6)
+  nothing: ['There is ___ in the box.', ''], whether: ['I don’t know ___ it will rain.', ''], behind: ['The cat hid ___ the tree.', 'tree'], many: ['How ___ apples do you have?', 'apple'], children: ['The ___ played at the park.', ''], above: ['The moon is ___ the house.', 'moon'], held: ['I ___ the baby bird gently.', 'bird'], next: ['You can go ___.', ''], these: ['___ shoes are mine.', ''], move: ['Please ___ your chair.', ''], people: ['Lots of ___ came to the party.', ''], none: ['There are ___ left.', ''], almost: ['I am ___ done.', ''], pull: ['___ the door to open it.', 'house'], gone: ['The snow is all ___.', 'snow'], should: ['You ___ brush your teeth.', ''], number: ['Three is my lucky ___.', 'three'], father: ['My ___ reads me a book.', 'book'], because: ['I wore a coat ___ it was cold.', 'snow'], neighbor: ['Our ___ has a big dog.', 'dog'], brother: ['My ___ likes to play ball.', 'ball'], animals: ['We saw ___ at the zoo.', 'elephant'], only: ['I have ___ one sock.', ''], its: ['The dog wagged ___ tail.', 'dog'], other: ['Where is my ___ shoe?', ''], would: ['___ you like some juice?', 'juice'], mother: ['My ___ gave me a hug.', 'heart'], after: ['We play ___ school.', ''], sister: ['My ___ is reading a book.', 'book'], together: ['We sang a song ___.', 'music'], about: ['This book is ___ a cat.', 'cat'], write: ['I can ___ my name.', 'hand'], anything: ['Is there ___ to eat?', 'apple'], even: ['Two and four are ___ numbers.', ''], friend: ['My best ___ came to play.', ''], everything: ['I put ___ in my backpack.', ''], goes: ['The bus ___ to school.', ''],
   // Dolch pre-primer
   a: ['I have ___ red ball.', 'ball'], and: ['I like cats ___ dogs.', 'cat'], away: ['The bird flew ___.', 'bird'],
   big: ['An elephant is very ___.', 'elephant'], blue: ['The sky is ___.', 'blue'], can: ['I ___ jump high.', ''],
@@ -543,19 +576,39 @@ function pickVoice() {
   voice = voice || vs[0] || null;
 }
 if (canTalk) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+/* What he heard on each screen (saved with his answer, so Parent Review can play it back) */
+let heard = [];
+function heardLog(text, rate, word) { if (!document.getElementById('confirm').hidden) return; const e = word ? { w: word } : { t: text, r: rate }; const last = heard[heard.length - 1]; if (!last || JSON.stringify(last) !== JSON.stringify(e)) heard.push(e); if (heard.length > 14) heard.shift(); }
+const takeHeard = () => { const h = heard; heard = []; return h.length ? h : undefined; };
 function say(text, rate = 0.9) {
   if (!canTalk || !text) return Promise.resolve();
-  speechSynthesis.cancel();
+  heardLog(text, rate);
+  const busy = speechSynthesis.speaking || speechSynthesis.pending; speechSynthesis.cancel();
   return new Promise(res => {
     const u = new SpeechSynthesisUtterance(text);
     if (voice) u.voice = voice;
     u.lang = (voice && voice.lang) || 'en-US'; u.rate = rate; u.pitch = 1.05;
     u.onend = u.onerror = () => res();
-    speechSynthesis.speak(u);
+    if (busy) setTimeout(() => speechSynthesis.speak(u), 120); else speechSynthesis.speak(u);   // iPads can garble or skip a word spoken right after cutting off another
     setTimeout(res, Math.min(6000, 1500 + text.length * 80));   // never wait forever if the voice gets stuck
   });
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
+/* Double-check: before an answer is locked in, each letter he typed lights up and is read out loud, and "Yes" waits until it's done */
+let dcToken = 0;
+async function doubleCheck() {
+  const my = ++dcToken, yes = $('confirmYes'), spans = [...$('confirmWord').querySelectorAll('.lbox:not(.sp)')];
+  $('confirmQ').textContent = 'Double-check your work!'; yes.disabled = true;
+  await say('Double-check your work. Look at every letter.', 0.95);
+  for (const s of spans) {
+    if (my !== dcToken || $('confirm').hidden) return;
+    spans.forEach(x => x.classList.remove('chk')); s.classList.add('chk');
+    await say(letterName(s.textContent.trim().toLowerCase()), 0.9); await wait(250);
+  }
+  if (my !== dcToken || $('confirm').hidden) return;
+  spans.forEach(x => x.classList.remove('chk')); yes.disabled = false;
+  say('Is every letter right?', 0.95);
+}
 /* Between screens: a bar that fills up so he can see the next one is coming (taps and keys pause meanwhile). Never waits on the voice. */
 async function nextUp(ms = 1200, label = 'Next one coming…') {
   onKey = null; document.body.classList.add('advancing');
@@ -570,7 +623,7 @@ function playClip(url) {
   if (canTalk) speechSynthesis.cancel();
   return new Promise(res => { const a = new Audio(url); a.onended = a.onerror = () => res(); a.play().catch(() => res()); setTimeout(res, 5000); });
 }
-const playWord = (w, rate = 0.85) => voices['w:' + w.toLowerCase()] ? playClip(voices['w:' + w.toLowerCase()]) : say(w, rate);
+const playWord = (w, rate = 0.85) => { const k = w.toLowerCase(), f = (store('study-wordfix') || {})[k]; if (f && f.rec) { heardLog('', 0, w); return playClip(f.rec); } if (voices['w:' + k]) { heardLog('', 0, w); return playClip(voices['w:' + k]); } return say(f && f.say ? f.say : w, rate); };
 const sayBlank = s => say(s.replace('___', ' blank '), 0.85);   // a sentence with the missing word read as "blank"
 const SPK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>`;
 const $ = id => document.getElementById(id);
@@ -655,7 +708,7 @@ async function saveClip(key, data, session) {
 function askSure(typed) {
   return new Promise(res => {
     $('confirmWord').innerHTML = boxes(typed, 'typed');
-    $('confirm').hidden = false; say('Are you sure? Once you say yes, you can’t change it.', 0.95); $('confirmNo').focus();
+    $('confirm').hidden = false; doubleCheck(); $('confirmNo').focus();
     $('confirmNo').onclick = () => { $('confirm').hidden = true; res(false); };
     $('confirmYes').onclick = () => { $('confirm').hidden = true; res(true); };
   });
@@ -723,7 +776,10 @@ function guided({ word, fill, ghost = false, hint }) {
 
 /* ============ The worksheet: assigned from the grown-up's device (or "Try it on screen") ============ */
 const params = new URLSearchParams(location.search);
-const TRY = params.get('try') === '1';
+const TESTDAY = (() => { try { return sessionStorage.getItem('study-testday') === '1'; } catch (e) { return false; } })();   // grown-up's Test day on his device: works like Try it, nothing saved
+const TRY = params.get('try') === '1' || TESTDAY;
+const HOME = TRY && !TESTDAY ? 'index.html' : 'spell.html';
+const DAILY = params.get('daily') === '1' && window.parent !== window;   // Sight Word Practice inside his daily routine (spell.html): when done, back to the quiz
 const emailOn = () => { try { return (JSON.parse(localStorage.getItem('spell-settings') || '{}') || {}).email === true; } catch (e) { return false; } };   // results emails are off unless turned on (Parent Review always has them)
 const RESULTS_EMAIL = 'dylan.l.cosmos@gmail.com';
 const MAILER_URL = 'https://script.google.com/macros/s/AKfycbzbr4Wpw4mrT6MbTViKI3K7PxLnp1avmygg0E5_imNpjTaF_Za6smj70ay-e1tKEJQr/exec';   // Google Apps Script web app on Dylan's account (SpellingHelperMailer.gs)
@@ -732,7 +788,8 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 let sbc = null;
 const sbClient = () => sbc || (window.supabase && window.supabase.createClient ? (sbc = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } })) : null);
 async function loadAssignment() {
-  if (TRY) return store('study-sheet-try');
+  if (params.get('try') === '1') return store('study-sheet-try');
+  if (params.get('daily') === '1') return store('study-sheet-daily');
   const id = params.get('a'); if (!id) return null;
   let a = ((store('study-sheets') || {}).list || []).find(x => x.id === id);
   if (!a) {
@@ -749,7 +806,7 @@ const items = [];       // every graded answer: { part, label, ok, typed, answer
 const partSum = [];     // [part name, how it went]
 let extra = {};         // anything else worth keeping (coin marks, step times)
 const picsOf = list => Object.fromEntries(list.map(([k, n, emo]) => [n, emo ? `<span style="font-size:46px;line-height:1">${emo}</span>` : WX_ICON(k, 64)]));
-const mark = (part, label, ok, typed, answer, word = null, shown = null, picks = null) => items.push({ part, label, ok, typed: typed ?? '', answer: answer ?? '', word, shown, picks: picks || (typed ? [String(typed)] : []) });
+const mark = (part, label, ok, typed, answer, word = null, shown = null, picks = null) => { const h = takeHeard(); items.push({ part, label, ok, typed: typed ?? '', answer: answer ?? '', word, shown: h ? { ...(shown || {}), heard: h } : shown, picks: picks || (typed ? [String(typed)] : []) }); };
 
 function renderProg() { $('prog').innerHTML = PARTS.length > 1 ? PARTS.map((p, i) => `<span class="${i === partIdx ? 'now' : i < partIdx ? 'done' : ''}">${i + 1}. ${esc(p.name)}</span>`).join('') : ''; }
 function startPart(i) {
@@ -1485,7 +1542,7 @@ function weatherChart(msg) {
     <table class="wxchart"><tr><th>Day</th><th>Sky</th><th>Temperature</th><th>Wind</th><th>From</th><th>Rain</th><th>Air</th><th>Clouds</th></tr>
     ${rows.map(e => `<tr><td><b>${e.day}</b><br><small>${esc(new Date(e.t).toLocaleDateString(undefined, { weekday: 'short' }))}</small></td><td>${WX_ICON(e.obs.sky, 40)}</td><td>${e.real ? `${e.real.temp}${S.U}` : ''}<br><small>${esc(e.obs.feel || '')}</small></td><td>${WX_ICON(e.obs.wind, 40)}</td><td>${esc(e.obs.from || '–')}</td><td>${e.obs.rain === 'yes' ? '🌧️' : '–'}</td><td>${esc(e.obs.air || '–')}</td><td>${WX_ICON(e.obs.clouds, 40)}</td></tr>
       ${e.forecast ? `<tr><td colspan="8" style="text-align:left;color:var(--muted)">Forecast for the next day: ${WX_ICON(e.forecast.sky, 26)} ${esc(skyName(e.forecast.sky))}, ${esc(e.forecast.feel)}</td></tr>` : ''}`).join('')}</table>
-    <p class="note" id="sent"></p><a class="btn big primary" href="${TRY ? 'index.html' : 'spell.html'}" style="text-decoration:none">Finished</a>`;
+    <p class="note" id="sent"></p><a class="btn big primary" href="${HOME}" style="text-decoration:none">Finished</a>`;
 }
 function weatherResults() {
   onKey = null; partIdx = PARTS.length; renderProg(); document.body.classList.remove('inpart'); window.scrollTo(0, 0);
@@ -1510,6 +1567,98 @@ function weatherResults() {
   saveAndSend(rec);
 }
 
+
+/* ============ Parent Help (hold 2 s on a quiz screen): see the word the page is saying, hear it, and fix how it sounds
+   (record your voice, or type how it should sound). Fixes are saved as Study state "wordfix" and used for that word everywhere. ============ */
+const wordFixes = () => store('study-wordfix') || {};
+const spoken = w => { const f = wordFixes()[String(w).toLowerCase()]; return f && f.say ? f.say : w; };   // what the computer voice should say for this word
+function saveWordFix(w, fix) {
+  const all = wordFixes(), k = w.toLowerCase(), cur = { ...(all[k] || {}), ...fix, at: Date.now() };
+  Object.keys(cur).forEach(x => { if (cur[x] === null) delete cur[x]; });
+  if (cur.rec || cur.say) all[k] = cur; else delete all[k];
+  store('study-wordfix', all); cloudState('wordfix', all);
+}
+
+/* ============ Grown-up PIN: on his device, every grown-up button asks for it after the hold (set on the grown-up's Daily Sight Words card).
+   Stored as a hash in Study settings (his device can read but not change it). 3 wrong tries = locked for a minute. ============ */
+async function pinHash(pin) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('tod-study-pin:' + pin)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+const pinSet = () => { try { return (JSON.parse(localStorage.getItem('spell-settings') || '{}') || {}).pin || ''; } catch (e) { return ''; } };
+const PIN_ROLE = () => { try { return localStorage.getItem('study-role') || ''; } catch (e) { return ''; } };
+function askPin() {
+  if (!pinSet() || PIN_ROLE() !== 'kid') return Promise.resolve(true);   // no PIN yet, or a grown-up's own device
+  return new Promise(res => {
+    let typed = '';
+    const w = document.createElement('div'); w.className = 'pin-wrap'; w.setAttribute('role', 'dialog');
+    w.innerHTML = `<div class="pin-box"><h3>🔒 Grown-up PIN</h3><div class="pin-dots"></div><p class="pin-msg"></p>
+      <div class="pin-pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-n="${n}">${n}</button>`).join('')}<button data-x="cancel" class="pin-sm">Cancel</button><button data-n="0">0</button><button data-x="back" class="pin-sm">⌫</button></div></div>`;
+    document.body.appendChild(w);
+    const q = s => w.querySelector(s), lockUntil = () => +(sessionStorage.getItem('study-pin-lock') || 0);
+    const draw = () => { q('.pin-dots').innerHTML = [0, 1, 2, 3].map(i => `<span class="${i < typed.length ? 'on' : ''}"></span>`).join(''); };
+    const done = ok => { window.removeEventListener('keydown', onKey, true); w.remove(); res(ok); };
+    const locked = () => { const s = Math.ceil((lockUntil() - Date.now()) / 1000); if (s > 0) { q('.pin-msg').textContent = `Too many tries. Wait ${s} seconds.`; return true; } return false; };
+    const press = async n => {
+      if (locked() || typed.length >= 4) return;
+      typed += n; draw();
+      if (typed.length < 4) return;
+      if (await pinHash(typed) === pinSet()) { sessionStorage.removeItem('study-pin-bad'); return done(true); }
+      const bad = +(sessionStorage.getItem('study-pin-bad') || 0) + 1; sessionStorage.setItem('study-pin-bad', bad);
+      if (bad >= 3) { sessionStorage.setItem('study-pin-lock', Date.now() + 60000); sessionStorage.setItem('study-pin-bad', 0); }
+      typed = ''; q('.pin-box').classList.remove('shake'); void q('.pin-box').offsetWidth; q('.pin-box').classList.add('shake');
+      setTimeout(draw, 300); if (!locked()) q('.pin-msg').textContent = 'That’s not it. Try again.';
+    };
+    const onKey = e => { e.stopImmediatePropagation(); e.preventDefault(); if (/^\d$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') { typed = typed.slice(0, -1); draw(); } else if (e.key === 'Escape') done(false); };
+    window.addEventListener('keydown', onKey, true);
+    w.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.n) press(b.dataset.n); else if (b.dataset.x === 'back') { typed = typed.slice(0, -1); draw(); } else done(false); });
+    draw(); locked();
+  });
+}
+function holdButton(el, ms, fn) {
+  let t = null; const cancel = () => { clearTimeout(t); el.classList.remove('holding'); };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); el.classList.add('holding'); t = setTimeout(() => { cancel(); askPin().then(ok => ok && fn()); }, ms); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.addEventListener(ev, cancel));
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+const phButton = () => `<button class="grownup ph-btn" data-ph="1">🧑 Parent Help <small>(hold)</small></button>`;
+function wireParentHelp(getWord) { document.querySelectorAll('[data-ph]:not([data-phw])').forEach(b => { b.dataset.phw = '1'; holdButton(b, 2000, () => openParentHelp(getWord())); }); }
+function openParentHelp(word) {
+  if (!word || document.querySelector('.ph-wrap')) return;
+  if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+  const k = word.toLowerCase(); let rec = null, mr = null, stream = null, chunks = [];
+  const w = document.createElement('div'); w.className = 'ph-wrap'; w.setAttribute('role', 'dialog');
+  const fx = wordFixes()[k] || {};
+  w.innerHTML = `<div class="ph-box"><h3>🧑 Parent Help</h3><p>The page is saying this word:</p><div class="ph-word">${esc(word)}</div>
+    <button class="btn big" data-a="play">🔊 Play it the way the page does</button>
+    <h4>🎙 Record your voice for “${esc(word)}”</h4>
+    <div class="ph-row"><button class="btn" data-a="rec">● Record</button><button class="btn" data-a="listen" hidden>▶ Listen</button><button class="btn primary" data-a="saverec" hidden>Save my recording</button></div>
+    <h4>⌨️ Or type how it should sound</h4>
+    <div class="ph-row"><input class="ph-in" placeholder="like: ev ree thing" value="${esc(fx.say || '')}"><button class="btn" data-a="try">🔊 Try it</button><button class="btn primary" data-a="savesay">Save</button></div>
+    <p class="ph-msg"></p>
+    <div class="ph-row"><button class="btn" data-a="undo"${fx.rec || fx.say ? '' : ' hidden'}>Remove my fix for this word</button><button class="btn big primary" data-a="close">Done, back to his screen</button></div></div>`;
+  document.body.appendChild(w);
+  const q = s => w.querySelector(s), msg = (t, bad) => { q('.ph-msg').textContent = t; q('.ph-msg').style.color = bad ? '#FCA5A5' : '#34D399'; };
+  if (fx.rec) msg('This word uses your recording now.'); else if (fx.say) msg(`The voice says “${fx.say}” for this word now.`);
+  const stopRec = () => { try { if (mr && mr.state !== 'inactive') mr.stop(); } catch (e) { } };
+  w.addEventListener('click', async e => {
+    const b = e.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a;
+    if (a === 'play') playWord(word);
+    if (a === 'rec') {
+      if (mr && mr.state === 'recording') return stopRec();
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true }); chunks = [];
+        mr = new MediaRecorder(stream); mr.ondataavailable = ev => chunks.push(ev.data);
+        mr.onstop = () => { stream.getTracks().forEach(x => x.stop()); const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' }); const fr = new FileReader(); fr.onload = () => { rec = fr.result; q('[data-a=listen]').hidden = false; q('[data-a=saverec]').hidden = false; q('[data-a=rec]').textContent = '● Record again'; msg('Listen to it, then save it.'); }; fr.readAsDataURL(blob); };
+        mr.start(); b.textContent = '■ Stop'; msg('Recording… say the word, then tap Stop.'); setTimeout(stopRec, 4000);
+      } catch (er) { msg('The microphone isn’t available here. Type how it should sound instead, or record it on your own device (Spelling Helper → Spell one word → Record).', true); }
+    }
+    if (a === 'listen' && rec) playClip(rec);
+    if (a === 'saverec' && rec) { saveWordFix(word, { rec }); q('[data-a=undo]').hidden = false; msg('Saved ✓ Your voice plays for this word from now on.'); }
+    if (a === 'try') { const s = q('.ph-in').value.trim(); if (s) say(s, 0.85); }
+    if (a === 'savesay') { const s = q('.ph-in').value.trim(); if (!s) return msg('Type how it should sound first.', true); saveWordFix(word, { say: s, rec: null }); q('[data-a=undo]').hidden = false; msg(`Saved ✓ The voice says “${s}” for this word from now on.`); }
+    if (a === 'undo') { saveWordFix(word, { rec: null, say: null }); q('.ph-in').value = ''; b.hidden = true; msg('Removed. The page uses its normal voice for this word again.'); }
+    if (a === 'close') { stopRec(); w.remove(); setTimeout(() => playWord(word), 250); }
+  });
+}
+document.addEventListener('keydown', e => { if (document.querySelector('.ph-wrap, .pin-wrap')) e.stopImmediatePropagation(); }, true);   // Parent Help open: keys go to its box, not his answer
 /* ================= Mastered Words Test (Fridays, assigned by a grown-up): words he already mastered, a little harder than the
    daily quiz: no sentence, he can hear each word only 2 times, and no right/wrong until the end.
    Right = "Mastered, confirmed" and +5 points. Wrong = −3 points and the word goes back to the front of his word bank. ================= */
@@ -1519,7 +1668,8 @@ function mtestSheet() {
     await each(words.length, async i => {
       const w = words[i]; let plays = 0;
       app.innerHTML = head('Listen carefully, then spell it from memory. You can hear each word only 2 times!') + `<div class="count">Word ${i + 1} of ${words.length}</div>
-        <button class="btn big" id="hear">${SPK}Hear the word <small id="plays" style="opacity:.75">(2 left)</small></button><div id="io"></div>`;
+        <button class="btn big" id="hear">${SPK}Hear the word <small id="plays" style="opacity:.75">(2 left)</small></button><div id="io"></div>${phButton()}`;
+      wireParentHelp(() => w);
       const hear = () => { if (plays >= 2) return; plays++; playWord(w); $('plays').textContent = plays >= 2 ? '(no more)' : `(${2 - plays} left)`; if (plays >= 2) $('hear').disabled = true; };
       $('hear').onclick = hear; hear();
       const r = await freeType({ answer: displayWord(w), test: true, reveal: false });
@@ -1557,7 +1707,7 @@ async function mtestResults() {
     <div class="sumlist">${its.map(x => x.ok ? `<div class="res ok"><span class="mark">✓✓</span><div><div class="w">${esc(x.label)}</div><div class="his">Mastered, confirmed! +5</div></div></div>`
       : `<div class="res no"><span class="mark">✗</span><div><div class="his">You put <s>${esc(x.typed)}</s></div><div class="w">${esc(x.label)}</div><div class="his">Back to practice. −3</div></div></div>`).join('')}</div>
     <p class="note" id="sent">${TRY ? 'Trying it out: nothing was saved.' : ''}</p>
-    <div class="row"><a class="btn big primary" href="${TRY ? 'index.html' : 'spell.html'}" style="text-decoration:none">Finished</a></div>`;
+    <div class="row"><a class="btn big primary" href="${HOME}" style="text-decoration:none">Finished</a></div>`;
   say(`You still remembered ${right} out of ${its.length}. ${gained >= 0 ? `You earned ${gained} points!` : `That's ${-gained} points off. Keep practicing!`}`, 0.95);
   if (right === its.length) confetti();
   const rec = { id: t.toString(36), t, aid: A.id, tool: 'mtest', title: A.title, grade: { pct: g.pct, letter: g.letter }, right, of: its.length, items, missed: [], parts: [['Points', `${gained >= 0 ? '+' : ''}${gained}`]], extra: { points: gained }, sent: false };
@@ -1595,14 +1745,14 @@ function showResults() {
   let stars = '';
   if (extra.stars) { const ws = [...new Set(items.filter(x => x.word).map(x => x.word))]; stars = `<div class="part-title"><h2 style="font-size:22px">My Word Master Stars</h2></div><div class="starrow">${ws.map(w => `<div>${STAR(items.filter(x => x.word === w).every(x => x.ok) ? '#FACC15' : 'transparent')}${esc(displayWord(w))}</div>`).join('')}</div>`; }
   const fixHref = `fixup.html?w=${encodeURIComponent(missed.map(m => `${m.word}:${m.typed}`).join('|'))}&from=${encodeURIComponent(A.title)}`;
-  const doneHref = TRY ? 'index.html' : 'spell.html';
+  const doneHref = HOME;
   app.innerHTML = `<div class="part-title"><h2>You finished ${esc(A.title)}!</h2><p>${A.tool === 'steps' ? 'Every step is done.' : A.tool === 'eagles' && extra.count != null ? `You had ${extra.count} eagle${extra.count === 1 ? '' : 's'}.` : ''}</p></div>
     ${g ? `<div class="grade"><span class="letter" style="background:${g.color}">${g.letter}</span><span class="pct">${g.pct}%<small>${right} of ${n} right the first time</small></span></div><p class="grade-msg">${esc(g.msg)}</p>` : A.tool === 'steps' ? `<div>${STAR('#FACC15')}${STAR('#FACC15')}${STAR('#FACC15')}</div>` : ''}
     ${stars}
     ${wrong.length ? `<div class="part-title"><h2 style="font-size:22px">Let’s look at what to fix</h2></div><div class="sumlist">${wrong.map(x => `<div class="res no"><span class="mark">✗</span><div><div class="his">${esc(x.part)}: ${esc(x.label)}</div>${x.typed ? `<div class="his">You put <s>${esc(x.typed)}</s></div>` : ''}<div class="w">${esc(x.answer)}</div></div></div>`).join('')}</div>` : ''}
     ${partSum.length > 1 ? `<div class="sumlist">${partSum.map(([k, v]) => `<div class="sum"><b>${esc(k)}</b><span>${esc(v)}</span></div>`).join('')}</div>` : ''}
     <p class="note" id="sent">${TRY ? 'Trying it out: nothing was saved or emailed.' : 'Sending the results to your grown-up…'}</p>
-    <div class="row">${missed.length && !TRY ? `<a class="btn big primary" href="${fixHref}" style="text-decoration:none">Fix my tricky words →</a><a class="btn big" href="${doneHref}" style="text-decoration:none">Finished</a>` : `<a class="btn big primary" href="${doneHref}" style="text-decoration:none">Finished</a>`}</div>`;
+    <div class="row">${DAILY ? `<a class="btn big primary" href="${doneHref}" style="text-decoration:none">Next: the quiz →</a>` : missed.length && !TRY ? `<a class="btn big primary" href="${fixHref}" style="text-decoration:none">Fix my tricky words →</a><a class="btn big" href="${doneHref}" style="text-decoration:none">Finished</a>` : `<a class="btn big primary" href="${doneHref}" style="text-decoration:none">Finished</a>`}</div>`;
   if (g) say(`You got ${right} out of ${n} right the first time. That’s ${g.pct} percent, a${'AF'.includes(g.letter) ? 'n' : ''} ${g.letter}. ${g.msg}${missed.length ? ' Next, let’s fix your tricky words.' : ''}`, 0.95);
   else say(A.tool === 'steps' ? 'You did every step! Great job!' : 'You finished! Great job!', 0.95);
   if (!wrong.length) confetti();
@@ -1678,13 +1828,17 @@ async function cloudSaveSheet(rec) {
 /* ============ Start ============ */
 const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet, steps: stepsSheet, eagles: eaglesSheet, weather: weatherSheet, mtest: mtestSheet };
 (async () => {
-  if (TRY) { $('trybar').hidden = false; $('backLink').href = 'index.html'; }
+  if (DAILY) {   // links that would leave go back to his daily routine instead
+    document.body.classList.add('emb');
+    document.addEventListener('click', e => { const a = e.target.closest('a[href]'); if (!a) return; e.preventDefault(); window.parent.postMessage({ studySheetDone: true, quit: a.id === 'backLink' }, location.origin); }, true);
+  }
+  if (TRY) { $('trybar').hidden = false; $('backLink').href = HOME; if (TESTDAY) $('trybar').textContent = '🧪 Test day: nothing is saved, so his real day stays the same.'; }
   else {   // he has to be signed in to the Study (the sign-in screen is on the Spelling Helper page)
     try { const sb = sbClient(); if (sb) { const { data } = await sb.auth.getSession(); if (!data.session) { location.replace('spell.html'); return; } } } catch (e) { }
   }
   A = await loadAssignment();
   if (!A || !SHEETS[A.tool]) {
-    app.innerHTML = `<div class="part-title"><h2>This worksheet isn’t here</h2><p>${TRY ? 'Go back to the Worksheets page and tap “Try it on screen” again.' : 'Ask a grown-up to assign it again.'}</p></div><a class="btn big primary" href="${TRY ? 'index.html' : 'spell.html'}" style="text-decoration:none">Go back</a>`;
+    app.innerHTML = `<div class="part-title"><h2>This worksheet isn’t here</h2><p>${TRY ? 'Go back to the Worksheets page and tap “Try it on screen” again.' : 'Ask a grown-up to assign it again.'}</p></div><a class="btn big primary" href="${HOME}" style="text-decoration:none">Go back</a>`;
     return;
   }
   SD = A.data || {};
