@@ -126,6 +126,11 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .mic-test { margin: 8px 0 0 32px; display: flex; flex-direction: column; gap: 6px; }
 .mic-test .meter { width: min(360px, 100%); height: 18px; }
 .mic-test .hit { font: 600 15px Fredoka, sans-serif; color: var(--good); min-height: 20px; }
+/* on his start screen the mic test sits in the middle, like everything else there */
+#kidMicSlot .mic-test { margin: 0 auto; align-items: center; text-align: center; }
+#kidMicSlot .mic-test .meter { margin: 0 auto; }
+#kidMicSlot .mic-test .row { justify-content: center; }
+#kidMicSlot #micTestBox { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .mic-hint { font-size: 16px; color: var(--muted); margin: 0; }
 .clips { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
 .clips .cw { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; }
@@ -499,7 +504,7 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
   <p id="kidMsg">Today’s words are ready.</p>
   <div class="done-today" id="kidDone" hidden></div>
   <div class="kid-sheets" id="kidSheets" hidden></div>
-  <div id="kidMicSlot" style="max-width:520px;margin:0 auto 14px;text-align:left"></div>
+  <div id="kidMicSlot" style="max-width:560px;margin:0 auto 14px"></div>
   <button class="btn big primary" id="kidStart">Start today’s words</button>
   <div class="kid-hold"><button class="grownup" id="kidGrown">🔒 Grown-up screen <small>(hold)</small></button><button class="grownup" id="kidSwitch">↺ Switch user <small>(hold)</small></button></div>
 </main>
@@ -1830,7 +1835,8 @@ function replaySteps(key) {
   if (kind === 'check') { const x = (store('spell-check-log') || []).find(r => String(r.id) === id); return x && { title: 'Sight word check', steps: x.results.map(r => ({ part: 'Check', label: r.word, ok: r.ok, answer: r.word, hear: true, shown: { text: 'He heard the word and a sentence. The word wasn’t shown.' }, picks: [r.typed] })) }; }
   if (kind === 'fixup') { const x = (store('fixup-log') || []).find(r => String(r.id) === id); return x && { title: 'Spelling Fix-Up', steps: (x.detail || x.test.map(r => ({ part: 'Practice Test', label: r.word, ok: r.ok, answer: r.word, picks: [r.typed] }))).map(r => ({ ...r, hear: /Practice Test|Pick/.test(r.part) })) }; }
   const x = (store('sheet-log') || []).find(r => String(r.id) === id); if (!x) return null;
-  const steps = [...((x.extra && x.extra.traces) || []).map(tr => ({ part: 'Trace', label: tr.word, ok: !tr.redo, img: tr.img, shown: { text: tr.redo ? `He had to trace more ${tr.redo} time${tr.redo > 1 ? 's' : ''}.` : 'Traced neatly the first time.' }, picks: [] })), ...(x.items || [])];
+  const its = x.items || [], say = its.filter(r => r.part === 'Look & Say');   // in the order he did them: Look & Say, Trace, then the rest
+  const steps = [...say, ...((x.extra && x.extra.traces) || []).map(tr => ({ part: 'Trace', label: tr.word, ok: !tr.redo, img: tr.img, shown: { text: tr.redo ? `He had to trace more ${tr.redo} time${tr.redo > 1 ? 's' : ''}.` : 'Traced neatly the first time.' }, picks: [] })), ...its.filter(r => r.part !== 'Look & Say')];
   return { title: x.title, steps };
 }
 function openReplay(key) { const r = replaySteps(key); if (!r || !r.steps.length) return; rp = { ...r, i: 0 }; $('replay').hidden = false; drawReplay(); }
@@ -1843,6 +1849,7 @@ function drawReplay() {
   const text = sh.text || '';
   if (st.img) saw = `<img class="rp-img" src="${st.img}" alt="His tracing">`;
   else if (sh.html) saw = `<div class="rp-pic">${cleanPic(sh.html)}</div>${/___/.test(text) ? (() => { const [a, b] = text.split('___'); return `<div class="rp-sent">${esc(a)}<span class="bl"></span>${esc(b || '')}</div>`; })() : `<div class="rp-saw">${esc(text)}</div>`}`;
+  else if (st.part === 'Look & Say') saw = `<div class="rp-big">${esc(st.label)}</div><div class="rp-saw">${esc(text)}</div>`;
   else if (st.part === 'Fix It!') saw = `<div class="rp-oops">${esc(st.label)}</div>`;
   else if (st.part === 'Word Shapes') {   // draw the shape he saw: tall, short and hanging boxes (+ any hint letters)
     const kinds = ((text.match(/\(([^)]*)\)/) || [])[1] || '').split(' ').filter(Boolean), hint = (text.match(/starts with “(.+)”/) || [])[1] || '';
@@ -1854,6 +1861,7 @@ function drawReplay() {
   else if (st.part === 'Missing Letters') saw = `<div class="rp-big">${esc((text.match(/“(.+)”/) || [])[1] || st.label)}</div>`;
   else if (st.part === 'Circle the What words' || /What|Which|How/.test(text) && !sh.choices) saw = `<div class="rp-sent">${esc(text)}</div>`;
   const hear = st.hear || st.part === 'Check' ? `<button class="btn" id="rpHear">🔊 Hear what he heard</button>` : '';
+  const said = sh.clips && sh.clips.length ? `<div class="rp-saw">His voice:</div><div class="row" style="justify-content:center">${sh.clips.map((k, q) => `<button class="btn" data-rpclip="${esc(k)}">▶ Time ${q + 1}</button>`).join('')}</div>` : '';
   let pick = '';
   if (sh.choices) {
     const two = sh.choices.length <= 4 && sh.choices.every(c => c.length > 6);
@@ -1864,11 +1872,12 @@ function drawReplay() {
     const A = [...n(st.answer).replace(/ /g, '')];
     pick = picks.map((v, k) => { const L = [...String(v).toLowerCase().replace(/[^a-z0-9]/g, '')]; const cells = Array.from({ length: Math.max(L.length, A.length) }, (_, q) => L[q] ? `<span class="rp-box ${L[q] === A[q] ? 'g' : 'b'}">${esc(L[q])}</span>` : `<span class="rp-box e"></span>`).join('');
       return `<div class="rp-try"><small>${picks.length > 1 ? `Try ${k + 1}` : 'He put'}</small>${cells}</div>`; }).join('');
-  } else if (picks.length) pick = `<div class="rp-keys" style="flex-direction:column">${picks.map(v => `<div>${esc(v)}</div>`).join('')}</div>`;
+  } else if (picks.length && st.part !== 'Look & Say') pick = `<div class="rp-keys" style="flex-direction:column">${picks.map(v => `<div>${esc(v)}</div>`).join('')}</div>`;
   const bank = sh.bank ? `<div class="rp-bank">${sh.bank.map(c => `<span class="${isRight(c) ? 'r' : ''}">${esc(c)}</span>`).join('')}</div>` : '';
-  $('rpScreen').innerHTML = `<p class="rp-part">${esc(st.part)}</p>${text && !saw.includes(esc(text)) && !saw.includes(esc(text.split('___')[0])) && !st.img ? `<p class="rp-sub">${esc(text)}</p>` : ''}${saw}${hear}${bank}${pick}
-    <div class="rp-verdict ${st.ok ? 'ok' : 'no'}">${!st.answer && !st.img ? 'His pick (nothing to check against)' : st.ok ? '✓ Right the first time' : '✗ Not the first time'}${st.answer && !st.img ? ` · right answer: ${esc(st.answer)}` : ''}</div>`;
+  $('rpScreen').innerHTML = `<p class="rp-part">${esc(st.part)}</p>${text && !saw.includes(esc(text)) && !saw.includes(esc(text.split('___')[0])) && !st.img ? `<p class="rp-sub">${esc(text)}</p>` : ''}${saw}${hear}${said}${bank}${pick}
+    <div class="rp-verdict ${st.ok ? 'ok' : 'no'}">${st.part === 'Look & Say' ? (st.ok ? '✓ Said it 3 times' : '✗ Didn’t finish all 3') : !st.answer && !st.img ? 'His pick (nothing to check against)' : st.ok ? '✓ Right the first time' : '✗ Not the first time'}${st.answer && !st.img ? ` · right answer: ${esc(st.answer)}` : ''}</div>`;
   $('rpBack').disabled = rp.i === 0; $('rpNext').textContent = rp.i < rp.steps.length - 1 ? 'Next →' : 'Done ✓';
+  $('rpScreen').querySelectorAll('[data-rpclip]').forEach(b => b.onclick = async () => { b.disabled = true; const d = await cloudGetAudio(b.dataset.rpclip); b.disabled = false; if (d) playClip(d); else b.textContent = 'Not saved'; });
   if ($('rpHear')) $('rpHear').onclick = () => { const s = typeof sentenceFor === 'function' ? sentenceFor(st.answer) : ''; playWord(st.answer).then(() => s && say(s, 0.85)); };
 }
 $('rpBack').onclick = () => { if (rp && rp.i > 0) { rp.i--; drawReplay(); } };

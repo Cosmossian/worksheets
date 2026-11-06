@@ -183,6 +183,9 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 .dots { display: flex; gap: 22px; }
 .dot { width: 76px; height: 76px; border-radius: 50%; border: 4px solid var(--field-line); background: var(--field); cursor: pointer; font: 700 30px Fredoka, sans-serif; color: var(--muted); touch-action: manipulation; }
 .dot.on { background: var(--good); border-color: var(--good); color: #0E151D; }
+span.dot { display: grid; place-items: center; cursor: default; }
+.meter { width: min(420px, 80vw); height: 16px; border-radius: 999px; background: var(--field); border: 1px solid var(--line); overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--try); transition: width .08s linear, background .1s; }
 .bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 760px; }
 .pill { border: 3px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 8px 20px; font: 700 28px Andika, sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; touch-action: manipulation; }
 .pill.show { cursor: default; font-size: 22px; padding: 4px 14px; }
@@ -583,6 +586,62 @@ const boxes = (text, cls) => [...text].map(c => c === ' ' ? '<span class="lbox s
 const pic = (name, size = 80) => name && ICONS[name] ? `<span class="pic">${icon(name, size)}</span>` : '';
 function confetti() { const c = document.createElement('div'); c.className = 'confetti'; const cols = ['#3C7DD9', '#F59E0B', '#34D399', '#C4B5FD', '#F87171', '#FACC15']; c.innerHTML = Array.from({ length: 60 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-delay:${Math.random() * 0.8}s"></i>`).join(''); document.body.appendChild(c); setTimeout(() => c.remove(), 3600); }
 
+/* ---- Microphone (same as the daily Look & Listen): only checks that he said something louder than the room, not which word.
+   Sensitivity is the one set on this device in the Spelling Helper. ---- */
+const SENS = { 1: { x: 2.0, min: 0.004, ms: 180 }, 2: { x: 1.6, min: 0.002, ms: 150 }, 3: { x: 1.35, min: 0.0012, ms: 120 }, 4: { x: 1.18, min: 0.0006, ms: 90 } };
+const sens = () => SENS[(store('spell-settings') || {}).sens] || SENS[3];
+let mic = null, listenToken = 0;
+async function getMic() {
+  if (mic) return mic;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !AC) return null;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: true } });
+    const ctx = new AC(), an = ctx.createAnalyser(); an.fftSize = 1024;
+    ctx.createMediaStreamSource(stream).connect(an);
+    mic = { stream, ctx, an, buf: new Float32Array(an.fftSize) };
+    return mic;
+  } catch (e) { return null; }
+}
+function micLevel() { mic.an.getFloatTimeDomainData(mic.buf); let t = 0; for (const v of mic.buf) t += v * v; return Math.sqrt(t / mic.buf.length); }
+function stopMic() { listenToken++; if (!mic) return; mic.stream.getTracks().forEach(t => t.stop()); try { mic.ctx.close(); } catch (e) { } mic = null; }
+async function quiet() { let n = 0; while (n++ < 80 && canTalk && speechSynthesis.speaking) await wait(100); await wait(250); }
+function listenForVoice(onLevel, onNudge) {   // resolves { clip } once he has said something for a moment, or null if cancelled
+  const my = ++listenToken;
+  return new Promise(async res => {
+    if (!mic) return res(null);
+    if (mic.ctx.state === 'suspended') { try { await mic.ctx.resume(); } catch (e) { } }
+    const samples = []; const t0 = performance.now();
+    while (performance.now() - t0 < 350) { samples.push(micLevel()); await wait(25); if (my !== listenToken) return res(null); }
+    samples.sort((a, b) => a - b);
+    const th = Math.max(sens().min, (samples[Math.floor(samples.length * 0.2)] || 0) * sens().x);
+    let mr = null, chunks = [];
+    if (window.MediaRecorder) { try { mr = new MediaRecorder(mic.stream, { audioBitsPerSecond: 24000 }); mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); }; mr.start(); } catch (e) { mr = null; } }
+    let voiced = 0, gap = 0, heardAt = 0, nudged = false, last = performance.now(); const start = last;
+    const finish = heard => {
+      clearInterval(timer);
+      if (!heard) { try { mr && mr.state !== 'inactive' && mr.stop(); } catch (e) { } return res(null); }
+      if (!mr) return res({ clip: null });
+      mr.onstop = () => { const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' }); if (!blob.size) return res({ clip: null }); const fr = new FileReader(); fr.onload = () => res({ clip: fr.result }); fr.onerror = () => res({ clip: null }); fr.readAsDataURL(blob); };
+      try { mr.stop(); } catch (e) { res({ clip: null }); }
+    };
+    const timer = setInterval(() => {
+      if (my !== listenToken) return finish(false);
+      const now = performance.now(), dt = now - last; last = now;
+      const lvl = micLevel(); onLevel(Math.min(1, lvl / (th * 2.5)), lvl > th);
+      if (lvl > th) { voiced += dt; gap = 0; } else { gap += dt; if (!heardAt && gap > 450) voiced = 0; }
+      if (!heardAt && voiced >= sens().ms) heardAt = now;
+      if (heardAt && (gap >= 650 || now - heardAt > 3000)) return finish(true);
+      if (!heardAt && !nudged && now - start > 8000) { nudged = true; onNudge(); }
+    }, 40);
+  });
+}
+/* His recordings go to the Study database (same as Look & Listen clips: kept 7 days). Trying it out: nothing is saved. */
+async function saveClip(key, data, session) {
+  if (TRY) return;
+  try { const sb = sbClient(); if (!sb) return; const { data: s } = await sb.auth.getSession(); if (!s.session) return; await sb.from('study_audio').upsert({ key, kind: 'clip', session, data }); } catch (e) { }
+}
+
 /* "Are you sure?" for test answers: resolves true (final) or false (let me look again) */
 function askSure(typed) {
   return new Promise(res => {
@@ -711,21 +770,42 @@ function sightSheet() {
   const hl = ({ dw, idx }) => [...dw].map((ch, i) => idx.includes(i) ? `<span class="hl">${esc(ch)}</span>` : esc(ch)).join('');
   const count = (i, n, what = 'Word') => `<div class="count">${what} ${i + 1} of ${n}</div>`;
 
+  // Look & Say: he says the word out loud 3 times. The microphone has to HEAR him each time (no tapping through), and each one
+  // is recorded for Parent Review. No microphone: an "I said it" button that only works after he's heard the word, and not too fast.
   const lookSay = async () => {
-    await each(W.length, i => new Promise(done => {
-      const x = W[i]; let n = 0;
-      app.innerHTML = head('Look at the word. Say it out loud 3 times. Tap a dot each time you say it.') + count(i, W.length)
+    const wantMic = (store('spell-daily') || {}).mic !== false, m = wantMic ? await getMic() : null, run = Date.now().toString(36);
+    let heard = 0;
+    await each(W.length, i => new Promise(async done => {
+      const x = W[i]; let n = 0, alive = true; const clips = [];
+      app.innerHTML = head(m ? 'Look at the word. Say it out loud 3 times. The microphone is listening! 🎤' : 'Look at the word. Say it out loud 3 times.') + count(i, W.length)
         + `<div class="big-word">${hl(x)}</div>${x.tip ? `<div class="tipline">Tricky part: ${esc(x.tip)}</div>` : ''}
         <button class="btn" id="hear">${SPK}Hear the word</button>
-        <div class="dots">${[1, 2, 3].map(k => `<button class="dot" data-d="${k}" aria-label="I said it ${k}">${k}</button>`).join('')}</div><div class="message" id="msg"></div>`;
-      $('hear').onclick = () => playWord(x.w); playWord(x.w);
-      app.querySelector('.dots').onclick = e => {
-        const b = e.target.closest('[data-d]'); if (!b || +b.dataset.d !== n + 1) return;
-        b.classList.add('on'); n++;
-        if (n === 3) { setMsg('Great saying!', 'good'); nextUp(1100).then(done); }
+        <div class="dots">${[1, 2, 3].map(k => `<span class="dot" data-d="${k}">${k}</span>`).join('')}</div>
+        ${m ? '<div class="meter" id="meter"><i id="mfill"></i></div>' : '<button class="btn big primary" id="saidBtn" disabled>I said it! 🗣️</button>'}<div class="message" id="msg"></div>`;
+      const dot = () => { const d = app.querySelector(`.dot[data-d="${n + 1}"]`); if (d) d.classList.add('on'); n++; };
+      const finish = () => { alive = false; listenToken++; mark('Look & Say', x.dw, n >= 3, '', '', null, { text: m ? `He saw “${x.dw}” and said it out loud 3 times (the microphone heard each one).` : `He saw “${x.dw}” and tapped “I said it” 3 times (no microphone).`, clips }, [m ? `said it ${n} times` : `tapped ${n} times`]); items.at(-1).free = true; heard += n >= 3 ? 1 : 0; setMsg('Great saying!', 'good'); nextUp(1100).then(done); };
+      const listenLoop = async () => {
+        while (alive && n < 3) {
+          await quiet();
+          if (!alive) return;
+          setMsg(n === 0 ? 'Now say it out loud!' : n === 1 ? 'Say it again!' : 'One more time!');
+          const r = await listenForVoice((lvl, over) => { const f = $('mfill'); if (f) { f.style.width = Math.round(lvl * 100) + '%'; f.style.background = over ? 'var(--good)' : 'var(--try)'; } }, () => { setMsg('I’m listening… say it out loud!', 'try'); say('Say it out loud!', 1); });
+          if (!r || !alive) continue;   // cancelled (he tapped Hear the word): listen again after it plays
+          dot(); setMsg('I heard you!', 'good');
+          if (r.clip) { const key = `clip:say:${run}:${i}:${n}`; clips.push(key); saveClip(key, r.clip, run); }
+          await wait(500);
+        }
+        if (alive && n >= 3) finish();
       };
+      $('hear').onclick = () => { listenToken++; playWord(x.w); };
+      if (m) { await playWord(x.w); listenLoop(); }
+      else {   // no microphone: the button only works after the word was heard, and not faster than every 2.5 s
+        await playWord(x.w); $('saidBtn').disabled = false; setMsg('Say it out loud, then tap the button.');
+        $('saidBtn').onclick = async () => { $('saidBtn').disabled = true; dot(); if (n >= 3) return finish(); setMsg(n === 1 ? 'Say it again!' : 'One more time!'); await wait(2500); if (alive) $('saidBtn').disabled = false; };
+      }
     }));
-    partDone('You looked at and said every word.');
+    stopMic();
+    partDone(m ? `The microphone heard him say every word 3 times.` : 'He said every word 3 times.');
   };
   // Trace with a finger (touch screen) or the mouse, over the big gray word. Done checks every letter got traced and he stayed on the letters.
   let usedPen = false;   // remembered for the whole worksheet
@@ -1440,7 +1520,7 @@ const STAR = c => `<svg width="52" height="52" viewBox="0 0 24 24" aria-hidden="
 function showResults() {
   if (A.tool === 'weather') return weatherResults();
   onKey = null; partIdx = PARTS.length; renderProg(); document.body.classList.remove('inpart'); window.scrollTo(0, 0);
-  const right = items.filter(x => x.ok).length, n = items.length, graded = n >= 2;
+  const G = items.filter(x => !x.free), right = G.filter(x => x.ok).length, n = G.length, graded = n >= 2;   // Look & Say isn't graded
   const g = graded ? gradeFor(right, n) : null;
   // spelling words he missed anywhere → the on-screen Fix-Up
   const missed = [];
