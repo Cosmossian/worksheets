@@ -227,11 +227,13 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
 .gate-form { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 420px; }
 .gate-form input { font-size: 22px; padding: 12px 14px; }
 .gate-form .err { color: var(--try); min-height: 20px; }
-.kid-sheets { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 520px; order: 10; }
+.kid-sheets { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 560px; }
+.kid-h { margin: 18px 0 0; font: 700 26px Fredoka, sans-serif; color: var(--navy); }
 .kid-sheets h3 { margin: 10px 0 0; font: 700 26px Fredoka, sans-serif; color: var(--navy); }
-.kid-sheets a { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-decoration: none; font: 600 24px Fredoka, sans-serif; color: var(--ink); background: var(--surface-2); border: 3px solid var(--study); border-radius: 20px; padding: 16px 22px; }
-.kid-sheets a.done { border-color: var(--good); }
-.kid-sheets a small { font-size: 17px; color: var(--good); white-space: nowrap; }
+/* worksheet buttons look like Start today's words: big and blue */
+.kid-sheets a { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; font: 700 30px Fredoka, sans-serif; color: #fff; background: var(--study); border: 2px solid var(--study); border-radius: 24px; padding: 20px 40px; min-height: 84px; min-width: min(460px, 90vw); text-align: center; }
+.kid-sheets a.done { background: #1F4F43; border-color: var(--good); }
+.kid-sheets a small { font: 600 17px Fredoka, sans-serif; color: #BBF7D0; white-space: nowrap; }
 
 /* ---------- Child's screen ---------- */
 .play { max-width: 980px; margin: 0 auto; padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
@@ -332,7 +334,7 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
 </head>
 <body class="authwait">
 <header class="app-header">
-  <h1>Spelling Helper</h1>
+  <h1 id="appTitle">Spelling Helper</h1>
   <button class="review-btn" id="reviewBtn" title="Hold for 2 seconds">Parent Review</button>
   <a class="back" href="./">← Back to Worksheets</a>
 </header>
@@ -502,8 +504,9 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
 <main class="kidhome" id="kidhome" hidden>
   <h2 id="kidHi">Hi! 👋</h2>
   <p id="kidMsg">Today’s words are ready.</p>
-  <div class="done-today" id="kidDone" hidden></div>
   <div class="kid-sheets" id="kidSheets" hidden></div>
+  <h3 class="kid-h" id="kidWordsH" hidden>Last: today’s sight words</h3>
+  <div class="done-today" id="kidDone" hidden></div>
   <div id="kidMicSlot" style="max-width:560px;margin:0 auto 14px"></div>
   <button class="btn big primary" id="kidStart">Start today’s words</button>
   <div class="kid-hold"><button class="grownup" id="kidGrown">🔒 Grown-up screen <small>(hold)</small></button><button class="grownup" id="kidSwitch">↺ Switch user <small>(hold)</small></button></div>
@@ -1010,7 +1013,8 @@ function placeMicTest(id) {   // his start screen gets the same mic test (sensit
   if ($('micTestPanel').previousElementSibling !== target && $('micTestPanel').parentNode !== target) { if (testing) stopMicTest(); onKid ? target.appendChild($('micTestPanel')) : target.after($('micTestPanel')); }
   $('micTestPanel').hidden = id === 'kidhome' && !onKid;
 }
-function show(id) { if (cloud.sb && !cloud.user && id !== 'gate') id = 'gate'; if (id === 'gate') { $('gatePick').hidden = false; $('gateForm').hidden = true; $('gateErr').textContent = ''; } if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome', 'gate'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('gated', id === 'gate'); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
+const agendaTitle = () => `📋 My Agenda · ${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}`;
+function show(id) { if (cloud.sb && !cloud.user && id !== 'gate') id = 'gate'; if (id === 'gate') { $('gatePick').hidden = false; $('gateForm').hidden = true; $('gateErr').textContent = ''; } if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome', 'gate'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('gated', id === 'gate'); $('appTitle').textContent = id === 'kidhome' ? agendaTitle() : id === 'gate' ? 'The Study' : 'Spelling Helper'; if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
 
 function start() {
   stopRecord();
@@ -2183,14 +2187,15 @@ function renderKidHome() {
   const d = store('spell-daily') || {}, words = d.on === false ? [] : parseList(d.words || '');
   const today = (store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString() && r.t > (d.resetAt || 0));   // "Reset today" starts his day fresh
   const sq = store('spell-queue'), sheets = [...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq', title: `✏️ Spelling practice · ${sq.words.length} word${sq.words.length > 1 ? 's' : ''}` }] : []), ...((store('study-sheets') || {}).list || [])];
-  $('kidMsg').textContent = words.length ? `Today you have ${words.length} word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : sheets.length ? 'Pick a worksheet below. Take your time and try your best!' : 'No words yet. Ask a grown-up to add today’s words.';
+  $('kidMsg').textContent = words.length && sheets.length ? `First your worksheet${sheets.length > 1 ? 's' : ''}, then your ${words.length} sight word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : words.length ? `Today you have ${words.length} word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : sheets.length ? 'Here’s your work for today. Take your time and try your best!' : 'Nothing yet. Ask a grown-up to add today’s work.';
+  $('kidWordsH').hidden = !(words.length && sheets.length);
   // On-screen worksheets assigned from the Worksheets page (done ones show their grade; Daily Steps counts today only)
   const logs = [...(store('sheet-log') || []), ...(store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))];
   const doneFor = a => logs.filter(l => l.aid === a.id && (!['steps', 'weather'].includes(a.tool) || new Date(l.t).toDateString() === new Date().toDateString())).sort((x, y) => y.t - x.t)[0];
   const href = a => a.tool === 'spellq' ? '#spellq' : a.tool === 'fixup' ? `fixup.html?w=${encodeURIComponent(((a.data && a.data.words) || []).map(x => `${x.w}:${x.his || ''}`).join('|'))}&from=${encodeURIComponent(a.title)}&cid=${encodeURIComponent(a.id)}` : `do.html?a=${encodeURIComponent(a.id)}`;
   $('kidSheets').hidden = !sheets.length;
-  $('kidSheets').innerHTML = sheets.length ? `<h3>Worksheets</h3>` + sheets.map(a => { const d = doneFor(a), g = d && d.grade;
-    return `<a class="${d ? 'done' : ''}" href="${href(a)}"><span>${esc(a.title)}</span>${d ? `<small>✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'weather' ? `day ${d.extra && d.extra.day} done today` : a.tool === 'steps' ? 'done today' : 'done'}${a.tool === 'weather' ? '' : ' · again?'}</small>` : '<span>→</span>'}</a>`; }).join('') : '';
+  $('kidSheets').innerHTML = sheets.length ? `<h3 class="kid-h">${words.length ? 'First: worksheets' : 'Worksheets'}</h3>` + sheets.map(a => { const d = doneFor(a), g = d && d.grade;
+    return `<a class="${d ? 'done' : ''}" href="${href(a)}"><span>${esc(a.title)}</span>${d ? `<small>✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'weather' ? `day ${d.extra && d.extra.day} done today` : a.tool === 'steps' ? 'done today' : 'done'}${a.tool === 'weather' ? '' : ' · again?'}</small>` : ''}</a>`; }).join('') : '';
   $('kidStart').hidden = !words.length;
   $('kidDone').hidden = !today.length;
   if (today.length) { const r = today.at(-1), g = r.grade || gradeFor(r.results.filter(x => x.ok).length, r.results.length); $('kidDone').textContent = `You already did a check today: ${g.letter} (${g.pct}%). You can practice again!`; }
