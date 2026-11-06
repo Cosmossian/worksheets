@@ -218,6 +218,9 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .sendbox { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); display: flex; flex-direction: column; gap: 8px; }
 .sendbox textarea { width: 100%; }
 body.only-daily #helperCard, body.only-helper #dailyCard { display: none; }
+body.only-daily #acctCard, body.only-daily #settingsCard, body.only-helper #acctCard, body.only-helper #settingsCard, body.only-settings #dailyCard, body.only-settings #helperCard { display: none; }
+body.kidgrown #settingsCard, body.kid #settingsLink { display: none !important; }
+body.onreview #reviewBtn, body.only-settings #settingsLink { display: none !important; } body.onreview #settingsLink { margin-left: auto !important; }
 body.embed #tod-nav, body.embed .app-header { display: none !important; }
 body.embed.playing .app-header { display: none !important; }
 .look-find { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
@@ -370,6 +373,8 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 .cal-d small { font-size: 12px; font-weight: 600; } .cal-d.future { opacity: .4; cursor: default; }
 .cal-d.done { background: #0F2E25; border-color: #34D399; color: #A7F3D0; } .cal-d.miss { background: #3A1717; border-color: #F87171; color: #FECACA; } .cal-d.none { background: #13233F; border-color: #3C7DD9; color: #BFDBFE; }
 .cal-d.today { outline: 3px solid #FDE68A; outline-offset: 2px; }
+.cal-d.sel { box-shadow: 0 0 0 4px #fff, 0 6px 14px rgba(0,0,0,.5); transform: scale(1.08); z-index: 1; position: relative; } .cal-d.sel .cal-n { text-decoration: underline; text-underline-offset: 3px; }
+.cal-showing { text-align: center; font: 700 20px Fredoka, sans-serif; margin: 6px 0 0; }
 .cal-key { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; align-items: center; font-size: 14px; margin-bottom: 10px; } .cal-key span::before { content: ''; display: inline-block; width: 12px; height: 12px; border-radius: 4px; margin-right: 6px; vertical-align: -1px; }
 .cal-key .done::before { background: #34D399; } .cal-key .miss::before { background: #F87171; } .cal-key .none::before { background: #3C7DD9; } .cal-key small { color: var(--muted); width: 100%; text-align: center; }
 .sheet-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; z-index: 80; background: #0B1118; }
@@ -397,7 +402,8 @@ body.sheeton { overflow: hidden; }
   <h1 id="appTitle">Spelling Helper</h1>
   <button class="review-btn pts-btn" id="pointsBtn" hidden>⭐ My points</button>
   <button class="review-btn" id="reviewBtn" title="Hold for 2 seconds">Parent Review</button>
-  <a class="back" href="./">← Back to Worksheets</a>
+  <a class="review-btn" id="settingsLink" href="#settings" style="text-decoration:none;margin-left:10px">⚙️ Parent Settings</a>
+  <a class="back" href="./">Back to Worksheets</a>
 </header>
 <div class="testbar" id="testBar" hidden><span>🧪 <b>Test day</b>: nothing is saved, so his real day stays the same.</span> <button class="btn btn-small" id="testEnd">End test</button></div>
 
@@ -428,6 +434,12 @@ body.sheeton { overflow: hidden; }
       </div>
       <div class="row"><button class="linkbtn" id="acctOutBtn">Sign out of the Study on this device</button></div>
     </div>
+  </div>
+  <div class="card" id="settingsCard">
+    <h2>⚙️ Parent Settings</h2>
+    <p class="help" style="margin:0 0 6px">Settings for the whole Study (not one activity). They’re shared with his device.</p>
+    <label class="check-row"><input type="checkbox" id="dailyEmail"> Also email me his results (they’re always in Parent Review)</label>
+    <div class="pin-set" style="margin-top:8px" id="pinSet"><b>🔒 Grown-up PIN</b> <span id="pinState"></span><div class="row" style="align-items:center;margin-top:6px"><input id="pinIn" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"><button class="btn" id="pinSave">Save PIN</button><button class="btn" id="pinOff" hidden>Remove PIN</button></div><small>On his device, every grown-up button (Parent Help, Grown-up screen, Parent Review, Test day, Switch user, stop) asks for it after the hold.</small></div>
   </div>
   <div class="card" id="dailyCard">
     <h2>Daily sight words</h2>
@@ -463,8 +475,6 @@ body.sheeton { overflow: hidden; }
     <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyKeep" checked> Save his voice so I can listen later</label>
     <label class="check-row"><input type="checkbox" id="dailyPractice" checked> Then practice each word with the Spelling Helper</label>
     <label class="check-row"><input type="checkbox" id="dailySheet" checked> Then Sight Word Practice with today’s words (trace, look &amp; say, cover &amp; write, word shapes…)</label>
-    <label class="check-row"><input type="checkbox" id="dailyEmail"> Also email me his results (they’re always in Parent Review)</label>
-    <div class="pin-set" id="pinSet"><b>🔒 Grown-up PIN</b> <span id="pinState"></span><div class="row" style="align-items:center;margin-top:6px"><input id="pinIn" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"><button class="btn" id="pinSave">Save PIN</button><button class="btn" id="pinOff" hidden>Remove PIN</button></div><small>On his device, every grown-up button (Parent Help, Grown-up screen, Parent Review, Test day, Switch user, stop) asks for it after the hold.</small></div>
     <small class="note" id="emailLine">Results are emailed to <b id="mailTo"></b>. <button class="linkbtn" id="testMail">Send a test email</button></small>
     <small class="note" id="mailStatus"></small>
     <div class="row"><button class="btn primary big" id="dailyStart" disabled>Start today’s words</button></div>
@@ -503,7 +513,7 @@ body.sheeton { overflow: hidden; }
       <textarea id="spellQIn" rows="2" placeholder="vitamin, earth, planet" autocapitalize="off" spellcheck="false"></textarea>
       <div class="row" style="align-items:center"><button class="btn primary" id="spellQSend">Send to his device</button><button class="btn" id="spellQOff" hidden>Take off his device</button><span class="sync-note" id="spellQNote"></span></div>
     </div>
-    <div class="recent practice" id="practice" hidden><b>Practice again: words he needed the most help with</b><div class="chips" id="pchips"></div></div>
+    <div class="recent practice" id="practice" hidden><b>Practice again: words he needed the most help with</b><small class="help" style="display:block;margin:2px 0 6px">From the Spelling Helper: how many letters he typed wrong at least once or needed “Help me” on, the last time he spelled it. Tap a word to practice it again.</small><div class="chips" id="pchips"></div></div>
     <div class="recent" id="recent" hidden><b>Words he asked for before</b><div class="chips" id="chips"></div></div>
     <div class="voice-warn" id="voiceWarn" hidden>This browser can’t talk, so the “hear it” buttons won’t make sound. It still works if you say the word and the parts out loud for him.</div>
     <details class="how">
@@ -602,8 +612,8 @@ body.sheeton { overflow: hidden; }
   <div id="reviewPts"></div>
   <div id="reviewCal"></div>
   <div class="card">
-    <h2>Parent Review</h2>
-    <p class="help">Everything from the daily sight words, newest first: hear how he said each word in Look &amp; Listen, and see how he spelled each word on the check and the Spelling Fix-Up. Recordings are kept on this device for 7 days.</p>
+    <h2 id="reviewDay">Parent Review</h2>
+    <p class="help">Pick a day on the calendar to see everything he did that day: his recordings from Look &amp; Listen, how he spelled each word, and every worksheet with ▶ Replay. Recordings are kept for 7 days.</p>
     <div id="reviewList"></div>
     <div class="row"><button class="btn primary" id="reviewDone">Done</button></div>
   </div>
@@ -1105,7 +1115,7 @@ function renderPractice() {
   const list = Object.entries(h).map(([w, es]) => ({ w, last: es.at(-1) })).filter(x => x.last && (x.last.hard.length || x.last.helps))
     .sort((a, b) => (b.last.hard.length + b.last.helps) - (a.last.hard.length + a.last.helps) || b.last.t - a.last.t).slice(0, 8);
   $('practice').hidden = !list.length;
-  $('pchips').innerHTML = list.map(x => `<button class="chip" data-w="${esc(x.last.text || x.w)}">${esc(x.last.text || x.w)}<small>${x.last.hard.length} tricky · ${agoText(now - x.last.t)}</small></button>`).join('');
+  $('pchips').innerHTML = list.map(x => `<button class="chip" data-w="${esc(x.last.text || x.w)}">${esc(x.last.text || x.w)}<small>${x.last.hard.length} letter${x.last.hard.length === 1 ? '' : 's'} he got stuck on · ${agoText(now - x.last.t)}</small></button>`).join('');
 }
 $('pchips').addEventListener('click', e => { const c = e.target.closest('[data-w]'); if (c) { $('wordIn').value = c.dataset.w; renderSetup(); } });
 function renderRecent() {
@@ -1293,7 +1303,7 @@ function applyMastery(results, checkId) {
 }
 const kidName = () => ((store('study-profile') || {}).name || '').trim();
 const agendaTitle = () => `📋 My Agenda · ${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}`;
-function show(id) { if (cloud.sb && !cloud.user && id !== 'gate') id = 'gate'; if (id === 'gate') { $('gatePick').hidden = false; $('gateForm').hidden = true; $('gateErr').textContent = ''; } if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome', 'gate'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('gated', id === 'gate'); $('grownBar').hidden = !(id === 'setup' && cloud.role === 'kid' && grownMode); document.body.classList.toggle('kidgrown', cloud.role === 'kid' && grownMode); $('appTitle').textContent = id === 'kidhome' ? agendaTitle() : id === 'gate' ? 'The Study' : 'Spelling Helper'; if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
+function show(id) { if (cloud.sb && !cloud.user && id !== 'gate') id = 'gate'; if (id === 'gate') { $('gatePick').hidden = false; $('gateForm').hidden = true; $('gateErr').textContent = ''; } if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome', 'gate'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('gated', id === 'gate'); $('grownBar').hidden = !(id === 'setup' && cloud.role === 'kid' && grownMode); document.body.classList.toggle('kidgrown', cloud.role === 'kid' && grownMode); $('appTitle').textContent = id === 'kidhome' ? agendaTitle() : id === 'gate' ? 'The Study' : id === 'review' ? 'Parent Review' : id === 'setup' && location.hash === '#settings' ? 'Parent Settings' : 'Spelling Helper'; document.body.classList.toggle('onreview', id === 'review'); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
 
 function start() {
   stopRecord();
@@ -2208,10 +2218,11 @@ function openPoints(forParent) {
 }
 document.addEventListener('click', e => {   // calendars: change month, or jump to a day
   const nv = e.target.closest('[data-calnav]');
-  if (nv) { const [which, step] = nv.dataset.calnav.split(':'); const c = calMonth[which]; const d = new Date(c[0], c[1] + +step, 1); calMonth[which] = [d.getFullYear(), d.getMonth()]; return which === 'pts' ? openPoints($('ptsTitle').dataset.parent === '1') : renderReview(); }
+  if (nv) { const [which, step] = nv.dataset.calnav.split(':'); const c = calMonth[which]; const d = new Date(c[0], c[1] + +step, 1); calMonth[which] = [d.getFullYear(), d.getMonth()]; return which === 'pts' ? openPoints($('ptsTitle').dataset.parent === '1') : renderReview(true); }
   const dy = e.target.closest('[data-calday]'); if (!dy) return;
   if (dy.closest('#ptsScreen')) { const el = $('ptsDay-' + dy.dataset.calday); if (el) { const b = el.querySelector('[data-ptsday]'); if (b && b.textContent === 'Review') b.click(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } return; }
-  const el = $('rv-' + dy.dataset.calday); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (dy.classList.contains('future')) return;
+  calSel = dy.dataset.calday; renderReview(true);
 });
 $('ptsScreen').addEventListener('click', e => { const b = e.target.closest('[data-ptsday]'); if (!b) return; const l = $('ptsList' + b.dataset.ptsday); l.hidden = !l.hidden; b.textContent = l.hidden ? 'Review' : 'Hide'; });
 $('ptsClose').onclick = () => { $('pointsWrap').hidden = true; };
@@ -2283,11 +2294,13 @@ $('rpBack').onclick = () => { if (rp && rp.i > 0) { rp.i--; drawReplay(); } };
 $('rpNext').onclick = () => { if (!rp) return; if (rp.i < rp.steps.length - 1) { rp.i++; drawReplay(); } else $('rpClose').click(); };
 $('rpClose').onclick = () => { $('replay').hidden = true; rp = null; if (canTalk) speechSynthesis.cancel(); };
 document.addEventListener('keydown', e => { if ($('replay').hidden) return; if (e.key === 'ArrowRight') $('rpNext').click(); else if (e.key === 'ArrowLeft') $('rpBack').click(); else if (e.key === 'Escape') $('rpClose').click(); });
-async function renderReview() {
+let calSel = null;   // the day picked on Parent Review's calendar (today at first)
+async function renderReview(noPull) {
   const P0 = pointsSummary();
   $('reviewPts').innerHTML = `<div class="pts-card"><b>⭐ ${esc(kidName() || 'His')} points: ${P0.total}</b><span>today ${upDown(P0.today)} · best day ${P0.best ? P0.best.pts : 0}</span><button class="btn" id="reviewPtsBtn">See every point</button></div>`;
   $('reviewPtsBtn').onclick = () => openPoints(true);
-  if (cloudMember()) { $('reviewList').innerHTML = '<p class="rv-empty">Loading…</p>'; await cloudPullLogs(); if ($('review').hidden) return; }
+  if (cloudMember() && !noPull) { $('reviewList').innerHTML = '<p class="rv-empty">Loading…</p>'; await cloudPullLogs(); if ($('review').hidden) return; }
+  if (!calSel) calSel = ymd(Date.now());
   const looks = lookLog(), checks = store('spell-check-log') || [], fixes = store('fixup-log') || [], sheets = store('sheet-log') || [];
   const days = {};
   const add = (t, item) => { (days[dayKey(t)] = days[dayKey(t)] || { t, items: [] }).items.push(item); };
@@ -2295,12 +2308,13 @@ async function renderReview() {
   checks.forEach(x => add(x.t, { t: x.t, kind: 'check', x }));
   fixes.forEach(x => add(x.t, { t: x.t, kind: 'fix', x }));
   sheets.forEach(x => add(x.t, { t: x.t, kind: 'sheet', x }));
-  const order = Object.values(days).sort((a, b) => b.t - a.t);
+  const order = Object.values(days).sort((a, b) => b.t - a.t).filter(d => ymd(d.t) === calSel);   // only the day picked on the calendar
   const agendas = store('study-days') || {}, cm = calMonth.review || (calMonth.review = [new Date().getFullYear(), new Date().getMonth()]);
-  $('reviewCal').innerHTML = monthCal(cm[0], cm[1], ds => dayStatus(ds, agendas), 'review') + `<div class="cal-key"><span class="done">Done</span><span class="miss">Not done</span><span class="none">Nothing assigned</span><small>Tap a day to jump to it.</small></div>`;
-  if (!order.length) { $('reviewList').innerHTML = '<p class="rv-empty">Nothing yet. Results show up here after he does the daily sight words.</p>'; return; }
+  $('reviewCal').innerHTML = monthCal(cm[0], cm[1], ds => { const s = dayStatus(ds, agendas); return { ...s, cls: s.cls + (ds === calSel ? ' sel' : '') }; }, 'review') + `<div class="cal-key"><span class="done">Done</span><span class="miss">Not done</span><span class="none">Nothing assigned</span><small>Gold ring = today. Tap a day to see what he did that day.</small></div>`;
+  $('reviewDay').textContent = new Date(calSel + 'T12:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + (calSel === ymd(Date.now()) ? ' (today)' : '');
+  if (!order.length) { $('reviewList').innerHTML = '<p class="rv-empty">Nothing on this day.</p>'; return; }
   const wordList = rs => rs.map(r => r.ok ? `<span class="ok">✓ ${esc(r.word)}</span>` : `<span class="no">✗ ${esc(r.word)} (wrote “${esc(r.typed)}”)</span>`).join(' · ');
-  $('reviewList').innerHTML = order.map(d => `<div class="rv-day" id="rv-${ymd(d.t)}"><h3>${esc(new Date(d.t).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }))}</h3>`
+  $('reviewList').innerHTML = order.map(d => `<div class="rv-day" id="rv-${ymd(d.t)}">`
     + d.items.sort((a, b) => a.t - b.t).map(it => {
       const x = it.x;
       if (it.kind === 'look') return `<div class="rv-sec"><h4>Look &amp; Listen<span>${esc(timeOf(x.t))}</span></h4>
@@ -2647,7 +2661,7 @@ if (EMBEDDED) {
   new ResizeObserver(() => tell({ studyH: document.documentElement.scrollHeight })).observe(document.body);
   new MutationObserver(() => tell({ studyFull: $('setup').hidden })).observe($('setup'), { attributes: true, attributeFilter: ['hidden'] });
 }
-const onlyCard = () => { document.body.classList.toggle('only-daily', location.hash === '#daily'); document.body.classList.toggle('only-helper', location.hash === '#helper'); };   // Daily Sight Words and the Spelling Helper are separate pages from the Study
+const onlyCard = () => { document.body.classList.toggle('only-daily', location.hash === '#daily'); document.body.classList.toggle('only-helper', location.hash === '#helper'); document.body.classList.toggle('only-settings', location.hash === '#settings'); if (!$('setup').hidden) $('appTitle').textContent = location.hash === '#settings' ? 'Parent Settings' : cloud.role === 'kid' ? $('appTitle').textContent : 'Spelling Helper'; if (location.hash === '#settings' && cloud.role !== 'kid' && $('setup').hidden && $('gate').hidden) { show('setup'); window.scrollTo(0, 0); } };   // Daily Sight Words and the Spelling Helper are separate pages from the Study
 onlyCard(); window.addEventListener('hashchange', onlyCard);
 (async () => {   // who's signed in? Nobody → the Parent / Child screen. (If the sign-in can't load at all, it works on this device only, like before.)
   const sb = cloudClient();
