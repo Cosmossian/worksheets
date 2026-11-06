@@ -220,7 +220,7 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 body.only-daily #helperCard, body.only-helper #dailyCard { display: none; }
 body.only-daily #acctCard, body.only-daily #settingsCard, body.only-helper #acctCard, body.only-helper #settingsCard, body.only-settings #dailyCard, body.only-settings #helperCard { display: none; }
 body.kidgrown #settingsCard, body.kid #settingsLink { display: none !important; }
-body.onreview #reviewBtn, body.only-settings #settingsLink { display: none !important; } body.onreview #settingsLink { margin-left: auto !important; }
+body.onreview #reviewBtn, body.only-settings #settingsLink, body.only-settings #reviewBtn { display: none !important; } body.onreview #settingsLink { margin-left: auto !important; }
 body.embed #tod-nav, body.embed .app-header { display: none !important; }
 body.embed.playing .app-header { display: none !important; }
 .look-find { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
@@ -394,6 +394,7 @@ body.sheeton { overflow: hidden; }
 .pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 10px; } .pin-pad button { height: 64px; border-radius: 16px; border: 2px solid #334155; background: #1E293B; color: #fff; font: 700 26px Fredoka, sans-serif; cursor: pointer; } .pin-pad .pin-sm { font-size: 16px; }
 .pin-box.shake { animation: pinshake .3s; } @keyframes pinshake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 .pin-set { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); } .pin-set input { font: 600 20px Andika, sans-serif; width: 120px; padding: 8px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--field, #0B1118); color: inherit; letter-spacing: 6px; } .pin-set small { color: var(--muted); display: block; margin-top: 6px; }
+.date-rows { display: flex; flex-direction: column; gap: 6px; } .date-row { display: flex; gap: 10px; align-items: flex-start; } .date-l { font: 700 14px Fredoka, sans-serif; color: var(--muted); min-width: 66px; padding-top: 8px; } .date-row .chips { flex: 1; }
 </style>
 </head>
 <body class="authwait">
@@ -448,13 +449,17 @@ body.sheeton { overflow: hidden; }
     <textarea class="big" id="dailyIn" rows="2" placeholder="first, while, more, against" autocapitalize="off" spellcheck="false"></textarea>
     <small class="note">Separate with commas. <button class="linkbtn" id="useSight" hidden></button></small>
     <div class="bankbox" id="bankBox" hidden>
-      <label class="check-row"><input type="checkbox" id="bankAuto"><span>Keep <b id="bankSize">6</b> words: when he spells a word right on the quiz, it moves to <b>Mastered</b> and the next word from the bank takes its place</span></label>
+      <label class="check-row"><input type="checkbox" id="bankAuto"><span>Keep <b id="bankSize">6</b> words: when he spells a word right on the quiz, it moves to <b>Passed</b> and the next word from the bank takes its place</span></label>
       <div class="bank-h"><b>Up next in the bank</b><small id="bankCount"></small></div>
       <div class="chips" id="bankChips"></div>
       <div class="row" style="align-items:center"><input type="text" id="bankAdd" placeholder="Add words to the bank (commas)" autocapitalize="off" spellcheck="false" style="flex:1;min-width:200px"><button class="btn" id="bankAddBtn">Add to bank</button></div>
-      <div class="bank-h"><b>Mastered</b><small id="mastCount"></small></div>
-      <div class="chips" id="mastChips"></div>
-      <small class="note">✓ = right on a daily quiz · ✓✓ = confirmed again on a Mastered Words Test. Tap ✕ to put a word back in the bank.</small>
+      <div class="bank-h"><b>Passed</b><small id="mastCount"></small></div>
+      <small class="note" style="margin-top:-4px">Spelled right on his daily quiz. These go into the Mastered Words Test.</small>
+      <div class="date-rows" id="mastChips"></div>
+      <div class="bank-h"><b>Mastered</b><small id="confCount"></small></div>
+      <small class="note" style="margin-top:-4px">Still remembered on a Mastered Words Test.</small>
+      <div class="date-rows" id="confChips"></div>
+      <small class="note">Tap ✕ to put a word back in the bank (at the front).</small>
     </div>
     <div class="row" id="syncRow" hidden style="align-items:center;margin-top:6px"><button class="btn" id="dailyOn" aria-pressed="true"></button><button class="btn" id="dailyReset" title="Keeps today’s results in Parent Review, but his start screen starts fresh with the same words">↺ Reset today</button><button class="btn" id="syncNow">⟳ Sync to his device</button><span class="sync-note" id="syncNote"></span></div>
     <label class="check-row"><input type="checkbox" id="dailyLook" checked> Look &amp; Listen first: he sees each word, says it, then hears it (3 rounds)</label>
@@ -1270,7 +1275,7 @@ function dayStatus(ds, agendas) {
   const L = [...(store('sheet-log') || []), ...(store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))], C = store('spell-check-log') || [];
   const on = t => ymd(t) === ds, upTo = t => ymd(t) <= ds;
   let items = (agendas[ds] || {}).items;
-  if (!items && ds === ymd(Date.now())) { const d = store('spell-daily') || {}, w = d.on === false ? [] : dailyWords(), sq = store('spell-queue'); items = [...(w.length ? [{ id: 'check', tool: 'check' }] : []), ...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq' }] : []), ...((store('study-sheets') || {}).list || [])]; }
+  if (!items && ds === ymd(Date.now())) { const d = store('spell-daily') || {}, w = d.on === false ? [] : dailyWords(), sq = store('spell-queue'); items = [...(w.length ? [{ id: 'check', tool: 'check' }] : []), ...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq' }] : []), ...((store('study-sheets') || {}).list || []).filter(a => !(a.tool === 'mtest' && ymd(a.at) < ymd(Date.now())))]; }
   const any = C.some(x => on(x.t)) || L.some(x => on(x.t));
   if (!items || !items.length) return any ? { cls: 'done', title: 'He did some work' } : { cls: 'none', title: 'Nothing assigned' };
   const done = it => it.tool === 'check' ? C.some(x => on(x.t)) : L.some(x => x.aid === it.id && (['steps', 'weather'].includes(it.tool) ? on(x.t) : upTo(x.t)));
@@ -1611,8 +1616,14 @@ function renderBankBox() {
   $('bankAuto').checked = b.auto !== false; $('bankSize').textContent = b.size || 6;
   $('bankCount').textContent = `${b.bank.length} word${b.bank.length === 1 ? '' : 's'}`;
   $('bankChips').innerHTML = b.bank.map((w, i) => `<span class="chip">${i === 0 ? '<i>next</i>' : ''}${esc(w)}<button data-unbank="${esc(w)}" aria-label="Remove ${esc(w)} from the bank">✕</button></span>`).join('') || '<small class="note">The bank is empty. Add words below.</small>';
-  $('mastCount').textContent = `${b.mastered.length} word${b.mastered.length === 1 ? '' : 's'} · ${b.mastered.filter(m => m.confirmed).length} confirmed`;
-  $('mastChips').innerHTML = b.mastered.map(m => `<span class="chip ${m.confirmed ? 'conf' : 'mast'}" title="${m.confirmed ? `Confirmed ${esc(m.confirmedAt || '')}` : `Mastered ${esc(m.at || '')}`}">${m.confirmed ? '✓✓' : '✓'} ${esc(m.w)}<button data-unmaster="${esc(m.w)}" aria-label="Put ${esc(m.w)} back in the bank">✕</button></span>`).join('');
+  const passed = b.mastered.filter(m => !m.confirmed), conf = b.mastered.filter(m => m.confirmed);
+  const fmt = d => { const [y, m, dd] = String(d || '').split('-'); return y ? `${m}/${dd}/${y.slice(2)}` : 'Before'; };
+  const rows = (list, dateOf, mark) => { const by = {}; list.forEach(m => (by[dateOf(m) || ''] = by[dateOf(m) || ''] || []).push(m));
+    return Object.keys(by).sort().reverse().map(d => `<div class="date-row"><span class="date-l">${fmt(d)}</span><div class="chips">${by[d].map(m => `<span class="chip ${mark === '✓✓' ? 'conf' : 'mast'}">${mark} ${esc(m.w)}<button data-unmaster="${esc(m.w)}" aria-label="Put ${esc(m.w)} back in the bank">✕</button></span>`).join('')}</div></div>`).join('') || '<small class="note">None yet.</small>'; };
+  $('mastCount').textContent = `${passed.length} word${passed.length === 1 ? '' : 's'}`;
+  $('confCount').textContent = `${conf.length} word${conf.length === 1 ? '' : 's'}`;
+  $('mastChips').innerHTML = rows(passed, m => m.at, '✓');
+  $('confChips').innerHTML = rows(conf, m => m.confirmedAt || m.at, '✓✓');
 }
 $('bankAuto').onchange = () => { const b = sightBank(); if (!b) return; b.auto = $('bankAuto').checked; store('sight-bank', b); };
 $('bankAddBtn').onclick = () => { const b = sightBank(); if (!b) return; const add = parseList($('bankAdd').value).filter(w => !b.bank.includes(w) && !b.current.some(c => c.w === w) && !b.mastered.some(m => m.w === w)); b.bank.push(...add); store('sight-bank', b); $('bankAdd').value = ''; renderBankBox(); };
@@ -2365,10 +2376,24 @@ holdToOpen($('kidSwitch'), 2000, 'signout');   // back to the Parent / Child scr
 /* Test day (grown-up, hold): do his day exactly as he sees it, without saving anything as him.
    This device's copy is put aside first and put back at "End test"; nothing goes to the database, no emails, no recordings. */
 const TEST_SKIP = k => k === 'spell-voice' || k === 'study-cloud-queue' || k === 'study-role' || /auth|^sb-/.test(k);
-function startTestDay() {
+function askTestKind() {   // fresh = his day as if he hasn't done anything yet today
+  const w = document.createElement('div'); w.className = 'ph-wrap';
+  w.innerHTML = `<div class="ph-box"><h3>🧪 Test day</h3><p>Nothing you do will be saved. How do you want to start?</p>
+    <button class="btn big primary" data-k="fresh">Start his day from scratch<br><small>as if he hasn’t done anything today</small></button>
+    <button class="btn big" data-k="now">Start from where his day is now</button><button class="btn" data-k="no">Cancel</button></div>`;
+  document.body.appendChild(w);
+  w.onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; w.remove(); if (b.dataset.k !== 'no') startTestDay(b.dataset.k === 'fresh'); };
+}
+function startTestDay(fresh) {
   const snap = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!TEST_SKIP(k)) snap[k] = localStorage.getItem(k); }
   try { sessionStorage.setItem('study-testday-snap', JSON.stringify(snap)); sessionStorage.setItem('study-testday', '1'); }
   catch (e) { alert('This device doesn’t have room for a test day right now.'); return; }
+  if (fresh) {   // only this device's copy, which End test puts back
+    const today = new Date().toDateString(), notToday = x => new Date(x.t).toDateString() !== today;
+    ['spell-check-log', 'sheet-log', 'fixup-log'].forEach(k => { const l = store(k); if (Array.isArray(l)) store(k, l.filter(notToday)); });
+    ['spell-check-latest', 'fixup-latest', 'study-day-agenda'].forEach(k => localStorage.removeItem(k));
+    const wp = store('weather-progress'); if (wp && Array.isArray(wp.entries)) { wp.entries = wp.entries.filter(notToday); store('weather-progress', wp); }
+  }
   renderTestBar(); show('kidhome'); window.scrollTo(0, 0); say('Test day. Nothing will be saved.', 1);
 }
 async function endTestDay() {
@@ -2380,7 +2405,7 @@ async function endTestDay() {
   daily = null; renderTestBar(); await cloudPull(); show('kidhome'); window.scrollTo(0, 0);
 }
 function renderTestBar() { $('testBar').hidden = !TESTDAY(); document.body.classList.toggle('testday', TESTDAY()); }
-$('kidTest').addEventListener('pointerdown', e => { e.preventDefault(); const b = $('kidTest'); b.classList.add('holding'); b._t = setTimeout(() => { b.classList.remove('holding'); askPin().then(ok => ok && startTestDay()); }, 2000); });
+$('kidTest').addEventListener('pointerdown', e => { e.preventDefault(); const b = $('kidTest'); b.classList.add('holding'); b._t = setTimeout(() => { b.classList.remove('holding'); askPin().then(ok => ok && askTestKind()); }, 2000); });
 ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => $('kidTest').addEventListener(ev, () => { clearTimeout($('kidTest')._t); $('kidTest').classList.remove('holding'); }));
 $('kidTest').addEventListener('contextmenu', e => e.preventDefault());
 $('testEnd').onclick = () => endTestDay();
@@ -2633,7 +2658,7 @@ function renderKidHome() {
   const d = store('spell-daily') || {}, words = d.on === false ? [] : dailyWords();
   const today = (store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString() && r.t > (d.resetAt || 0));   // "Reset today" starts his day fresh
   $('kidHi').textContent = kidName() ? `Hi ${kidName()}! 👋` : 'Hi! 👋';
-  const sq = store('spell-queue'), sheets = [...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq', title: `✏️ Spelling practice · ${sq.words.length} word${sq.words.length > 1 ? 's' : ''}` }] : []), ...((store('study-sheets') || {}).list || [])];
+  const sq = store('spell-queue'), sheets = [...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq', title: `✏️ Spelling practice · ${sq.words.length} word${sq.words.length > 1 ? 's' : ''}` }] : []), ...((store('study-sheets') || {}).list || []).filter(a => !(a.tool === 'mtest' && ymd(a.at) < ymd(Date.now())))];
   $('kidMsg').textContent = words.length && sheets.length ? `First your worksheet${sheets.length > 1 ? 's' : ''}, then your ${words.length} sight word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : words.length ? `Today you have ${words.length} word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : sheets.length ? 'Here’s your work for today. Take your time and try your best!' : 'Nothing yet. Ask a grown-up to add today’s work.';
   $('kidWordsH').hidden = !(words.length && sheets.length);
   // On-screen worksheets assigned from the Worksheets page (done ones show their grade; Daily Steps counts today only)
