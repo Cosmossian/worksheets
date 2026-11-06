@@ -228,6 +228,8 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
 .gate-form input { font-size: 22px; padding: 12px 14px; }
 .gate-form .err { color: var(--try); min-height: 20px; }
 .kid-sheets { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 560px; }
+.grown-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--surface); border: 2px solid var(--try); border-radius: 16px; padding: 10px 14px; margin-bottom: 14px; font: 600 17px Fredoka, sans-serif; position: sticky; top: 8px; z-index: 5; }
+.grown-bar[hidden] { display: none; }
 .kid-h { margin: 18px 0 0; font: 700 26px Fredoka, sans-serif; color: var(--navy); }
 .kid-sheets h3 { margin: 10px 0 0; font: 700 26px Fredoka, sans-serif; color: var(--navy); }
 /* worksheet buttons look like Start today's words: big and blue */
@@ -343,6 +345,7 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
 
 <!-- Grown-up: type the word -->
 <main class="setup" id="setup">
+  <div class="grown-bar" id="grownBar" hidden><span>🔒 Grown-up screen on his device</span><button class="btn primary" id="grownDone">✓ Done, back to his screen</button></div>
   <div class="card acct" id="acctCard">
     <h2>Shared across devices</h2>
     <div id="acctOut">
@@ -1007,6 +1010,7 @@ $('again').onclick = () => begin();
 if (!canTalk) $('voiceWarn').hidden = false;
 
 let grownMode = false;
+$('grownDone').onclick = () => { grownMode = false; show('kidhome'); window.scrollTo(0, 0); };
 function placeMicTest(id) {   // his start screen gets the same mic test (sensitivity is per device), when Look & Listen uses the mic
   const d = store('spell-daily') || {}, onKid = id === 'kidhome' && d.on !== false && d.look !== false && d.mic !== false && parseList(d.words || '').length > 0;
   const target = onKid ? $('kidMicSlot') : $('setupMicSlot');
@@ -1014,7 +1018,7 @@ function placeMicTest(id) {   // his start screen gets the same mic test (sensit
   $('micTestPanel').hidden = id === 'kidhome' && !onKid;
 }
 const agendaTitle = () => `📋 My Agenda · ${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}`;
-function show(id) { if (cloud.sb && !cloud.user && id !== 'gate') id = 'gate'; if (id === 'gate') { $('gatePick').hidden = false; $('gateForm').hidden = true; $('gateErr').textContent = ''; } if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome', 'gate'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('gated', id === 'gate'); $('appTitle').textContent = id === 'kidhome' ? agendaTitle() : id === 'gate' ? 'The Study' : 'Spelling Helper'; if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
+function show(id) { if (cloud.sb && !cloud.user && id !== 'gate') id = 'gate'; if (id === 'gate') { $('gatePick').hidden = false; $('gateForm').hidden = true; $('gateErr').textContent = ''; } if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome', 'gate'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('gated', id === 'gate'); $('grownBar').hidden = !(id === 'setup' && cloud.role === 'kid' && grownMode); $('appTitle').textContent = id === 'kidhome' ? agendaTitle() : id === 'gate' ? 'The Study' : 'Spelling Helper'; if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
 
 function start() {
   stopRecord();
