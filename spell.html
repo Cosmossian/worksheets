@@ -157,6 +157,9 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .kidhome .btn.big { font-size: 30px; padding: 22px 40px; min-height: 84px; border-radius: 24px; }
 .kidhome .done-today { color: var(--good); font: 600 22px Fredoka, sans-serif; }
 .kidhome .grownup, .kidhome .kid-hold { order: 20; }
+.sendbox { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); display: flex; flex-direction: column; gap: 8px; }
+.sendbox textarea { width: 100%; }
+body.only-daily #helperCard, body.only-helper #dailyCard { display: none; }
 .kid-hold { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
 body.authwait main, body.authwait .app-header .review-btn, body.authwait .app-header .back { visibility: hidden; }
 body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-header .back { display: none; }
@@ -307,7 +310,7 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
     <label class="lbl" for="dailyIn">Today’s words</label>
     <textarea class="big" id="dailyIn" rows="2" placeholder="first, while, more, against" autocapitalize="off" spellcheck="false"></textarea>
     <small class="note">Separate with commas. <button class="linkbtn" id="useSight" hidden></button></small>
-    <div class="row" id="syncRow" hidden style="align-items:center;margin-top:6px"><button class="btn" id="syncNow">⟳ Sync to his device</button><span class="sync-note" id="syncNote"></span></div>
+    <div class="row" id="syncRow" hidden style="align-items:center;margin-top:6px"><button class="btn" id="dailyOn" aria-pressed="true"></button><button class="btn" id="syncNow">⟳ Sync to his device</button><span class="sync-note" id="syncNote"></span></div>
     <label class="check-row"><input type="checkbox" id="dailyLook" checked> Look &amp; Listen first: he sees each word, says it, then hears it (3 rounds)</label>
     <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyMic" checked> Make sure he says each word out loud (uses the microphone)</label>
     <div id="setupMicSlot"></div>
@@ -332,7 +335,7 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
     <div class="clips" id="lookClips"></div>
     <div class="row" style="margin-top:10px"><button class="btn" id="openReview">Open Parent Review: his recordings and results</button></div>
   </div>
-  <div class="card">
+  <div class="card" id="helperCard">
     <h2>Spell one word: what does he want to spell?</h2>
     <p class="help">Type it here, then hand him the screen. He spells it one letter at a time, and the helper says the word and its parts out loud, as slowly and as often as he needs. It never fills in a letter for him.</p>
     <label class="lbl" for="wordIn">Word</label>
@@ -356,6 +359,12 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
     <div class="row">
       <button class="btn primary big" id="startBtn" disabled>Start</button>
       <button class="btn" id="testWord" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>Hear the word</button>
+    </div>
+    <div class="sendbox" id="sendBox" hidden>
+      <b>Send words to his device</b>
+      <small class="note" style="margin-top:2px">He practices each one with the Spelling Helper on his own (no check at the end). It shows as a button on his start screen.</small>
+      <textarea id="spellQIn" rows="2" placeholder="vitamin, earth, planet" autocapitalize="off" spellcheck="false"></textarea>
+      <div class="row" style="align-items:center"><button class="btn primary" id="spellQSend">Send to his device</button><button class="btn" id="spellQOff" hidden>Take off his device</button><span class="sync-note" id="spellQNote"></span></div>
     </div>
     <div class="recent practice" id="practice" hidden><b>Practice again: words he needed the most help with</b><div class="chips" id="pchips"></div></div>
     <div class="recent" id="recent" hidden><b>Words he asked for before</b><div class="chips" id="chips"></div></div>
@@ -931,7 +940,7 @@ if (!canTalk) $('voiceWarn').hidden = false;
 
 let grownMode = false;
 function placeMicTest(id) {   // his start screen gets the same mic test (sensitivity is per device), when Look & Listen uses the mic
-  const d = store('spell-daily') || {}, onKid = id === 'kidhome' && d.look !== false && d.mic !== false && parseList(d.words || '').length > 0;
+  const d = store('spell-daily') || {}, onKid = id === 'kidhome' && d.on !== false && d.look !== false && d.mic !== false && parseList(d.words || '').length > 0;
   const target = onKid ? $('kidMicSlot') : $('setupMicSlot');
   if ($('micTestPanel').previousElementSibling !== target && $('micTestPanel').parentNode !== target) { if (testing) stopMicTest(); onKid ? target.appendChild($('micTestPanel')) : target.after($('micTestPanel')); }
   $('micTestPanel').hidden = id === 'kidhome' && !onKid;
@@ -1232,7 +1241,11 @@ function parseList(text) {
 function sightPracticeWords() {   // this week's list on the worksheets page (same site, same browser)
   try { const st = JSON.parse(localStorage.getItem('fgfw-state') || '{}'); return st.sight && st.sight.words ? parseList(st.sight.words.replace(/\s+/g, ', ')) : []; } catch (e) { return []; }
 }
+const dailyOn = () => ((store('spell-daily') || {}).on !== false);   // daily words show on his device unless turned off
+function renderDailyOn() { const on = dailyOn(), b = $('dailyOn'); b.textContent = on ? '✓ On his device' : '○ Off his device'; b.setAttribute('aria-pressed', on); b.classList.toggle('primary', on); b.title = on ? 'Tap to take today’s words off his start screen' : 'Tap to put today’s words on his start screen'; }
+$('dailyOn').onclick = () => { const d = store('spell-daily') || {}; d.on = !dailyOn(); store('spell-daily', d); renderDailyOn(); syncNote(d.on ? 'Today’s words are on his device.' : 'Today’s words are off his device.'); };
 function renderDailySetup(fromCloud) {
+  renderDailyOn();
   $('mailTo').textContent = RESULTS_EMAIL;
   const saved = store('spell-daily');
   if (saved && (!$('dailyIn').value || fromCloud)) $('dailyIn').value = saved.words || '';
@@ -1250,7 +1263,7 @@ function renderDailySetup(fromCloud) {
   $('dailyStart').disabled = !parseList($('dailyIn').value).length;
   renderLastCheck();
 }
-function saveDailySetup() { store('spell-daily', { words: $('dailyIn').value, practice: $('dailyPractice').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked }); }
+function saveDailySetup() { store('spell-daily', { on: dailyOn(), words: $('dailyIn').value, practice: $('dailyPractice').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked }); }
 $('dailyIn').addEventListener('input', () => { $('dailyStart').disabled = !parseList($('dailyIn').value).length; saveDailySetup(); });
 $('dailyPractice').addEventListener('change', saveDailySetup);
 ['dailyLook', 'dailyMic', 'dailyKeep'].forEach(id => $(id).addEventListener('change', saveDailySetup));
@@ -1262,7 +1275,7 @@ $('dailyStart').onclick = () => {
   startDaily(words, { practice: $('dailyPractice').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked });
 };
 function startDaily(words, o) {
-  daily = { words, i: 0, phase: 'practice', practiced: o.practice !== false, looked3: o.look !== false, micWanted: o.mic !== false, keepVoice: o.keep !== false, practice: {}, results: [] };
+  daily = { only: !!o.only, qid: o.qid || '', words, i: 0, phase: 'practice', practiced: o.practice !== false, looked3: o.look !== false, micWanted: o.mic !== false, keepVoice: o.keep !== false, practice: {}, results: [] };
   if (daily.looked3) startLook(); else afterLook();
 }
 
@@ -1449,14 +1462,28 @@ function dailyAfterWord() {
   if (!inDaily) return;
   if (daily.phase === 'practice') daily.practice[daily.words[daily.i]] = { tricky: helpedAt.size, helps: stats.helps };
   const last = daily.i >= daily.words.length - 1;
-  $('nextWord').textContent = !last ? 'Next word →' : daily.phase === 'practice' ? 'On to the check →' : 'All done →';
+  $('nextWord').textContent = !last ? 'Next word →' : daily.phase === 'practice' && !daily.only ? 'On to the check →' : 'All done →';
 }
 $('nextWord').onclick = () => {
   if (!daily) return show('setup');
   if (daily.i < daily.words.length - 1) { daily.i++; return practiceWord(); }
-  if (daily.phase === 'practice') return readyForCheck();
+  if (daily.phase === 'practice') return daily.only ? practiceListDone() : readyForCheck();
   show('setup');
 };
+/* A practice list sent from the grown-up's device: saved like a worksheet result (Parent Review + email) */
+function practiceListDone() {
+  const d = daily, t = Date.now();
+  const items = d.words.map(w => { const p = d.practice[w] || {}; return { part: 'Spelling Helper', label: w, ok: !p.tricky && !p.helps, typed: '', answer: w, word: w }; });
+  const rec = { id: t.toString(36), t, aid: d.qid, tool: 'spell', title: 'Spelling Helper practice', grade: null, right: items.filter(x => x.ok).length, of: items.length, items, missed: [],
+    parts: d.words.map(w => { const p = d.practice[w] || {}; return [w, p.tricky || p.helps ? `${p.tricky || 0} tricky letter${p.tricky === 1 ? '' : 's'}, ${p.helps || 0} help${p.helps === 1 ? '' : 's'}` : 'spelled it with no help']; }), extra: {}, sent: false };
+  const log = store('sheet-log') || []; log.push(rec); store('sheet-log', log.slice(-40));
+  cloudPutLog('sheet', rec.id, t, rec);
+  const body = { _subject: `Spelling Helper practice: ${rec.right} of ${rec.of} with no help (${new Date(t).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })})`, 'Date': new Date(t).toLocaleString(), 'Words': d.words.join(', ') };
+  rec.parts.forEach(([k, v]) => { body[k] = v; });
+  rec.body = body; const box = store('sheet-outbox') || []; box.push(rec); store('sheet-outbox', box.slice(-20));
+  postForm(body).then(ok => { if (ok) { store('sheet-outbox', (store('sheet-outbox') || []).filter(x => x.id !== rec.id)); const l = store('sheet-log') || []; const x = l.find(y => y.id === rec.id); if (x) { x.sent = true; store('sheet-log', l); } } });
+  daily = null; show('setup');
+}
 
 /* ---- The check: the word is said (and used in a sentence), never shown; no help, no right/wrong until the end ---- */
 let typed = '';
@@ -1760,7 +1787,8 @@ $('reviewList').addEventListener('click', async e => {
 holdToOpen($('reviewBtn'), 2000, 'review');
 $('openReview').onclick = () => show('review');
 $('reviewDone').onclick = () => show('setup');
-$('kidStart').onclick = () => { if (testing) stopMicTest(); const d = store('spell-daily') || {}; const words = parseList(d.words || ''); if (!words.length) return renderKidHome(); startDaily(words, d); };
+$('kidSheets').addEventListener('click', e => { const a = e.target.closest('a[href="#spellq"]'); if (!a) return; e.preventDefault(); const q = store('spell-queue'); if (q && q.words && q.words.length) startDaily(q.words, { look: false, practice: true, only: true, qid: q.id }); });
+$('kidStart').onclick = () => { if (testing) stopMicTest(); const d = store('spell-daily') || {}; const words = d.on === false ? [] : parseList(d.words || ''); if (!words.length) return renderKidHome(); startDaily(words, d); };
 holdToOpen($('kidGrown'), 2000, 'grown');
 holdToOpen($('kidSwitch'), 2000, 'signout');   // back to the Parent / Child screen
 
@@ -1774,7 +1802,7 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const KID_DOMAIN = 'kids.thatonedrawer.com';   // usernames become <username>@kids.thatonedrawer.com behind the scenes (never emailed)
 const loginEmail = id => { id = id.trim().toLowerCase(); return id.includes('@') ? id : `${id}@${KID_DOMAIN}`; };
 const shownName = email => email.endsWith('@' + KID_DOMAIN) ? email.slice(0, -KID_DOMAIN.length - 1) : email;
-const SYNC = { 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent', 'study-sheets': 'sheets' };   // sheets: on-screen worksheets assigned from the Worksheets page
+const SYNC = { 'spell-queue': 'spellq', 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent', 'study-sheets': 'sheets' };   // sheets: on-screen worksheets assigned from the Worksheets page
 const cloud = { sb: null, user: null, role: null, pulling: false, timers: {} };
 const cloudMember = () => !!(cloud.sb && cloud.user && cloud.role);
 function cloudClient() {
@@ -1821,7 +1849,7 @@ window.addEventListener('online', () => cloudFlush());
 // store() calls this for every write; synced keys go up (debounced), except while pulling
 function cloudOnStore(k) {
   if (!SYNC[k] || cloud.pulling || !cloud.sb) return;
-  if (cloud.role === 'kid' && ['spell-daily', 'spell-settings', 'spell-sounds', 'study-sheets'].includes(k)) return;   // set from the grown-up's device
+  if (cloud.role === 'kid' && ['spell-daily', 'spell-settings', 'spell-sounds', 'study-sheets', 'spell-queue'].includes(k)) return;   // set from the grown-up's device
   clearTimeout(cloud.timers[k]);
   cloud.timers[k] = setTimeout(() => {
     let data = store(k);
@@ -1917,11 +1945,24 @@ async function cloudSetUser(user) {
   if (cloudMember()) { await cloudFlush(); await cloudPull(); if (!$('review').hidden) renderReview(); }   // opened straight to Parent Review (the email link): refresh once signed in
   else if (!$('kidhome').hidden) show('setup');
 }
+function renderSpellQ() {
+  const q = store('spell-queue');
+  $('spellQOff').hidden = !(q && q.words && q.words.length);
+  $('spellQNote').textContent = q && q.words && q.words.length ? `On his device: ${q.words.join(', ')}` : '';
+}
+$('spellQSend').onclick = () => {
+  const words = parseList($('spellQIn').value || $('wordIn').value);
+  if (!words.length) { $('spellQNote').textContent = 'Type a word or two first.'; return; }
+  store('spell-queue', { id: 'sq' + Date.now().toString(36), at: Date.now(), words }); $('spellQIn').value = ''; renderSpellQ();
+  $('spellQNote').textContent = `Sent ✓ ${words.length} word${words.length > 1 ? 's' : ''}: ${words.join(', ')}`;
+};
+$('spellQOff').onclick = () => { store('spell-queue', { id: '', at: Date.now(), words: [] }); renderSpellQ(); $('spellQNote').textContent = 'Taken off his device.'; };
 function renderAccount() {
   const inside = !!cloud.user;
   $('acctOut').hidden = inside; $('acctIn2').hidden = !inside;
   if (!inside) return;
   $('kidMaker').hidden = cloud.role !== 'grownup';
+  $('sendBox').hidden = cloud.role !== 'grownup'; renderSpellQ();
   document.body.classList.toggle('kid', cloud.role === 'kid');
   $('syncRow').hidden = cloud.role !== 'grownup';
   $('acctWho').innerHTML = cloud.role === 'grownup' ? `Signed in as <b>${esc(cloud.user.email)}</b> (grown-up). Today’s words, results and recordings are shared with his device.`
@@ -1987,14 +2028,14 @@ setInterval(() => { if (cloudMember() && !daily && (!$('kidhome').hidden || !$('
 
 /* ---- His start screen ---- */
 function renderKidHome() {
-  const d = store('spell-daily') || {}, words = parseList(d.words || '');
+  const d = store('spell-daily') || {}, words = d.on === false ? [] : parseList(d.words || '');
   const today = (store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString());
-  const sheets = ((store('study-sheets') || {}).list || []);
+  const sq = store('spell-queue'), sheets = [...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq', title: `✏️ Spelling practice · ${sq.words.length} word${sq.words.length > 1 ? 's' : ''}` }] : []), ...((store('study-sheets') || {}).list || [])];
   $('kidMsg').textContent = words.length ? `Today you have ${words.length} word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : sheets.length ? 'Pick a worksheet below. Take your time and try your best!' : 'No words yet. Ask a grown-up to add today’s words.';
   // On-screen worksheets assigned from the Worksheets page (done ones show their grade; Daily Steps counts today only)
   const logs = [...(store('sheet-log') || []), ...(store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))];
   const doneFor = a => logs.filter(l => l.aid === a.id && (!['steps', 'weather'].includes(a.tool) || new Date(l.t).toDateString() === new Date().toDateString())).sort((x, y) => y.t - x.t)[0];
-  const href = a => a.tool === 'fixup' ? `fixup.html?w=${encodeURIComponent(((a.data && a.data.words) || []).map(x => `${x.w}:${x.his || ''}`).join('|'))}&from=${encodeURIComponent(a.title)}&cid=${encodeURIComponent(a.id)}` : `do.html?a=${encodeURIComponent(a.id)}`;
+  const href = a => a.tool === 'spellq' ? '#spellq' : a.tool === 'fixup' ? `fixup.html?w=${encodeURIComponent(((a.data && a.data.words) || []).map(x => `${x.w}:${x.his || ''}`).join('|'))}&from=${encodeURIComponent(a.title)}&cid=${encodeURIComponent(a.id)}` : `do.html?a=${encodeURIComponent(a.id)}`;
   $('kidSheets').hidden = !sheets.length;
   $('kidSheets').innerHTML = sheets.length ? `<h3>Worksheets</h3>` + sheets.map(a => { const d = doneFor(a), g = d && d.grade;
     return `<a class="${d ? 'done' : ''}" href="${href(a)}"><span>${esc(a.title)}</span>${d ? `<small>✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'weather' ? `day ${d.extra && d.extra.day} done today` : a.tool === 'steps' ? 'done today' : 'done'}${a.tool === 'weather' ? '' : ' · again?'}</small>` : '<span>→</span>'}</a>`; }).join('') : '';
@@ -2006,6 +2047,8 @@ function renderKidHome() {
 renderRecent();
 renderSetup();
 renderDailySetup();
+const onlyCard = () => { document.body.classList.toggle('only-daily', location.hash === '#daily'); document.body.classList.toggle('only-helper', location.hash === '#helper'); };   // Daily Sight Words and the Spelling Helper are separate pages from the Study
+onlyCard(); window.addEventListener('hashchange', onlyCard);
 (async () => {   // who's signed in? Nobody → the Parent / Child screen. (If the sign-in can't load at all, it works on this device only, like before.)
   const sb = cloudClient();
   if (!sb) { document.body.classList.remove('authwait'); return; }

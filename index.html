@@ -28,6 +28,21 @@ a { color: var(--accent); }
 .classes button[aria-pressed="true"] { border-color: var(--study); background: #1B2D47; box-shadow: inset 0 -4px 0 var(--study); }
 .tablink { font: 600 16px Fredoka, sans-serif; border: 2px solid #0F9F8F; background: #0E2A28; color: #FFFFFF; border-radius: 999px; padding: 8px 16px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .tablink:hover { background: #12403B; }
+.hdr-btn.day { background: #0E2A28; border-color: #0F9F8F; color: #fff; }
+.daywrap { position: fixed; inset: 0; background: rgba(5, 9, 14, .78); z-index: 80; display: grid; place-items: start center; padding: 40px 16px; overflow: auto; }
+.daywrap[hidden] { display: none; }
+.daybox { background: var(--surface); border: 2px solid var(--study); border-radius: 22px; padding: 20px 22px; width: 100%; max-width: 640px; }
+.dayhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.dayhead h2 { margin: 0; font: 700 24px Fredoka, sans-serif; color: var(--navy); }
+.dayitem { display: flex; gap: 12px; align-items: flex-start; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+.dayitem .n { width: 30px; height: 30px; border-radius: 50%; background: var(--study); color: #fff; display: grid; place-items: center; font: 700 15px Fredoka, sans-serif; flex: none; }
+.dayitem.off { opacity: .55; } .dayitem.off .n { background: var(--muted); }
+.dayitem .body { flex: 1; } .dayitem b { font: 700 18px Fredoka, sans-serif; }
+.dayitem .sub { font-size: 15px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+.dayitem .st { font: 600 14px Fredoka, sans-serif; white-space: nowrap; color: var(--muted); }
+.dayitem .st.ok { color: #34D399; }
+.dayitem .acts2 { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.dayitem .acts2 a { text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; }
 .tablink[hidden], .tabs button[hidden] { display: none; }
 .empty-class { grid-column: 1 / -1; background: var(--surface); border: 1px dashed var(--field-line); border-radius: 16px; padding: 30px; text-align: center; color: var(--muted); font-size: 18px; }
 .app-header h1 { margin: 0; font-family: Fredoka, sans-serif; font-weight: 700; font-size: 26px; color: var(--navy); }
@@ -271,11 +286,12 @@ select::-ms-expand { display: none; }
 <body class="authwait">
 <header class="app-header">
   <h1>The Study</h1>
-  <div class="hdr-btns"><a class="hdr-btn" href="spell.html#review">Parent Review</a><button class="hdr-btn" id="switchUser">↺ Switch user</button></div>
+  <div class="hdr-btns"><button class="hdr-btn day" id="dayBtn">👀 Review Child’s Day</button><a class="hdr-btn" href="spell.html#review">Parent Review</a><button class="hdr-btn" id="switchUser">↺ Switch user</button></div>
 </header>
 <nav class="classes" id="classes" aria-label="Classes"></nav>
 <nav class="tabs" role="tablist" aria-label="Worksheets in this class">
-  <a class="tablink" data-cls="phonics" href="spell.html">✏️ Spelling Helper &amp; daily sight words →</a>
+  <a class="tablink" data-cls="phonics" href="spell.html#daily">📝 Daily Sight Words →</a>
+  <a class="tablink" data-cls="phonics" href="spell.html#helper">✏️ Spelling Helper →</a>
   <button role="tab" data-tool="sight">Sight Word Practice</button>
   <button role="tab" data-tool="master">Word Master Challenge</button>
   <button role="tab" data-tool="fixup">Spelling Fix-Up</button>
@@ -284,6 +300,11 @@ select::-ms-expand { display: none; }
   <button role="tab" data-tool="eagles">Count the Eagles</button>
   <button role="tab" data-tool="weather">My Weather Watch</button>
 </nav>
+<div class="daywrap" id="dayWrap" hidden role="dialog" aria-modal="true" aria-labelledby="dayTitle"><div class="daybox">
+  <div class="dayhead"><h2 id="dayTitle">His day today</h2><button class="hdr-btn" id="dayClose">✕ Close</button></div>
+  <p class="help" style="margin:0 0 10px">This is what his start screen shows right now, in order.</p>
+  <div id="dayList"></div>
+</div></div>
 <main class="workspace">
   <aside class="panel" id="panel" aria-label="Worksheet options"></aside>
   <div class="preview" id="preview" aria-label="Worksheet preview"></div>
@@ -1083,7 +1104,7 @@ const CLASSES = [
   { id: 'ela', name: 'ELA', icon: '📖', tools: ['question'] },
   { id: 'math', name: 'Math', icon: '🔢', tools: ['eagles'] },
   { id: 'music', name: 'Music', icon: '🎵', tools: [] },
-  { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['sight', 'master', 'fixup'], extra: 1 },
+  { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['sight', 'master', 'fixup'], extra: 2 },
   { id: 'pe', name: 'PE', icon: '🏃', tools: [] },
   { id: 'science', name: 'Science', icon: '🔬', tools: ['weather'] },
   { id: 'social', name: 'Social Studies', icon: '🌎', tools: [] },
@@ -1102,6 +1123,45 @@ document.getElementById('classes').addEventListener('click', e => {
   state.cls = c.id; if (c.tools.length && !c.tools.includes(state.tool)) state.tool = c.tools[0];
   save(); history.replaceState(null, '', '#' + (c.tools.length ? state.tool : c.id)); renderPanel();
 });
+/* Review Child's Day: what his start screen shows today, straight from the Study database */
+async function openDay() {
+  const wrap = document.getElementById('dayWrap'), list = document.getElementById('dayList');
+  wrap.hidden = false; list.innerHTML = '<p class="help">Loading…</p>';
+  const sb = await studySession();
+  if (!sb) { list.innerHTML = '<p class="help">Sign in first to see his day.</p>'; return; }
+  try {
+    const { data: st } = await sb.from('study_state').select('key,data').in('key', ['daily', 'sheets', 'spellq']);
+    const S = Object.fromEntries((st || []).map(r => [r.key, r.data]));
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const { data: logs } = await sb.from('study_log').select('kind,t,data').gte('t', new Date(Date.now() - 30 * 864e5).toISOString());
+    const L = (logs || []).map(r => ({ kind: r.kind, ...r.data, t: r.data.t || Date.parse(r.t) }));
+    const today = x => x.t >= start.getTime();
+    const items = [];
+    const d = S.daily || {}, words = parseWords(d.words || '');
+    if (words.length) {
+      const steps = [d.look !== false ? `Look &amp; Listen (3 rounds${d.mic !== false ? ', with the microphone' : ''})` : '', d.practice !== false ? 'practice each word with the Spelling Helper' : '', 'the check (spoken words, letter grade)'].filter(Boolean).join(' → ');
+      const chk = L.filter(x => x.kind === 'check' && today(x)).sort((a, b) => b.t - a.t)[0];
+      items.push({ off: d.on === false, title: `📝 Today’s sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : chk && chk.grade ? `✓ done: ${chk.grade.letter} (${chk.grade.pct}%)` : 'not done yet', ok: !!chk, acts: `<a class="btn btn-small" href="spell.html#daily">Change the words</a>` });
+    }
+    const q = S.spellq;
+    if (q && q.words && q.words.length) {
+      const done = L.find(x => x.kind === 'sheet' && x.aid === q.id);
+      items.push({ title: `✏️ Spelling practice · ${q.words.length}`, sub: `${esc(q.words.join(', '))}<br>each word with the Spelling Helper, on his own`, st: done ? '✓ done' : 'not done yet', ok: !!done, acts: `<a class="btn btn-small" href="spell.html#helper">Change the words</a>` });
+    }
+    ((S.sheets && S.sheets.list) || []).forEach((a, k) => {
+      const mine = L.filter(x => (x.aid || x.cid) === a.id && (!['steps', 'weather'].includes(a.tool) || today(x))).sort((x, y) => y.t - x.t)[0];
+      const g = mine && mine.grade;
+      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc((CLASSES.find(c => c.tools.includes(a.tool)) || {}).name || '')} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'steps' || a.tool === 'weather' ? 'done today' : 'done'}` : 'not done yet', ok: !!mine,
+        acts: a.tool === 'fixup' ? '' : `<button class="btn btn-small" data-tryday="${k}">Try it</button>` });
+    });
+    list.innerHTML = items.length ? items.map((it, i) => `<div class="dayitem${it.off ? ' off' : ''}"><span class="n">${i + 1}</span><div class="body"><b>${it.title}</b><div class="sub">${it.sub}</div>${it.acts ? `<div class="acts2">${it.acts}</div>` : ''}</div><span class="st${it.ok ? ' ok' : ''}">${it.st}</span></div>`).join('')
+      : '<p class="help">Nothing on his device yet. Type today’s sight words (Phonics → Daily Sight Words) or assign a worksheet.</p>';
+    list.onclick = e => { const b = e.target.closest('[data-tryday]'); if (!b) return; const a = S.sheets.list[+b.dataset.tryday]; lsSet('study-sheet-try', { ...a, id: 'try' }); window.open('do.html?try=1', '_blank'); };
+  } catch (e) { list.innerHTML = `<p class="help">Couldn’t load his day right now (${esc(e.message || e)}).</p>`; }
+}
+document.getElementById('dayBtn').onclick = openDay;
+document.getElementById('dayClose').onclick = () => { document.getElementById('dayWrap').hidden = true; };
+document.getElementById('dayWrap').onclick = e => { if (e.target.id === 'dayWrap') e.target.hidden = true; };
 document.getElementById('switchUser').onclick = async () => { try { const sb = sbClient(); if (sb) await sb.auth.signOut(); } catch (e) { } location.href = 'spell.html'; };
 
 function renderPanel() {
