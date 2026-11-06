@@ -143,6 +143,9 @@ body.inpart .prog { margin: 0 auto; }
   .prog { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+/* his login stays in the Study: the top bar keeps the logo (not a link) and drops the links to the other sections */
+body.kid #tod-nav .tod-links { display: none !important; }
+body.kid #tod-nav .tod-home { pointer-events: none; }
 .nextbar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--surface); border: 2px solid var(--study); border-radius: 999px; padding: 10px 22px; display: flex; align-items: center; gap: 14px; z-index: 60; font: 600 18px Fredoka, sans-serif; box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
 .nextbar i { width: 140px; height: 12px; border-radius: 999px; background: var(--field); overflow: hidden; display: block; }
 .nextbar b { display: block; height: 100%; width: 0; background: var(--good); border-radius: 999px; animation: nextfill linear forwards; }
@@ -257,9 +260,13 @@ span.dot { display: grid; place-items: center; cursor: default; }
 .wxchart th, .wxchart td { border: 1px solid var(--line); padding: 6px 10px; text-align: center; }
 .wxchart th { font: 600 15px Fredoka, sans-serif; color: var(--muted); }
 .wxchart td svg { background: #fff; border-radius: 8px; padding: 2px; vertical-align: middle; }
+/* his login stays in the Study: the top bar keeps the logo (not a link) and drops the links to the other sections */
+body.kid #tod-nav .tod-links { display: none !important; }
+body.kid #tod-nav .tod-home { pointer-events: none; }
 </style>
 </head>
 <body>
+<script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <a class="back" id="backLink" href="spell.html">← Back</a>
   <h1 id="sheetTitle">Worksheet</h1>

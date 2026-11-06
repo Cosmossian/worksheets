@@ -143,9 +143,13 @@ body.inpart .prog { margin: 0 auto; }
   .prog { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+/* his login stays in the Study: the top bar keeps the logo (not a link) and drops the links to the other sections */
+body.kid #tod-nav .tod-links { display: none !important; }
+body.kid #tod-nav .tod-home { pointer-events: none; }
 </style>
 </head>
 <body>
+<script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <h1>Spelling Fix-Up</h1>
   <div class="prog" id="prog"></div>

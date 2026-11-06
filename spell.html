@@ -332,9 +332,13 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
 .grownup::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; height: auto; width: 0; background: rgba(251, 191, 36, .28); border-radius: 0; z-index: -1; }
 .grownup.holding { color: var(--ink); border-color: var(--try); }
 .grownup.holding::after { width: 100%; transition: width 2s linear; }
+/* his login stays in the Study: the top bar keeps the logo (not a link) and drops the links to the other sections */
+body.kid #tod-nav .tod-links { display: none !important; }
+body.kid #tod-nav .tod-home { pointer-events: none; }
 </style>
 </head>
 <body class="authwait">
+<script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <h1 id="appTitle">Spelling Helper</h1>
   <button class="review-btn" id="reviewBtn" title="Hold for 2 seconds">Parent Review</button>
@@ -2124,6 +2128,7 @@ function renderAccount() {
   $('kidMaker').hidden = cloud.role !== 'grownup';
   $('sendBox').hidden = cloud.role !== 'grownup'; renderSpellQ();
   document.body.classList.toggle('kid', cloud.role === 'kid');
+  try { localStorage.setItem('study-role', cloud.role || ''); } catch (e) { }   // do.html and fixup.html hide the top bar's links for him too
   $('syncRow').hidden = cloud.role !== 'grownup';
   $('acctWho').innerHTML = cloud.role === 'grownup' ? `Signed in as <b>${esc(cloud.user.email)}</b> (grown-up). Today’s words, results and recordings are shared with his device.`
     : cloud.role === 'kid' ? `This is <b>his device</b> (signed in as ${esc(shownName(cloud.user.email))}). It shows him “Start today’s words”. Set the words from your own device.`
