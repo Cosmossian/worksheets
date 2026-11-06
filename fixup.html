@@ -390,6 +390,7 @@ const $ = id => document.getElementById(id);
 const app = $('app');
 
 /* ============ The words: from the sight word check (link), or the latest check on this device ============ */
+const emailOn = () => { try { return (JSON.parse(localStorage.getItem('spell-settings') || '{}') || {}).email === true; } catch (e) { return false; } };   // results emails are off unless turned on (Parent Review always has them)
 const RESULTS_EMAIL = 'dylan.l.cosmos@gmail.com';
 const MAILER_URL = 'https://script.google.com/macros/s/AKfycbzbr4Wpw4mrT6MbTViKI3K7PxLnp1avmygg0E5_imNpjTaF_Za6smj70ay-e1tKEJQr/exec';   // Google Apps Script web app on Dylan's account (SpellingHelperMailer.gs): emails go from his Gmail to his Gmail
 
@@ -432,6 +433,8 @@ const PARTS = [
 ];
 const score = { pick: { first: 0, of: 0, misses: 0 }, chunk: { mistakes: 0 }, rainbow: { clean: 0, of: 0 }, fix: { first: 0, of: 0 }, search: { found: 0, of: 0, wrongTaps: 0 }, test: [] };
 let partIdx = 0;
+const detail = [];   // for Parent Review: what was on his screen and everything he picked or typed, in order
+const note = (part, label, ok, answer, shown, picks) => detail.push({ part, label, ok, answer, shown, picks });
 function renderProg() {
   $('prog').innerHTML = PARTS.map((p, i) => `<span class="${i === partIdx ? 'now' : i < partIdx ? 'done' : ''}">${i + 1}. ${p.name}</span>`).join('');
 }
@@ -468,7 +471,7 @@ function partPick() {
     const { w, his } = WORDS[i];
     const wrong = [...new Set([his, ...misspellings(w.toLowerCase())].filter(x => x && x.toLowerCase() !== w.toLowerCase()))].slice(0, 3);
     const opts = shuffle([w, ...wrong], seed + i * 3);
-    let missed = false;
+    let missed = false; const tapped = [];
     app.innerHTML = title('Listen, then tap the word that is spelled right.') + `<div class="count">Word ${i + 1} of ${WORDS.length}</div>
       <button class="btn big primary" id="hear">${SPK}Hear the word</button>
       <div class="opts">${opts.map(o => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
@@ -477,7 +480,9 @@ function partPick() {
     playWord(w);
     app.querySelector('.opts').onclick = e => {
       const b = e.target.closest('[data-o]'); if (!b || b.disabled) return;
+      tapped.push(b.dataset.o);
       if (b.dataset.o === w) {
+        note('Pick the Right One', w, !missed, w, { text: 'He heard the word and picked the right spelling.', choices: opts }, tapped);
         b.classList.add('right'); app.querySelectorAll('.opt').forEach(x => x.disabled = true);
         if (!missed) score.pick.first++;
         setMsg(missed ? 'Yes! That’s the right spelling.' : 'Yes! You got it right away!', 'good');
@@ -500,7 +505,7 @@ function partChunk() {
     for (let a = targets.length - 1; a > 0; a--) { const b = Math.floor(Math.random() * (a + 1)); [targets[a], targets[b]] = [targets[b], targets[a]]; }
     if (targets.length > 1 && targets.every((k, n) => n === 0 || k > targets[n - 1])) targets.push(targets.shift());   // never in the usual order
     const { tip } = trickyFor(w.toLowerCase());
-    let ti = 0, pos = 0, heard = false;
+    let ti = 0, pos = 0, heard = false; const keys = [];
     const part = () => ti < targets.length ? chunks[targets[ti]].s.replace(/ /g, '') : '';
     const draw = () => {
       $('chunks').innerHTML = chunks.map((g, k) => {
@@ -526,12 +531,12 @@ function partChunk() {
     draw(); playWord(w).then(() => setMsg('Tap “Hear this part” first.'));
     onKey = (c) => {
       if (!heard) { setMsg('Tap “Hear this part” first.', 'try'); shakeEl($('hearPart')); return; }
-      const p = part();
+      const p = part(); keys.push(c);
       if (c === p[pos].toLowerCase()) {
         pos++;
         if (pos >= p.length) {
           ti++; pos = 0;
-          if (ti >= targets.length) { onKey = null; draw(); $('keys').classList.remove('cool'); setMsg('You got every part!', 'good'); say(dw, 0.85); nextUp(1300).then(() => { i++; i < WORDS.length ? show() : partDone(score.chunk.mistakes ? `Only ${score.chunk.mistakes} wrong letter${score.chunk.mistakes > 1 ? 's' : ''}. Nice work!` : 'Every letter right!'); }); return; }
+          if (ti >= targets.length) { note('Chunk It', w, keys.length === chunks.map(g => g.s.replace(/ /g, '')).join('').length, w, { text: `Parts in this order: ${targets.map(k => chunks[k].s).join(' → ')}` }, [keys.join(' ')]); onKey = null; draw(); $('keys').classList.remove('cool'); setMsg('You got every part!', 'good'); say(dw, 0.85); nextUp(1300).then(() => { i++; i < WORDS.length ? show() : partDone(score.chunk.mistakes ? `Only ${score.chunk.mistakes} wrong letter${score.chunk.mistakes > 1 ? 's' : ''}. Nice work!` : 'Every letter right!'); }); return; }
           heard = false; setMsg('Great! Now listen to the next part.', 'good');
         } else setMsg('');
         draw();
@@ -547,7 +552,7 @@ function partRainbow() {
   const PALETTE = [['#F87171', 'red'], ['#FB923C', 'orange'], ['#FBBF24', 'yellow'], ['#34D399', 'green'], ['#38BDF8', 'light blue'], ['#7FB0F0', 'blue'], ['#C4B5FD', 'purple'], ['#F9A8D4', 'pink']];
   const show = () => {
     const { w } = WORDS[i], dw = displayWord(w), letters = [...dw].filter(c => c !== ' ');
-    let row = 0, pos = 0, rowMiss = false; const cols = [];
+    let row = 0, pos = 0, rowMiss = false; const cols = [], lineKeys = [[], [], []];
     const draw = () => {
       const rows = row >= 2 ? [2] : [0, 1].filter(r => r <= row);   // the memory line shows alone
       $('rw').innerHTML = rows.map(r => `<div class="rw-row"><span class="n" style="color:${cols[r] || 'var(--muted)'}">${r + 1}</span>${letters.map((ch, n) => {
@@ -569,13 +574,14 @@ function partRainbow() {
     onKey = (c) => {
       if (row > 2) return;
       if (!cols[row]) { setMsg('Pick a color first.', 'try'); return; }
+      lineKeys[row].push(c);
       if (c === letters[pos].toLowerCase()) {
         pos++;
         if (pos >= letters.length) {
           if (!rowMiss) score.rainbow.clean++;
           row++; pos = 0; rowMiss = false;
           if (row === 2) { setMsg('Now from memory! The word is hiding.', 'good'); say('Now try it from memory!', 0.95); }
-          else if (row > 2) { onKey = null; draw(); $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join(''); setMsg('Rainbow done!', 'good'); say(dw, 0.85); nextUp(1500).then(() => { i++; i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); }); return; }
+          else if (row > 2) { note('Rainbow Write', w, lineKeys.every(l => l.length === letters.length), w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory.' }, lineKeys.map((l, k) => `line ${k + 1}: ${l.join(' ')}`)); onKey = null; draw(); $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join(''); setMsg('Rainbow done!', 'good'); say(dw, 0.85); nextUp(1500).then(() => { i++; i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); }); return; }
           else setMsg('Great! Again.', 'good');
         }
         draw();
@@ -596,7 +602,7 @@ function partFix() {
     const bad = his && his.toLowerCase() !== w.toLowerCase() ? his : (misspellings(w.toLowerCase())[0] || w + 'e');
     const s = sentenceFor(w);
     const sent = s ? esc(s).replace('___', `<span class="bad">${esc(bad)}</span>`) : `<span class="bad">${esc(bad)}</span>`;
-    let typed = '', tries = 0;
+    let typed = '', tries = 0; const tried = [];
     const draw = () => { $('ans').innerHTML = [...typed].map(c => `<span class="lbox typed">${esc(c)}</span>`).join('') + '<span class="lbox cur"></span>'; $('doneBtn').disabled = !typed; };
     app.innerHTML = title('One word is spelled wrong. Type it the right way.') + `<div class="count">Sentence ${i + 1} of ${WORDS.length}</div>
       <div class="sentence">${sent}</div>
@@ -609,7 +615,9 @@ function partFix() {
     onKey = c => { if (typed.length < 20) { typed += c; draw(); } };
     $('backBtn').onclick = () => { typed = typed.slice(0, -1); draw(); };
     $('doneBtn').onclick = () => {
+      tried.push(typed);
       if (typed.toLowerCase() === w.toLowerCase().replace(/\s+/g, '')) {
+        note('Fix the Sentence', w, !tries, w, { text: s ? s.replace('___', bad) : bad }, tried);
         if (!tries) score.fix.first++;
         onKey = null; setMsg('Fixed it!', 'good');
         $('ans').innerHTML = [...dw].map(c => c === ' ' ? '<span class="lbox sp"></span>' : `<span class="lbox done">${esc(c)}</span>`).join('');
@@ -696,6 +704,7 @@ function partTest() {
     $('confirm').hidden = true;
     const w = order[i];
     score.test.push({ word: w, typed: typed.trim(), ok: typed.trim().toLowerCase().replace(/\s+/g, ' ') === w.toLowerCase() });
+    note('Practice Test', w, score.test.at(-1).ok, w, { text: 'He only heard the word and a sentence (the word was hidden).' }, [typed.trim()]);
     onKey = null; i++;
     if (i < order.length) { app.querySelector('.count').textContent = 'Got it!'; nextUp(1000, 'Next word coming…').then(show); }
     else showResults();
@@ -733,24 +742,24 @@ function showResults() {
   const byWord = Object.fromEntries(score.test.map(r => [r.word, r]));
   const test = WORDS.map(x => byWord[x.w]).filter(Boolean);
   const right = test.filter(r => r.ok).length, g = gradeFor(right, test.length);
-  const rec = { id: Date.now().toString(36), t: Date.now(), from: FROM, words: WORDS, test, grade: { pct: g.pct, letter: g.letter }, parts: partLines(), sent: false };
+  const rec = { id: Date.now().toString(36), t: Date.now(), from: FROM, words: WORDS, test, grade: { pct: g.pct, letter: g.letter }, parts: partLines(), detail, sent: false };
   rec.cid = params.get('cid') || null;
   store('fixup-latest', rec);
   const flog = store('fixup-log') || []; flog.push(rec); store('fixup-log', flog.slice(-30));
   cloudSaveFixup(rec);
   rec.body = emailBody(rec);
-  const box = store('fixup-outbox') || []; box.push(rec); store('fixup-outbox', box.slice(-20));
+  if (emailOn()) { const box = store('fixup-outbox') || []; box.push(rec); store('fixup-outbox', box.slice(-20)); }
   app.innerHTML = `<div class="part-title"><h2>You finished the Fix-Up!</h2><p>Practice Test</p></div>
     <div class="grade"><span class="letter" style="background:${g.color}">${g.letter}</span><span class="pct">${g.pct}%<small>${right} of ${test.length} right</small></span></div>
     <p class="grade-msg">${esc(g.msg)}</p>
     <div class="sumlist">${test.map(r => r.ok ? `<div class="res ok"><span class="mark">✓</span><span class="w">${esc(r.word)}</span></div>`
       : `<div class="res no"><span class="mark">✗</span><div><div class="w">${esc(r.word)}</div><div class="his">You wrote <s>${esc(r.typed)}</s></div></div></div>`).join('')}</div>
     <div class="sumlist">${partLines().map(([n, v]) => `<div class="sum"><b>${esc(n)}</b><span>${esc(v)}</span></div>`).join('')}</div>
-    <p class="note" id="sent">Sending the results to your grown-up…</p>
+    <p class="note" id="sent">${emailOn() ? 'Sending the results to your grown-up…' : 'Saved for your grown-up in Parent Review.'}</p>
     <a class="btn big primary" href="spell.html" style="text-decoration:none">Finished</a>`;
   say(`You got ${right} out of ${test.length} on the practice test. That’s ${g.pct} percent, a${'AF'.includes(g.letter) ? 'n' : ''} ${g.letter}. ${g.msg}`, 0.95);
   if (right === test.length) { const c = document.createElement('div'); c.className = 'confetti'; const cols = ['#3C7DD9', '#F59E0B', '#34D399', '#C4B5FD', '#F87171', '#FACC15']; c.innerHTML = Array.from({ length: 60 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-delay:${Math.random() * 0.8}s"></i>`).join(''); document.body.appendChild(c); setTimeout(() => c.remove(), 3600); }
-  sendOutbox().then(() => { const l = store('fixup-latest'); const el = $('sent'); if (el) el.textContent = l && l.sent ? `For the grown-up: results emailed to ${RESULTS_EMAIL}.` : 'For the grown-up: the email couldn’t send right now. It will try again the next time this page or the Spelling Helper opens.'; });
+  if (emailOn()) sendOutbox().then(() => { const l = store('fixup-latest'); const el = $('sent'); if (el) el.textContent = l && l.sent ? `For the grown-up: results emailed to ${RESULTS_EMAIL}.` : 'For the grown-up: the email couldn’t send right now. It will try again the next time this page or the Spelling Helper opens.'; });
 }
 function emailBody(rec) {
   const right = rec.test.filter(r => r.ok).length, n = rec.test.length;
@@ -811,7 +820,7 @@ if (!WORDS.length) {
   $('begin').onclick = () => startPart(0);
   renderProg();
 }
-if ((store('fixup-outbox') || []).length) sendOutbox();
+if (emailOn() && (store('fixup-outbox') || []).length) sendOutbox();
 </script>
 <script src="/nav.js" defer></script>
 </body>

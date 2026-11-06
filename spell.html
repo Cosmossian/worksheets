@@ -138,6 +138,22 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .rv-day h3 { margin: 0 0 8px; font: 700 21px Fredoka, sans-serif; color: var(--navy); }
 .rv-sec { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
 .rv-sec h4 { margin: 0 0 6px; font: 700 17px Fredoka, sans-serif; }
+.ans { margin-top: 8px; }
+.ans summary { cursor: pointer; font: 600 15px Fredoka, sans-serif; color: var(--accent); display: inline-block; border: 2px solid var(--line); border-radius: 10px; padding: 5px 12px; background: var(--surface); }
+.ans[open] summary { margin-bottom: 8px; }
+.ans-row { border-left: 4px solid var(--line); padding: 6px 10px; margin: 6px 0; background: var(--surface); border-radius: 0 10px 10px 0; font-size: 15px; line-height: 1.4; }
+.ans-row.ok { border-left-color: var(--good); } .ans-row.no { border-left-color: var(--try); }
+.ans-h { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .ans-h .mk { font-weight: 700; } .ans-row.ok .mk { color: var(--good); } .ans-row.no .mk { color: var(--try); }
+.ans-h span:last-child { color: var(--muted); }
+.ans-saw { color: var(--muted); }
+.ans-ch { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+.ans-ch span { border: 2px solid var(--line); border-radius: 999px; padding: 1px 10px; position: relative; }
+.ans-ch span.r { border-color: var(--good); } .ans-ch span.w { border-color: var(--bad, #F87171); color: #FCA5A5; text-decoration: line-through; }
+.ans-ch i { font-style: normal; font: 700 11px Fredoka, sans-serif; background: var(--try); color: #0E151D; border-radius: 999px; padding: 0 5px; margin-right: 5px; text-decoration: none; display: inline-block; }
+.ans-picks span.r { color: var(--good); font-weight: 700; } .ans-picks span.w { color: #FCA5A5; }
+.ans-right { color: var(--muted); } .ans-right b { color: var(--ink); }
+.traces { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.traces figure { margin: 0; } .traces img { width: 220px; background: #fff; border-radius: 10px; display: block; } .traces figcaption { font-size: 13px; color: var(--muted); }
 .rv-sec h4 span { font: 500 14px Andika, sans-serif; color: var(--muted); margin-left: 6px; }
 .rv-sec .ln { font-size: 15px; line-height: 1.5; }
 .rv-sec .ok { color: var(--good); } .rv-sec .no { color: var(--try); }
@@ -310,7 +326,7 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
     <label class="lbl" for="dailyIn">Today’s words</label>
     <textarea class="big" id="dailyIn" rows="2" placeholder="first, while, more, against" autocapitalize="off" spellcheck="false"></textarea>
     <small class="note">Separate with commas. <button class="linkbtn" id="useSight" hidden></button></small>
-    <div class="row" id="syncRow" hidden style="align-items:center;margin-top:6px"><button class="btn" id="dailyOn" aria-pressed="true"></button><button class="btn" id="syncNow">⟳ Sync to his device</button><span class="sync-note" id="syncNote"></span></div>
+    <div class="row" id="syncRow" hidden style="align-items:center;margin-top:6px"><button class="btn" id="dailyOn" aria-pressed="true"></button><button class="btn" id="dailyReset" title="Keeps today’s results in Parent Review, but his start screen starts fresh with the same words">↺ Reset today</button><button class="btn" id="syncNow">⟳ Sync to his device</button><span class="sync-note" id="syncNote"></span></div>
     <label class="check-row"><input type="checkbox" id="dailyLook" checked> Look &amp; Listen first: he sees each word, says it, then hears it (3 rounds)</label>
     <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyMic" checked> Make sure he says each word out loud (uses the microphone)</label>
     <div id="setupMicSlot"></div>
@@ -328,7 +344,8 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
     </div>
     <label class="check-row" style="margin-left:32px"><input type="checkbox" id="dailyKeep" checked> Save his voice so I can listen later</label>
     <label class="check-row"><input type="checkbox" id="dailyPractice" checked> Then practice each word with the Spelling Helper</label>
-    <small class="note">Results are emailed to <b id="mailTo"></b>. <button class="linkbtn" id="testMail">Send a test email</button></small>
+    <label class="check-row"><input type="checkbox" id="dailyEmail"> Also email me his results (they’re always in Parent Review)</label>
+    <small class="note" id="emailLine">Results are emailed to <b id="mailTo"></b>. <button class="linkbtn" id="testMail">Send a test email</button></small>
     <small class="note" id="mailStatus"></small>
     <div class="row"><button class="btn primary big" id="dailyStart" disabled>Start today’s words</button></div>
     <div class="last-check" id="lastCheck"></div>
@@ -739,6 +756,7 @@ let plan = null;        // { text, parts: [{ text, say, start, end, word }], let
 let pos = 0, tries = 0, level = 0, helpedAt = new Set();
 let mustHear = new Set();   // gold Help letters he still has to listen to
 let triedSet = new Set(), lastTry = 0, triesAtHelp = 0, stats = { tries: 0, helps: 0, letters: 0 };
+const emailOn = () => { try { return (JSON.parse(localStorage.getItem('spell-settings') || '{}') || {}).email === true; } catch (e) { return false; } };   // results emails are off unless turned on (Parent Review always has them)
 let settings = Object.assign({ need: 2, win: 60, sens: 3 }, store('spell-settings') || {});
 /* Microphone sensitivity: how much louder than the room his voice must be, the lowest level that counts, and how long it must last. */
 const SENS = { 1: { x: 2.0, min: 0.004, ms: 180 }, 2: { x: 1.6, min: 0.002, ms: 150 }, 3: { x: 1.35, min: 0.0012, ms: 120 }, 4: { x: 1.18, min: 0.0006, ms: 90 } };
@@ -1243,9 +1261,12 @@ function sightPracticeWords() {   // this week's list on the worksheets page (sa
 }
 const dailyOn = () => ((store('spell-daily') || {}).on !== false);   // daily words show on his device unless turned off
 function renderDailyOn() { const on = dailyOn(), b = $('dailyOn'); b.textContent = on ? '✓ On his device' : '○ Off his device'; b.setAttribute('aria-pressed', on); b.classList.toggle('primary', on); b.title = on ? 'Tap to take today’s words off his start screen' : 'Tap to put today’s words on his start screen'; }
+$('dailyReset').onclick = () => { const d = store('spell-daily') || {}; d.resetAt = Date.now(); store('spell-daily', d); syncNote('Reset ✓ His start screen starts today fresh, with the same words.'); };
+$('dailyEmail').onchange = () => { settings.email = $('dailyEmail').checked; store('spell-settings', settings); $('emailLine').hidden = !settings.email; if (settings.email && (store('spell-check-outbox') || []).length) sendOutbox(); };
 $('dailyOn').onclick = () => { const d = store('spell-daily') || {}; d.on = !dailyOn(); store('spell-daily', d); renderDailyOn(); syncNote(d.on ? 'Today’s words are on his device.' : 'Today’s words are off his device.'); };
 function renderDailySetup(fromCloud) {
   renderDailyOn();
+  $('dailyEmail').checked = emailOn(); $('dailyEmail').disabled = cloud.role === 'kid'; $('emailLine').hidden = !emailOn();
   $('mailTo').textContent = RESULTS_EMAIL;
   const saved = store('spell-daily');
   if (saved && (!$('dailyIn').value || fromCloud)) $('dailyIn').value = saved.words || '';
@@ -1263,7 +1284,7 @@ function renderDailySetup(fromCloud) {
   $('dailyStart').disabled = !parseList($('dailyIn').value).length;
   renderLastCheck();
 }
-function saveDailySetup() { store('spell-daily', { on: dailyOn(), words: $('dailyIn').value, practice: $('dailyPractice').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked }); }
+function saveDailySetup() { store('spell-daily', { resetAt: (store('spell-daily') || {}).resetAt || 0, on: dailyOn(), words: $('dailyIn').value, practice: $('dailyPractice').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked }); }
 $('dailyIn').addEventListener('input', () => { $('dailyStart').disabled = !parseList($('dailyIn').value).length; saveDailySetup(); });
 $('dailyPractice').addEventListener('change', saveDailySetup);
 ['dailyLook', 'dailyMic', 'dailyKeep'].forEach(id => $(id).addEventListener('change', saveDailySetup));
@@ -1480,6 +1501,7 @@ function practiceListDone() {
   cloudPutLog('sheet', rec.id, t, rec);
   const body = { _subject: `Spelling Helper practice: ${rec.right} of ${rec.of} with no help (${new Date(t).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })})`, 'Date': new Date(t).toLocaleString(), 'Words': d.words.join(', ') };
   rec.parts.forEach(([k, v]) => { body[k] = v; });
+  if (!emailOn()) { daily = null; return show('setup'); }
   rec.body = body; const box = store('sheet-outbox') || []; box.push(rec); store('sheet-outbox', box.slice(-20));
   postForm(body).then(ok => { if (ok) { store('sheet-outbox', (store('sheet-outbox') || []).filter(x => x.id !== rec.id)); const l = store('sheet-log') || []; const x = l.find(y => y.id === rec.id); if (x) { x.sent = true; store('sheet-log', l); } } });
   daily = null; show('setup');
@@ -1590,7 +1612,7 @@ function showResults() {
   const rec = { id: Date.now().toString(36), t: Date.now(), results, looked3: !!daily.looked3, look: daily.looked3 ? { micWanted: daily.micWanted, micOk: daily.micOk, heard: daily.heard, total: daily.lookTotal, kept: daily.keepVoice } : null, practiced: daily.practiced, practice: daily.practice, sent: false };
   rec.session = daily.session || null;
   store('spell-check-latest', rec);
-  const outbox = store('spell-check-outbox') || []; outbox.push(rec); store('spell-check-outbox', outbox.slice(-20));
+  if (emailOn()) { const outbox = store('spell-check-outbox') || []; outbox.push(rec); store('spell-check-outbox', outbox.slice(-20)); }
   daily.phase = 'results'; daily.missed = results.filter(r => !r.ok).map(r => r.word);
   show('results'); renderDailyBar(); $('dailyBar').hidden = true;
   const g = gradeFor(right, n);
@@ -1614,8 +1636,9 @@ function showResults() {
   say(`You got ${right} out of ${n}. That’s ${g.pct} percent, a${'AF'.includes(g.letter) ? 'n' : ''} ${g.letter}. ${g.msg}`, 0.95);
   const confettiOn = right === n;
   if (confettiOn) { const conf = document.createElement('div'); conf.className = 'confetti'; const cols = ['#3C7DD9', '#F59E0B', '#34D399', '#C4B5FD', '#F87171', '#FACC15']; conf.innerHTML = Array.from({ length: 60 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-delay:${Math.random() * 0.8}s"></i>`).join(''); document.body.appendChild(conf); setTimeout(() => conf.remove(), 3600); }
+  if (!emailOn()) $('resSent').textContent = 'Saved for your grown-up in Parent Review.'; else {
   $('resSent').textContent = 'Sending the results to your grown-up…';
-  sendOutbox().then(() => { const l = store('spell-check-latest'); $('resSent').textContent = l && l.sent ? `For the grown-up: results emailed to ${RESULTS_EMAIL}.` : `For the grown-up: the email hasn’t gone through yet${(store('spell-send-status') || {}).msg ? ` (${(store('spell-send-status') || {}).msg})` : ''}. It will try again the next time this page opens.`; });
+  sendOutbox().then(() => { const l = store('spell-check-latest'); $('resSent').textContent = l && l.sent ? `For the grown-up: results emailed to ${RESULTS_EMAIL}.` : `For the grown-up: the email hasn’t gone through yet${(store('spell-send-status') || {}).msg ? ` (${(store('spell-send-status') || {}).msg})` : ''}. It will try again the next time this page opens.`; }); }
 }
 $('resList').addEventListener('click', async e => {
   const b = e.target.closest('[data-miss]'); if (!b || !daily) return;
@@ -1677,7 +1700,7 @@ function clipAttachments(rec) {
 }
 let sending = false;
 async function sendOutbox() {
-  if (sending) return; sending = true;
+  if (sending || !emailOn()) return; sending = true;
   try {
     let box = store('spell-check-outbox') || [];
     for (const rec of [...box]) {
@@ -1726,7 +1749,7 @@ function renderLastCheck() {
   const right = l.results.filter(r => r.ok).length, missed = l.results.filter(r => !r.ok);
   const lg = l.grade || gradeFor(right, l.results.length);
   $('lastCheck').innerHTML = `<b>Last check (${esc(shortDate(l.t))}):</b> ${lg.pct}% ${lg.letter} · ${right} of ${l.results.length} right${missed.length ? ` · missed ${missed.map(r => `${esc(r.word)} (“${esc(r.typed)}”)`).join(', ')}` : ''} · ${l.sent ? 'emailed ✓' : 'not emailed yet'}`
-    + (box.length ? ` <button class="linkbtn" id="retrySend">Try sending again</button>` : '')
+    + (box.length && emailOn() ? ` <button class="linkbtn" id="retrySend">Try sending again</button>` : '')
     + (missed.length ? ` · <a href="${esc(fixupLink(l))}">Make a Spelling Fix-Up sheet</a>` : '');
   const r = document.getElementById('retrySend'); if (r) r.onclick = () => sendOutbox();
 }
@@ -1734,6 +1757,22 @@ function renderLastCheck() {
 /* ---- Parent Review: by day, newest first ---- */
 const dayKey = t => new Date(t).toDateString();
 const timeOf = t => new Date(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+/* "See every answer": what was on his screen and everything he picked or typed, in order */
+const nrm = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+function answerRows(list) {
+  return list.map(r => {
+    const picks = r.picks && r.picks.length ? r.picks : r.typed ? [r.typed] : [], ch = r.shown && r.shown.choices;
+    const isRight = v => nrm(v) === nrm(r.answer) || nrm(v).replace(/^(a|an|the) /, '') === nrm(r.answer).replace(/^(a|an|the) /, '');
+    const chips = ch ? `<div class="ans-ch">${ch.map(c => { const n = picks.findIndex(p => nrm(p) === nrm(c)); return `<span class="${isRight(c) ? 'r' : n >= 0 ? 'w' : ''}">${n >= 0 ? `<i>${n + 1}</i>` : ''}${esc(c)}</span>`; }).join('')}</div>` : '';
+    const letterKeys = /^[a-z]( [a-z])*$/.test(picks[0] || '') && picks.length === 1 && nrm(picks[0]).replace(/ /g, '') !== nrm(r.answer).replace(/ /g, '');   // a list of single letters (missing letters, chunks)
+    const bank = r.shown && r.shown.bank ? `<div class="ans-ch">Word bank: ${r.shown.bank.map(c => `<span class="${isRight(c) ? 'r' : ''}">${esc(c)}</span>`).join('')}</div>` : '';
+    const tries = picks.length ? `<div class="ans-picks">${ch ? 'He tapped' : letterKeys ? 'He typed these letters, in order' : 'He typed'}: ${picks.map((v, i) => `<span class="${letterKeys || /^line \d/.test(v) ? '' : isRight(v) ? 'r' : 'w'}">${picks.length > 1 ? `${i + 1}. ` : ''}${esc(v.replace(/^letters he typed: /, ''))}</span>`).join(' → ')}</div>` : '';
+    return `<div class="ans-row ${r.ok ? 'ok' : 'no'}"><div class="ans-h"><span class="mk">${r.ok ? '✓' : '✗'}</span><b>${esc(r.part)}</b><span>${esc(r.label)}</span></div>
+      ${r.shown && r.shown.text ? `<div class="ans-saw">On his screen: ${esc(r.shown.text)}</div>` : ''}${chips}${bank}${tries}
+      ${r.answer ? `<div class="ans-right">Right answer: <b>${esc(r.answer)}</b></div>` : ''}</div>`;
+  }).join('');
+}
+const seeAll = (rows, extraHtml = '') => rows || extraHtml ? `<details class="ans"><summary>See every answer</summary>${extraHtml}${rows}</details>` : '';
 async function renderReview() {
   if (cloudMember()) { $('reviewList').innerHTML = '<p class="rv-empty">Loading…</p>'; await cloudPullLogs(); if ($('review').hidden) return; }
   const looks = lookLog(), checks = store('spell-check-log') || [], fixes = store('fixup-log') || [], sheets = store('sheet-log') || [];
@@ -1753,18 +1792,19 @@ async function renderReview() {
         <div class="ln">${x.micOk === false && x.micWanted ? 'The microphone wasn’t available, so it couldn’t check.' : x.total ? `Said out loud: ${x.heard} of ${x.total}` : ''}</div>
         ${x.clips && x.clips.length ? `<div class="clips">${clipButtons(x)}</div><button class="del" data-delsess="${x.session}">Delete these recordings</button>` : '<div class="ln rv-empty">No recordings saved.</div>'}</div>`;
       if (it.kind === 'check') { const right = x.results.filter(r => r.ok).length, g = x.grade || gradeFor(right, x.results.length);
-        return `<div class="rv-sec"><h4>Sight word check<span>${esc(timeOf(x.t))} · ${g.pct}% ${g.letter} · ${right} of ${x.results.length} right${x.sent ? ' · emailed ✓' : ''}</span></h4><div class="ln">${wordList(x.results)}</div></div>`; }
+        return `<div class="rv-sec"><h4>Sight word check<span>${esc(timeOf(x.t))} · ${g.pct}% ${g.letter} · ${right} of ${x.results.length} right${x.sent ? ' · emailed ✓' : ''}</span></h4><div class="ln">${wordList(x.results)}</div>${seeAll(answerRows(x.results.map(r => ({ part: 'Check', label: r.word, ok: r.ok, answer: r.word, shown: { text: 'He heard the word and a sentence. The word wasn’t shown.' }, picks: [r.typed] }))))}</div>`; }
       if (it.kind === 'sheet') {
         const wrong = (x.items || []).filter(r => !r.ok);
         return `<div class="rv-sec"><h4>${esc(x.title)}<span>${esc(timeOf(x.t))}${x.grade ? ` · ${x.grade.pct}% ${x.grade.letter} · ${x.right} of ${x.of} right the first time` : ' · done'}${x.sent ? ' · emailed ✓' : ''}</span></h4>
           ${wrong.length ? `<div class="ln">${wrong.map(r => `<span class="no">✗ ${esc(r.part)}: ${esc(r.label)}${r.typed ? ` (put “${esc(r.typed)}”)` : ''} → ${esc(r.answer)}</span>`).join(' · ')}</div>` : (x.items || []).length ? '<div class="ln"><span class="ok">Everything right the first time ✓</span></div>' : ''}
           ${x.extra && x.extra.marks ? `<div class="ln">Quarters: ${x.extra.marks.map((m, i) => `${i + 1} ${m === 'has' ? '🦅' : '✗'}`).join(' · ')}</div>` : ''}
           ${x.extra && x.extra.stepTimes ? `<div class="ln">Steps done at ${x.extra.stepTimes.map(t => esc(timeOf(t))).join(', ')}</div>` : ''}
-          ${(x.parts || []).length > 1 ? `<div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div>` : ''}</div>`;
+          ${(x.parts || []).length > 1 ? `<div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div>` : ''}
+          ${seeAll(answerRows(x.items || []), x.extra && x.extra.traces ? `<div class="ans-row"><div class="ans-h"><b>Trace</b><span>what he traced with his finger</span></div><div class="traces">${x.extra.traces.map(tr => `<figure><img src="${tr.img}" alt="His tracing of ${esc(tr.word)}"><figcaption>${esc(tr.word)}${tr.redo ? ` · traced more ${tr.redo}×` : ''}</figcaption></figure>`).join('')}</div></div>` : '')}</div>`;
       }
       const right = x.test.filter(r => r.ok).length;
       return `<div class="rv-sec"><h4>Spelling Fix-Up<span>${esc(timeOf(x.t))} · Practice Test ${x.grade.pct}% ${x.grade.letter} · ${right} of ${x.test.length} right</span></h4>
-        <div class="ln">${wordList(x.test)}</div><div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div></div>`;
+        <div class="ln">${wordList(x.test)}</div><div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div>${seeAll(answerRows(x.detail || x.test.map(r => ({ part: 'Practice Test', label: r.word, ok: r.ok, answer: r.word, picks: [r.typed] }))))}</div>`;
     }).join('') + '</div>').join('');
 }
 $('reviewList').addEventListener('click', async e => {
@@ -1853,7 +1893,7 @@ function cloudOnStore(k) {
   clearTimeout(cloud.timers[k]);
   cloud.timers[k] = setTimeout(() => {
     let data = store(k);
-    if (k === 'spell-settings' && data) data = { need: data.need, win: data.win };   // sensitivity stays on this device
+    if (k === 'spell-settings' && data) data = { need: data.need, win: data.win, email: data.email === true };   // sensitivity stays on this device
     cloudRun('state', { key: SYNC[k], data }).then(ok => { if (ok && k === 'spell-daily') syncNote(`Saved for his device ✓ (${timeOf(Date.now())})`); });
   }, 700);
 }
@@ -2029,7 +2069,7 @@ setInterval(() => { if (cloudMember() && !daily && (!$('kidhome').hidden || !$('
 /* ---- His start screen ---- */
 function renderKidHome() {
   const d = store('spell-daily') || {}, words = d.on === false ? [] : parseList(d.words || '');
-  const today = (store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString());
+  const today = (store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString() && r.t > (d.resetAt || 0));   // "Reset today" starts his day fresh
   const sq = store('spell-queue'), sheets = [...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq', title: `✏️ Spelling practice · ${sq.words.length} word${sq.words.length > 1 ? 's' : ''}` }] : []), ...((store('study-sheets') || {}).list || [])];
   $('kidMsg').textContent = words.length ? `Today you have ${words.length} word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : sheets.length ? 'Pick a worksheet below. Take your time and try your best!' : 'No words yet. Ask a grown-up to add today’s words.';
   // On-screen worksheets assigned from the Worksheets page (done ones show their grade; Daily Steps counts today only)
@@ -2060,6 +2100,7 @@ onlyCard(); window.addEventListener('hashchange', onlyCard);
 if (location.hash === '#review') show('review');
 if ((store('spell-check-outbox') || []).length) sendOutbox();   // send anything that didn't go out last time
 (async () => {   // on-screen worksheet results that didn't go out (saved with their finished email)
+  if (!emailOn()) return;
   let box = store('sheet-outbox') || [];
   for (const rec of [...box]) {
     if (!rec.body) continue;
@@ -2071,6 +2112,7 @@ if ((store('spell-check-outbox') || []).length) sendOutbox();   // send anything
   }
 })();
 (async () => {   // also resend on-screen Fix-Up results that didn't go out (they're saved with their finished email)
+  if (!emailOn()) return;
   let box = store('fixup-outbox') || [];
   for (const rec of [...box]) {
     if (!rec.body) continue;

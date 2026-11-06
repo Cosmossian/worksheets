@@ -596,7 +596,7 @@ function askSure(typed) {
    Resolves { typed (his first answer), ok (right the first time), tries }. */
 function freeType({ answer, test = false, match = (a, b) => norm(a) === norm(b), hint = 'Not quite. Look closely and try again.' }) {
   return new Promise(resolve => {
-    let typed = '', tries = 0, first = null;
+    let typed = '', tries = 0, first = null; const attempts = [];
     const space = /\s/.test(answer);
     $('io').innerHTML = `<div class="boxes" id="ans"></div><div class="message" id="msg"></div>${keysHtml()}
       <div class="row acts">${space ? '<button class="btn big" id="spaceBtn">space</button>' : ''}<button class="btn big" id="backBtn">⌫ Back</button><button class="btn big primary" id="doneBtn" disabled>${test ? 'Done ✓' : 'Check ✓'}</button></div>`;
@@ -611,13 +611,13 @@ function freeType({ answer, test = false, match = (a, b) => norm(a) === norm(b),
         if (!(await askSure(t))) return;
         onKey = null; const ok = match(t, answer);
         $('ans').innerHTML = boxes(t, ok ? 'rightl' : 'wrongl'); $('doneBtn').disabled = true; $('backBtn').disabled = true;
-        return resolve({ typed: t, ok, tries: 0 });
+        return resolve({ typed: t, ok, tries: 0, attempts: [t] });
       }
-      if (first === null) first = t;
+      if (first === null) first = t; attempts.push(t);
       if (match(t, answer)) {
         onKey = null; $('ans').innerHTML = boxes(t, 'done'); $('doneBtn').disabled = true;
         setMsg(tries ? 'You got it!' : 'Yes! Right the first time!', 'good');
-        say('Yes!', 1); nextUp(1200).then(() => resolve({ typed: first, ok: tries === 0, tries }));
+        say('Yes!', 1); nextUp(1200).then(() => resolve({ typed: first, ok: tries === 0, tries, attempts }));
       } else {
         tries++; typed = ''; draw(); shakeEl($('ans'));
         if (tries >= 2) { setMsg(`It’s spelled: ${[...answer].join(' ')}. Now you type it.`, 'try'); say(`It's spelled ${[...answer.replace(/[^a-z]/gi, '')].map(letterName).join(', ')}.`, 0.75); }
@@ -631,7 +631,7 @@ function freeType({ answer, test = false, match = (a, b) => norm(a) === norm(b),
    fill = which letter positions he types; the others are shown. ghost = show the letters in gray to trace. Resolves the number of wrong letters. */
 function guided({ word, fill, ghost = false, hint }) {
   return new Promise(res => {
-    const L = [...word]; let k = 0, mistakes = 0;
+    const L = [...word]; let k = 0, mistakes = 0; const keys = [];
     const draw = () => { $('gb').innerHTML = L.map((ch, i) => {
       if (ch === ' ') return '<span class="lbox sp"></span>';
       const f = fill.indexOf(i);
@@ -643,7 +643,8 @@ function guided({ word, fill, ghost = false, hint }) {
     draw();
     onKey = c => {
       if (k >= fill.length) return;
-      if (c === L[fill[k]].toLowerCase()) { k++; draw(); setMsg(''); if (k >= fill.length) { onKey = null; res(mistakes); } }
+      keys.push(c);
+      if (c === L[fill[k]].toLowerCase()) { k++; draw(); setMsg(''); if (k >= fill.length) { onKey = null; guided.keys = keys; res(mistakes); } }
       else { mistakes++; shakeEl(document.querySelector('#gb .cur')); setMsg(hint || 'Look closely. Which letter goes here?', 'try'); cool(); }
     };
   });
@@ -652,6 +653,7 @@ function guided({ word, fill, ghost = false, hint }) {
 /* ============ The worksheet: assigned from the grown-up's device (or "Try it on screen") ============ */
 const params = new URLSearchParams(location.search);
 const TRY = params.get('try') === '1';
+const emailOn = () => { try { return (JSON.parse(localStorage.getItem('spell-settings') || '{}') || {}).email === true; } catch (e) { return false; } };   // results emails are off unless turned on (Parent Review always has them)
 const RESULTS_EMAIL = 'dylan.l.cosmos@gmail.com';
 const MAILER_URL = 'https://script.google.com/macros/s/AKfycbzbr4Wpw4mrT6MbTViKI3K7PxLnp1avmygg0E5_imNpjTaF_Za6smj70ay-e1tKEJQr/exec';   // Google Apps Script web app on Dylan's account (SpellingHelperMailer.gs)
 const SB_URL = 'https://wpgclwmssnmiidvnekml.supabase.co';
@@ -675,7 +677,7 @@ let A = null, SD = {}, PARTS = [], partIdx = 0;
 const items = [];       // every graded answer: { part, label, ok, typed, answer, word }
 const partSum = [];     // [part name, how it went]
 let extra = {};         // anything else worth keeping (coin marks, step times)
-const mark = (part, label, ok, typed, answer, word = null) => items.push({ part, label, ok, typed: typed ?? '', answer: answer ?? '', word });
+const mark = (part, label, ok, typed, answer, word = null, shown = null, picks = null) => items.push({ part, label, ok, typed: typed ?? '', answer: answer ?? '', word, shown, picks: picks || (typed ? [String(typed)] : []) });
 
 function renderProg() { $('prog').innerHTML = PARTS.length > 1 ? PARTS.map((p, i) => `<span class="${i === partIdx ? 'now' : i < partIdx ? 'done' : ''}">${i + 1}. ${esc(p.name)}</span>`).join('') : ''; }
 function startPart(i) {
@@ -744,7 +746,7 @@ function sightSheet() {
       const [near, ng] = make(); ng.lineWidth = Math.max(18, fs * 0.16); ng.lineJoin = 'round'; ng.strokeText(word, x0, base); ng.fillText(word, x0, base);   // the letters + a little room
       const [ink, ig] = make(); ig.lineCap = ig.lineJoin = 'round'; ig.lineWidth = Math.max(16, fs * 0.13);
       const coreD = cg.getImageData(0, 0, Wd, Ht).data, nearD = ng.getImageData(0, 0, Wd, Ht).data;
-      let strokes = [], cur = null, orange = new Set();
+      let strokes = [], cur = null, orange = new Set(), redoHere = 0;
       const draw = () => {
         ctx.clearRect(0, 0, Wd, Ht); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, Wd, Ht);
         ctx.strokeStyle = '#E2E8F0'; ctx.lineWidth = 2; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(10, base); ctx.lineTo(Wd - 10, base); ctx.stroke(); ctx.setLineDash([]);
@@ -772,8 +774,9 @@ function sightSheet() {
         const missedL = spans.filter((s, k) => per[k][1] && per[k][0] / per[k][1] < 0.45);
         const outside = inkAll ? inkOut / inkAll : 1;
         orange = new Set(missedL);
-        if (outside > 0.4) { redo++; draw(); setMsg('Stay on the gray letters. Tap Start over and trace them carefully.', 'try'); say('Stay on the gray letters.', 0.95); return; }
-        if (missedL.length) { redo++; draw(); setMsg(`Trace the orange letter${missedL.length > 1 ? 's' : ''} too: ${missedL.map(s => s.ch).join(', ')}.`, 'try'); say(`Trace the orange letter${missedL.length > 1 ? 's' : ''} too.`, 0.95); return; }
+        if (outside > 0.4) { redo++; redoHere++; draw(); setMsg('Stay on the gray letters. Tap Start over and trace them carefully.', 'try'); say('Stay on the gray letters.', 0.95); return; }
+        if (missedL.length) { redo++; redoHere++; draw(); setMsg(`Trace the orange letter${missedL.length > 1 ? 's' : ''} too: ${missedL.map(s => s.ch).join(', ')}.`, 'try'); say(`Trace the orange letter${missedL.length > 1 ? 's' : ''} too.`, 0.95); return; }
+        try { const sm = document.createElement('canvas'); sm.width = 360; sm.height = Math.round(360 * Ht / Wd); sm.getContext('2d').drawImage(cv, 0, 0, sm.width, sm.height); (extra.traces = extra.traces || []).push({ word, img: sm.toDataURL('image/png'), redo: redoHere }); } catch (er) { }   // a small picture of his tracing for Parent Review
         setMsg('Beautiful tracing!', 'good'); say(word, 0.85); nextUp(1300).then(done);
       };
     }));
@@ -783,7 +786,7 @@ function sightSheet() {
   const coverWrite = async () => {
     await each(W.length, i => new Promise(done => {
       const x = W[i], target = x.dw.replace(/[^A-Za-z ]/g, '');
-      let first = null, tries = 0;
+      let first = null, tries = 0; const tried = [];
       const look = (again) => {
         onKey = null;
         app.innerHTML = head(again ? 'Look again at the tricky part. Then cover it and fix it.' : 'Look at the word. When you’re ready, cover it and write it from memory.') + count(i, W.length)
@@ -804,14 +807,14 @@ function sightSheet() {
         $('backBtn').onclick = () => { typed = typed.slice(0, -1); draw(); };
         $('doneBtn').onclick = () => {
           onKey = null;
-          if (first === null) first = typed;
+          if (first === null) first = typed; tried.push(typed);
           const right = norm(typed) === norm(target);
           // Check: each letter green if it matches the word, red if not
           const T = [...target.replace(/ /g, '')];
           $('ans').innerHTML = [...typed].map((c, k) => `<span class="lbox ${T[k] && T[k].toLowerCase() === c ? 'rightl' : 'wrongl'}">${esc(c)}</span>`).join('');
           $('backBtn').disabled = $('doneBtn').disabled = true;
           if (right) {
-            if (tries === 0) mark('Cover & Write', x.dw, true, typed, x.dw, x.w); else mark('Cover & Write', x.dw, false, first, x.dw, x.w);
+            mark('Cover & Write', x.dw, tries === 0, first, x.dw, x.w, { text: `Saw “${x.dw}”, then it was covered. He wrote it from memory.` }, tried);
             setMsg(tries ? 'You fixed it!' : 'Yes! Right from memory!', 'good');
             say(tries ? 'You fixed it!' : 'Yes!', 1); nextUp(1300).then(done);
           } else {
@@ -849,16 +852,17 @@ function sightSheet() {
       <span><svg width="18" height="42"><rect x="1" y="13" width="16" height="28" rx="3" fill="#fff" stroke="#94A3B8" stroke-width="2"/></svg>hanging letters<br><b>g j p q y</b></span></div>`;
     const order = shuffle(W.map((_, i) => i), seed), used = new Set();
     await each(order.length, n => new Promise(done => {
-      const x = W[order[n]], c = COLORS[n % COLORS.length], hl = hintLen(x); let missed = false, pickedWrong = '';
+      const x = W[order[n]], c = COLORS[n % COLORS.length], hl = hintLen(x); let missed = false, pickedWrong = ''; const tapped = [];
       app.innerHTML = head('Which word fits this shape? Count the boxes. Look for tall and hanging letters.') + `<div class="count">Shape ${n + 1} of ${order.length}${hl ? ` · Hint: it starts with “${esc(x.dw.slice(0, hl))}”` : ''}</div>
         <div class="shape-wrap" id="shape">${shape(x.dw, c, hl)}</div>${legend}
         <div class="bank">${W.map(y => `<button class="pill${used.has(y.w) ? ' used' : ''}" data-w="${esc(y.w)}" ${used.has(y.w) ? 'disabled' : ''}>${esc(y.dw)}</button>`).join('')}</div><div class="message" id="msg"></div>`;
       app.querySelector('.bank').onclick = e => {
         const b = e.target.closest('[data-w]'); if (!b || b.disabled) return;
+        tapped.push(displayWord(b.dataset.w));
         if (b.dataset.w === x.w) {
           b.classList.add('right'); app.querySelectorAll('.bank .pill').forEach(p => p.disabled = true); used.add(x.w);
           $('shape').innerHTML = shape(x.dw, c, 0, true);
-          mark('Word Shapes', x.dw, !missed, missed ? pickedWrong : x.dw, x.dw);
+          mark('Word Shapes', x.dw, !missed, missed ? pickedWrong : x.dw, x.dw, null, { text: `A shape of ${[...x.dw].filter(isLetter).length} boxes (${sig(x.dw).replace(/T/g, 'tall ').replace(/G/g, 'hanging ').replace(/s/g, 'short ').trim()})${hl ? `, hint: starts with “${x.dw.slice(0, hl)}”` : ''}`, choices: W.filter(y => !used.has(y.w) || y.w === x.w).map(y => y.dw) }, tapped);
           setMsg('Yes! It fits!', 'good'); playWord(x.w); nextUp(1300).then(done);
         } else {
           if (!missed) pickedWrong = b.dataset.w; missed = true; b.classList.add('wrong'); b.disabled = true; shakeEl(b);
@@ -879,7 +883,7 @@ function sightSheet() {
       app.innerHTML = head('Fill in the missing letters.') + `<div class="count">Word ${n + 1} of ${order.length}</div><button class="btn" id="hear">${SPK}Hear the word</button><div id="io"></div>`;
       $('hear').onclick = () => playWord(x.w); playWord(x.w);
       const miss = await guided({ word: x.dw, fill: b, hint: 'Think about how the word looks. Try another letter.' });
-      mark('Missing Letters', x.dw, miss === 0, '', x.dw, x.w);
+      mark('Missing Letters', x.dw, miss === 0, '', x.dw, x.w, { text: `He saw “${[...x.dw].map((ch, k) => b.includes(k) ? '_' : ch).join('')}” and filled in the blanks.` }, [guided.keys.join(' ')]);
       setMsg(miss ? 'You filled it in!' : 'Yes! Right the first time!', 'good'); say(x.dw, 0.85); await nextUp(1300);
     });
     partDone(firstTry('Missing Letters') + '.');
@@ -895,7 +899,7 @@ function sightSheet() {
         <button class="btn" id="hear">${SPK}Hear the sentence</button><div id="io"></div>`;
       $('hear').onclick = () => sayBlank(s); sayBlank(s);
       const r = await freeType({ answer: x.dw, hint: 'Not quite. Read the sentence again. Which word fits?' });
-      mark('Finish the Sentence', s.replace('___', '___'), r.ok, r.typed, x.dw, x.w);
+      mark('Finish the Sentence', s, r.ok, r.typed, x.dw, x.w, { text: s, bank: W.map(y => y.dw) }, r.attempts);
     });
     partDone(firstTry('Finish the Sentence') + '.');
   };
@@ -925,7 +929,7 @@ function masterSheet() {
         <div class="oops">${esc(displayWord(x.fix))}</div><button class="btn" id="hear">${SPK}Hear the word</button><div id="io"></div>`;
       $('hear').onclick = () => playWord(x.w); playWord(x.w);
       const r = await freeType({ answer: x.dw, test: true });
-      mark('Fix It!', displayWord(x.fix), r.ok, r.typed, x.dw, x.w);
+      mark('Fix It!', displayWord(x.fix), r.ok, r.typed, x.dw, x.w, { text: `He saw the wrong spelling “${displayWord(x.fix)}” and typed it the right way.` }, r.attempts);
       setMsg(r.ok ? 'Right!' : `The right way: ${x.dw}`, r.ok ? 'good' : 'try'); await nextUp(r.ok ? 1200 : 2200);
     });
     partDone(firstTry('Fix It!').replace(' the first time', '') + '.');
@@ -939,7 +943,7 @@ function masterSheet() {
         <button class="btn" id="hear">${SPK}Hear the sentence</button><div id="io"></div>`;
       $('hear').onclick = () => sayBlank(s); sayBlank(s);
       const r = await freeType({ answer: x.dw, test: true });
-      mark('Picture Sentences', s, r.ok, r.typed, x.dw, x.w);
+      mark('Picture Sentences', s, r.ok, r.typed, x.dw, x.w, { text: s + (ic ? ` (picture: ${ic})` : '') }, r.attempts);
       setMsg(r.ok ? 'Right!' : `The word was: ${x.dw}`, r.ok ? 'good' : 'try'); await nextUp(r.ok ? 1200 : 2200);
     });
     partDone(firstTry('Picture Sentences').replace(' the first time', '') + '.');
@@ -956,7 +960,7 @@ function masterSheet() {
         const b = e.target.closest('[data-o]'); if (!b || b.disabled) return;
         app.querySelectorAll('.opt').forEach(o => { o.disabled = true; if (o.dataset.o === x.w) o.classList.add('right'); });
         const ok = b.dataset.o === x.w; if (!ok) b.classList.add('wrong');
-        mark('Spelling Detective', x.dw, ok, displayWord(b.dataset.o), x.dw, x.w);
+        mark('Spelling Detective', x.dw, ok, displayWord(b.dataset.o), x.dw, x.w, { text: 'Tap the word that is spelled right.', choices: opts.map(displayWord) }, [displayWord(b.dataset.o)]);
         setMsg(ok ? 'Good detective work!' : 'The green one is spelled right.', ok ? 'good' : 'try');
         nextUp(ok ? 1200 : 2200).then(done);
       };
@@ -991,13 +995,13 @@ function questionSheet() {
     const showGot = () => { $('qgot').innerHTML = got.map(([a, b]) => `<span>${esc(a)}: <b>${esc(b)}</b></span>`).join(''); };
     // 1. circle the What ___ words
     if (canCircle) await new Promise(done => {
-      let tries = 0; const on = new Set();
+      let tries = 0; const on = new Set(), circled = [];
       $('stepbox').innerHTML = step(1, 'Tap the <b>What ___</b> words to circle them.') + `<div class="message" id="msg"></div><div class="row"><button class="btn big primary" id="doneBtn">Check ✓</button></div>`;
       $('qline').onclick = e => { const b = e.target.closest('[data-t]'); if (!b || b.classList.contains('locked')) return; const i = +b.dataset.t; on.has(i) ? on.delete(i) : on.add(i); b.classList.toggle('on', on.has(i)); };
       $('doneBtn').onclick = () => {
-        const right = on.size === lead && [...Array(lead).keys()].every(i => on.has(i));
+        const right = on.size === lead && [...Array(lead).keys()].every(i => on.has(i)); circled.push(toks.filter((_, i) => on.has(i)).join(' ') || '(nothing)');
         if (right) {
-          mark('Circle the What words', label, tries === 0, toks.filter((_, i) => on.has(i)).join(' '), toks.slice(0, lead).join(' '));
+          mark('Circle the What words', label, tries === 0, circled[0], toks.slice(0, lead).join(' '), null, { text: it.q }, circled);
           app.querySelectorAll('.qtok').forEach(b => b.classList.add('locked')); setMsg('Yes! Those words tell you what kind of answer.', 'good');
           say('Yes!', 1); nextUp(1100, 'Next step coming…').then(done);
         } else { tries++; setMsg('Find the word “What” and the word right after it that tells what kind of answer.', 'try'); shakeEl($('qline')); }
@@ -1006,13 +1010,14 @@ function questionSheet() {
     // 2. what kind of answer? 3. the answer
     const pickOrType = (n, part, prompt, answer, bank, iconOf) => new Promise(done => {
       if (SD.wordBank) {
-        let missed = false, firstPick = '';
+        let missed = false, firstPick = ''; const picked = [];
         $('stepbox').innerHTML = step(n, prompt) + `<div class="bank" id="bank">${bank.map(v => `<button class="pill" data-v="${esc(v)}">${iconOf ? `<span class="pic">${icon(iconOf(v), 30)}</span>` : ''}${esc(v)}</button>`).join('')}</div><div class="message" id="msg"></div>`;
         $('bank').onclick = e => {
           const b = e.target.closest('[data-v]'); if (!b || b.disabled) return;
+          picked.push(b.dataset.v);
           if (noArticle(b.dataset.v) === noArticle(answer)) {
             b.classList.add('right'); $('bank').querySelectorAll('.pill').forEach(p => p.disabled = true);
-            mark(part, label, !missed, missed ? firstPick : b.dataset.v, answer);
+            mark(part, label, !missed, missed ? firstPick : b.dataset.v, answer, null, { text: it.q, choices: bank }, picked);
             setMsg('Yes!', 'good'); say(b.dataset.v, 0.9); nextUp(1100, 'Next step coming…').then(done);
           } else {
             if (!missed) firstPick = b.dataset.v; missed = true; b.classList.add('wrong'); b.disabled = true; shakeEl(b);
@@ -1022,7 +1027,7 @@ function questionSheet() {
       } else {
         $('stepbox').innerHTML = step(n, prompt) + '<div id="io"></div>';
         freeType({ answer, match: (a, b) => noArticle(a) === noArticle(b), hint: n === 2 ? 'Look at the words you circled. What kind of answer do they want?' : `Read it again. It wants ${/^[aeiou]/.test(it.kind) ? 'an' : 'a'} ${it.kind}.` })
-          .then(r => { mark(part, label, r.ok, r.typed, answer); done(); });
+          .then(r => { mark(part, label, r.ok, r.typed, answer, null, { text: it.q }, r.attempts); done(); });
       }
     });
     await pickOrType(2, 'What kind of answer', SD.wordBank ? 'What <b>kind</b> of answer does it want? Tap it.' : 'What <b>kind</b> of answer does it want? Type it.', it.kind, kinds);
@@ -1128,7 +1133,7 @@ function eaglesSheet() {
         const f = e.target.closest('[data-flip]'), m = e.target.closest('[data-m]');
         if (f) { const c = coins[+f.dataset.flip]; c.side = c.side === 'heads' ? 'tails' : 'heads'; f.classList.toggle('flipped', c.side === 'tails'); setTimeout(draw, 420); return; }
         if (m) { marks[+m.dataset.k] = m.dataset.m; draw(); return; }
-        if (e.target.closest('#countBtn')) { app.onclick = null; coins.forEach((c, k) => mark('Marking quarters', `Quarter ${k + 1} (${c.design === 'eagle' ? 'eagle' : 'a ' + c.design})`, (marks[k] === 'has') === (c.design === 'eagle'), marks[k] === 'has' ? 'eagle' : 'no eagle', c.design === 'eagle' ? 'eagle' : 'no eagle'));
+        if (e.target.closest('#countBtn')) { app.onclick = null; coins.forEach((c, k) => mark('Marking quarters', `Quarter ${k + 1} (${c.design === 'eagle' ? 'eagle' : 'a ' + c.design})`, (marks[k] === 'has') === (c.design === 'eagle'), marks[k] === 'has' ? 'eagle' : 'no eagle', c.design === 'eagle' ? 'eagle' : 'no eagle', null, { text: `The back of quarter ${k + 1} showed ${c.design === 'eagle' ? 'an eagle' : 'a ' + c.design}.` }, [marks[k] === 'has' ? 'eagle' : 'no eagle']));
           const wrong = coins.filter((c, k) => (marks[k] === 'has') !== (c.design === 'eagle')).length; partDone(wrong ? `${wrong} quarter${wrong > 1 ? 's' : ''} marked wrong.` : 'Every quarter marked right!'); }
       };
       return;
@@ -1145,7 +1150,7 @@ function eaglesSheet() {
     show(0);
   };
   const count = () => {
-    const has = marks.filter(m => m === 'has').length; let tries = 0;
+    const has = marks.filter(m => m === 'has').length; let tries = 0; const counted = [];
     extra.marks = marks.slice();
     app.innerHTML = head('Count the X’s in the “Has an eagle” column.') + `<div class="marks"><span class="h">Quarter</span><span class="h" style="color:#60A5FA">Has an eagle</span><span class="h" style="color:#FB923C">No eagle</span>
       ${marks.map((m, i) => `<b>${i + 1}</b><span class="x" style="color:#60A5FA">${m === 'has' ? 'X' : ''}</span><span class="x" style="color:#FB923C">${m === 'no' ? 'X' : ''}</span>`).join('')}</div>
@@ -1154,9 +1159,9 @@ function eaglesSheet() {
     say('How many eagles did you have? Count the X’s in the has an eagle column.', 0.95);
     $('np').onclick = e => {
       const b = e.target.closest('[data-n]'); if (!b || b.disabled) return;
-      const n = +b.dataset.n;
+      const n = +b.dataset.n; counted.push(String(n));
       if (n === has) {
-        mark('Count the eagles', 'How many eagles?', tries === 0, String(tries ? extra.firstCount : n), String(has));
+        mark('Count the eagles', 'How many eagles?', tries === 0, String(tries ? extra.firstCount : n), String(has), null, { text: `His marks showed ${has} eagle${has === 1 ? '' : 's'}.` }, counted);
         extra.count = has; $('np').querySelectorAll('button').forEach(x => x.disabled = true);
         setMsg(`Yes! You had ${has} eagle${has === 1 ? '' : 's'}!`, 'good'); say(`Yes! You had ${has} eagle${has === 1 ? '' : 's'}!`, 0.95);
         nextUp(1500).then(() => partDone(tries ? `Counted ${has} eagles on try ${tries + 1}.` : `Counted ${has} eagles right the first time.`));
@@ -1270,16 +1275,16 @@ function weatherSheet() {
     if (!S.real) { await reveal(`<div class="big">You felt: ${S.obs.feel}</div>${noData()}`); return nextPart(); }
     const t = S.real.temp;
     screen('Now read the thermometer. Where does the red line stop?', `<div class="wxrow">${thermo(t)}<div class="learn" style="max-width:260px">Find the top of the red line.<br>Look at the numbers next to it.<br>Each little line is ${F ? '2' : '1'} degree${F ? 's' : ''}.</div></div>`);
-    let tries = 0, firstRead = null, hint = '';
+    let tries = 0, firstRead = null, hint = ''; const reads = [];
     for (;;) {
       const v = await numpad(!F || t < 0, hint);
-      if (firstRead === null) firstRead = v;
+      if (firstRead === null) firstRead = v; reads.push(String(v));
       if (Math.abs(v - t) <= (F ? 2 : 1)) break;
       tries++;
       hint = tries >= 2 ? `It’s ${t}${U}. Type ${t}.` : v < t ? `Not ${v}. Look a little higher. Count the little lines up from the last number.` : `Not ${v}. Look a little lower. Count the little lines up from the last number.`;
     }
     S.obs.read = firstRead; S.skills.push(['Read the thermometer', tries === 0]);
-    mark('Thermometer', `It was ${t}${U}`, tries === 0, String(firstRead), `${t}`);
+    mark('Thermometer', `It was ${t}${U}`, tries === 0, String(firstRead), `${t}`, null, { text: `A thermometer showing ${t}${U}.` }, reads);
     const rf = feel(t), ok = rf === S.obs.feel;
     await reveal(`<div class="big">It is ${t}${U}. That’s ${rf}!</div><div class="${ok ? 'good' : 'try'}">${ok ? `You felt ${S.obs.feel} too. Good weather sense!` : `You felt ${S.obs.feel}. The thermometer says ${rf}.`}</div>
       <div class="learn">Today’s high: ${S.real.hi}${U} · low: ${S.real.lo}${U}. ${F ? '80° and up is hot. 60° to 79° is warm. Under 60° is cold.' : '27° and up is hot. 15° to 26° is warm. Under 15° is cold.'}</div>`, `It is ${t} degrees. That's ${rf}.`);
@@ -1298,14 +1303,14 @@ function weatherSheet() {
     if (!S.real) return nextPart();
     const d = dirK(S.real.dir);
     screen('Wind is named for where it comes FROM. The arrow starts on the side the wind comes from.', `<div class="wxrow">${compass(S.real.dir)}<div class="learn" style="max-width:240px">Find the round end of the arrow.<br>Which letter is it closest to?</div></div>`);
-    let tries = 0;
+    let tries = 0; const taps = [];
     for (;;) {
-      const b = await dirPad();
+      const b = await dirPad(); taps.push(b.dataset.d);
       if (b.dataset.d === d) { b.classList.add('right'); break; }
       tries++; b.classList.add('wrong'); b.disabled = true; setMsg('Not that way. Find the round end of the arrow, where the wind starts.', 'try');
     }
     S.obs.from = d; S.skills.push(['Read the compass', tries === 0]);
-    mark('Compass', 'Where the wind comes from', tries === 0, '', d);
+    mark('Compass', 'Where the wind comes from', tries === 0, '', d, null, { text: `A compass with the wind arrow coming from the ${DIRN[d]}.`, choices: ['N', 'E', 'S', 'W'] }, taps);
     await reveal(`<div class="big">The wind comes from the ${DIRN[d]}!</div><div class="learn">We call it a ${DIRN[d]} wind. It’s blowing toward the ${DIRN[{ N: 'S', S: 'N', E: 'W', W: 'E' }[d]]}.</div>`, `The wind comes from the ${DIRN[d]}. We call it a ${DIRN[d]} wind.`);
     nextPart();
   } });
@@ -1320,15 +1325,16 @@ function weatherSheet() {
   parts.push({ name: 'The Air', run: async () => {
     if (!S.real) return nextPart();
     screen('Humidity is how much water vapor is in the air. Water vapor is water so tiny you can’t see it!', `<div class="wxrow">${humCup(S.real.hum)}<div class="learn" style="max-width:260px">This cup shows how much water vapor is in the air today. Is the cup more than half full?</div></div>`);
-    let tries = 0, ans;
+    let tries = 0, ans; const cups = [];
     const more = S.real.hum > 50;
     for (;;) {
       ans = await choose([['more', 'More than half', '💧💧'], ['less', 'Less than half', '💧']], true);
+      cups.push(ans === 'more' ? 'more than half' : 'less than half');
       if ((ans === 'more') === more) break;
       tries++; $('io').insertAdjacentHTML('beforeend', '<div class="message try">Look at the dashed line in the middle. Is the blue above it or below it?</div>'); say('Look at the dashed line in the middle. Is the blue above it or below it?', 0.95); await wait(2600);
     }
     S.obs.air = more ? 'damp' : 'dry'; S.skills.push(['Read the humidity cup', tries === 0]);
-    mark('Humidity cup', `${S.real.hum}% humidity`, tries === 0, ans, more ? 'more' : 'less');
+    mark('Humidity cup', `${S.real.hum}% humidity`, tries === 0, cups[0], more ? 'more than half' : 'less than half', null, { text: `A cup filled to ${S.real.hum}%.`, choices: ['more than half', 'less than half'] }, cups);
     await reveal(`<div class="big">The humidity is ${S.real.hum}%. The air is ${more ? 'damp' : 'dry'}!</div><div class="learn">${more ? 'Damp air can feel sticky. Lots of water vapor can turn into clouds and rain.' : 'Dry air helps puddles and wet clothes dry faster.'}</div>`, `The humidity is ${S.real.hum} percent. The air is ${more ? 'damp' : 'dry'}.`);
     nextPart();
   } });
@@ -1449,6 +1455,7 @@ function saveAndSend(rec) {
   if (TRY) return;
   const log = store('sheet-log') || []; log.push(rec); store('sheet-log', log.slice(-40));
   cloudSaveSheet(rec);
+  if (!emailOn()) { const el = $('sent'); if (el) el.textContent = 'Saved for your grown-up in Parent Review.'; return; }
   rec.body = emailBody(rec);
   const box = store('sheet-outbox') || []; box.push(rec); store('sheet-outbox', box.slice(-20));
   sendOutbox().then(() => { const l = (store('sheet-log') || []).find(x => x.id === rec.id); const el = $('sent'); if (el) el.textContent = l && l.sent ? `For the grown-up: results emailed to ${RESULTS_EMAIL}.` : 'For the grown-up: the email couldn’t send right now. It will try again the next time the Spelling Helper opens.'; });
@@ -1535,7 +1542,7 @@ const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet
   $('begin').onclick = () => startPart(0);
   renderProg();
 })();
-if ((store('sheet-outbox') || []).length) sendOutbox();
+if (emailOn() && (store('sheet-outbox') || []).length) sendOutbox();
 </script>
 <script src="/nav.js" defer></script>
 </body>

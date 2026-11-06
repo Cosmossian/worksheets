@@ -28,6 +28,8 @@ a { color: var(--accent); }
 .classes button[aria-pressed="true"] { border-color: var(--study); background: #1B2D47; box-shadow: inset 0 -4px 0 var(--study); }
 .tablink { font: 600 16px Fredoka, sans-serif; border: 2px solid #0F9F8F; background: #0E2A28; color: #FFFFFF; border-radius: 999px; padding: 8px 16px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .tablink:hover { background: #12403B; }
+.onday { display: inline-flex; align-items: center; margin-left: 8px; font: 700 12px Fredoka, sans-serif; color: #0E151D; background: #34D399; border-radius: 999px; padding: 2px 8px; vertical-align: middle; }
+.classes button .dot { width: 10px; height: 10px; border-radius: 50%; background: #34D399; display: inline-block; box-shadow: 0 0 0 3px rgba(52, 211, 153, .25); }
 .hdr-btn.day { background: #0E2A28; border-color: #0F9F8F; color: #fff; }
 .daywrap { position: fixed; inset: 0; background: rgba(5, 9, 14, .78); z-index: 80; display: grid; place-items: start center; padding: 40px 16px; overflow: auto; }
 .daywrap[hidden] { display: none; }
@@ -290,8 +292,8 @@ select::-ms-expand { display: none; }
 </header>
 <nav class="classes" id="classes" aria-label="Classes"></nav>
 <nav class="tabs" role="tablist" aria-label="Worksheets in this class">
-  <a class="tablink" data-cls="phonics" href="spell.html#daily">📝 Daily Sight Words →</a>
-  <a class="tablink" data-cls="phonics" href="spell.html#helper">✏️ Spelling Helper →</a>
+  <a class="tablink" data-cls="phonics" data-day="daily" href="spell.html#daily">📝 Daily Sight Words →</a>
+  <a class="tablink" data-cls="phonics" data-day="spellq" href="spell.html#helper">✏️ Spelling Helper →</a>
   <button role="tab" data-tool="sight">Sight Word Practice</button>
   <button role="tab" data-tool="master">Word Master Challenge</button>
   <button role="tab" data-tool="fixup">Spelling Fix-Up</button>
@@ -1111,9 +1113,24 @@ const CLASSES = [
   { id: 'every', name: 'Every Day', icon: '📋', tools: ['steps'] }
 ];
 const classOf = t => (CLASSES.find(c => c.tools.includes(t)) || CLASSES[3]).id;
+/* What's on his day right now (so you don't assign the same thing twice): tags on the tabs and dots on the classes */
+let onDay = null;
+async function refreshOnDay(sheetList) {
+  const sb = await studySession(); if (!sb) return;
+  try {
+    const { data } = await sb.from('study_state').select('key,data').in('key', sheetList ? ['daily', 'spellq'] : ['daily', 'spellq', 'sheets']);
+    const S = Object.fromEntries((data || []).map(r => [r.key, r.data]));
+    const list = sheetList || ((S.sheets && S.sheets.list) || []), d = S.daily || {};
+    onDay = { tools: new Set(list.map(a => a.tool)), daily: d.on !== false && parseWords(d.words || '').length > 0, spellq: !!(S.spellq && S.spellq.words && S.spellq.words.length) };
+    renderClasses();
+  } catch (e) { }
+}
 function renderClasses() {
   const cls = state.cls || classOf(state.tool);
-  document.getElementById('classes').innerHTML = CLASSES.map(c => `<button data-cls="${c.id}" aria-pressed="${c.id === cls}"><span aria-hidden="true">${c.icon}</span>${esc(c.name)}<small>${c.tools.length + (c.extra || 0)}</small></button>`).join('');
+  const on = onDay || { tools: new Set(), daily: false, spellq: false }, hasOn = c => c.tools.some(t => on.tools.has(t)) || (c.id === 'phonics' && (on.daily || on.spellq));
+  document.getElementById('classes').innerHTML = CLASSES.map(c => `<button data-cls="${c.id}" aria-pressed="${c.id === cls}"><span aria-hidden="true">${c.icon}</span>${esc(c.name)}<small>${c.tools.length + (c.extra || 0)}</small>${hasOn(c) ? '<span class="dot" title="Something here is on his day"></span>' : ''}</button>`).join('');
+  document.querySelectorAll('.tabs [data-tool]').forEach(b => { const tag = b.querySelector('.onday'); if (on.tools.has(b.dataset.tool)) { if (!tag) b.insertAdjacentHTML('beforeend', '<span class="onday">✓ On his day</span>'); } else if (tag) tag.remove(); });
+  document.querySelectorAll('.tabs [data-day]').forEach(a => { const tag = a.querySelector('.onday'); if (on[a.dataset.day]) { if (!tag) a.insertAdjacentHTML('beforeend', '<span class="onday">✓ On his day</span>'); } else if (tag) tag.remove(); });
   document.querySelectorAll('.tabs [data-tool]').forEach(b => { b.hidden = classOf(b.dataset.tool) !== cls; });
   document.querySelectorAll('.tabs .tablink').forEach(a => { a.hidden = a.dataset.cls !== cls; });
 }
@@ -1140,13 +1157,13 @@ async function openDay() {
     const d = S.daily || {}, words = parseWords(d.words || '');
     if (words.length) {
       const steps = [d.look !== false ? `Look &amp; Listen (3 rounds${d.mic !== false ? ', with the microphone' : ''})` : '', d.practice !== false ? 'practice each word with the Spelling Helper' : '', 'the check (spoken words, letter grade)'].filter(Boolean).join(' → ');
-      const chk = L.filter(x => x.kind === 'check' && today(x)).sort((a, b) => b.t - a.t)[0];
-      items.push({ off: d.on === false, title: `📝 Today’s sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : chk && chk.grade ? `✓ done: ${chk.grade.letter} (${chk.grade.pct}%)` : 'not done yet', ok: !!chk, acts: `<a class="btn btn-small" href="spell.html#daily">Change the words</a>` });
+      const chk = L.filter(x => x.kind === 'check' && today(x) && x.t > (d.resetAt || 0)).sort((a, b) => b.t - a.t)[0];
+      items.push({ off: d.on === false, title: `📝 Today’s sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : chk && chk.grade ? `✓ done: ${chk.grade.letter} (${chk.grade.pct}%)` : 'not done yet', ok: !!chk, acts: `<a class="btn btn-small" href="spell.html#daily">Change the words</a>${chk ? '<button class="btn btn-small" data-reset="daily">↺ Reset today, keep the words</button>' : ''}` });
     }
     const q = S.spellq;
     if (q && q.words && q.words.length) {
       const done = L.find(x => x.kind === 'sheet' && x.aid === q.id);
-      items.push({ title: `✏️ Spelling practice · ${q.words.length}`, sub: `${esc(q.words.join(', '))}<br>each word with the Spelling Helper, on his own`, st: done ? '✓ done' : 'not done yet', ok: !!done, acts: `<a class="btn btn-small" href="spell.html#helper">Change the words</a>` });
+      items.push({ title: `✏️ Spelling practice · ${q.words.length}`, sub: `${esc(q.words.join(', '))}<br>each word with the Spelling Helper, on his own`, st: done ? '✓ done' : 'not done yet', ok: !!done, acts: `<a class="btn btn-small" href="spell.html#helper">Change the words</a>${done ? '<button class="btn btn-small" data-reset="spellq">↺ Do it again, same words</button>' : ''}` });
     }
     ((S.sheets && S.sheets.list) || []).forEach((a, k) => {
       const mine = L.filter(x => (x.aid || x.cid) === a.id && (!['steps', 'weather'].includes(a.tool) || today(x))).sort((x, y) => y.t - x.t)[0];
@@ -1156,7 +1173,17 @@ async function openDay() {
     });
     list.innerHTML = items.length ? items.map((it, i) => `<div class="dayitem${it.off ? ' off' : ''}"><span class="n">${i + 1}</span><div class="body"><b>${it.title}</b><div class="sub">${it.sub}</div>${it.acts ? `<div class="acts2">${it.acts}</div>` : ''}</div><span class="st${it.ok ? ' ok' : ''}">${it.st}</span></div>`).join('')
       : '<p class="help">Nothing on his device yet. Type today’s sight words (Phonics → Daily Sight Words) or assign a worksheet.</p>';
-    list.onclick = e => { const b = e.target.closest('[data-tryday]'); if (!b) return; const a = S.sheets.list[+b.dataset.tryday]; lsSet('study-sheet-try', { ...a, id: 'try' }); window.open('do.html?try=1', '_blank'); };
+    list.onclick = async e => {
+      const r = e.target.closest('[data-reset]');
+      if (r) {   // keep the results (Parent Review, email) but start his day fresh with the same words
+        r.disabled = true; r.textContent = 'Resetting…';
+        const key = r.dataset.reset, data = key === 'daily' ? { ...d, resetAt: Date.now() } : { ...S.spellq, id: 'sq' + Date.now().toString(36), at: Date.now() };
+        const res = await sb.from('study_state').upsert({ key, data, updated_at: new Date().toISOString() });
+        if (res.error) { r.textContent = 'Couldn’t reset: ' + res.error.message; return; }
+        lsSet(key === 'daily' ? 'spell-daily' : 'spell-queue', data);
+        return openDay();
+      }
+      const b = e.target.closest('[data-tryday]'); if (!b) return; const a = S.sheets.list[+b.dataset.tryday]; lsSet('study-sheet-try', { ...a, id: 'try' }); window.open('do.html?try=1', '_blank'); };
   } catch (e) { list.innerHTML = `<p class="help">Couldn’t load his day right now (${esc(e.message || e)}).</p>`; }
 }
 document.getElementById('dayBtn').onclick = openDay;
@@ -1223,7 +1250,7 @@ async function renderAssigned() {
   const sb = await studySession();
   if (!sb) { el.innerHTML = ''; return; }
   try {
-    const list = await loadSheets(sb);
+    const list = await loadSheets(sb); refreshOnDay(list);
     const since = new Date(Date.now() - 30 * 864e5).toISOString();
     const { data: logs } = await sb.from('study_log').select('kind,t,data').in('kind', ['sheet', 'fixup']).gte('t', since);
     const today = new Date().toDateString();
