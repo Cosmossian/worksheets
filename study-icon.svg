@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- wood background, like the home page drawer -->
+  <rect width="512" height="512" fill="#C98B4F"/>
+  <g stroke="#8A5A2E" stroke-width="6" fill="none" stroke-linecap="round" opacity=".55">
+    <path d="M0 70 C120 50 220 95 340 70 S470 60 512 78"/>
+    <path d="M0 150 C90 135 200 170 310 148 S450 140 512 158"/>
+    <path d="M0 470 C110 455 230 490 350 468 S470 462 512 476"/>
+  </g>
+
+  <!-- inside of the pulled-out drawer -->
+  <path d="M96 286 L120 214 L392 214 L416 286 Z" fill="#17201A"/>
+
+  <!-- worksheet sticking out -->
+  <g transform="rotate(-9 210 200)">
+    <rect x="128" y="74" width="168" height="214" rx="10" fill="#17201A" transform="translate(10 10)"/>
+    <rect x="128" y="74" width="168" height="214" rx="10" fill="#FFF8EC" stroke="#17201A" stroke-width="12"/>
+    <g stroke="#3C7DD9" stroke-width="10" stroke-linecap="round">
+      <path d="M156 160 H268"/><path d="M156 196 H268"/><path d="M156 232 H236"/>
+    </g>
+    <!-- gold star sticker -->
+    <path d="M212 88 l13 27 30 4 -22 21 5 30 -26 -14 -27 14 5 -30 -22 -21 30 -4 z" transform="translate(30 -6) scale(.78) translate(60 30)" fill="#F5B400" stroke="#17201A" stroke-width="10" stroke-linejoin="round"/>
+  </g>
+
+  <!-- pencil sticking out -->
+  <g transform="translate(306 274) rotate(-62)">
+    <g stroke="#17201A" stroke-width="12" stroke-linejoin="round">
+      <rect x="0" y="-24" width="170" height="48" fill="#F5B400"/>
+      <path d="M170 -24 L222 0 L170 24 Z" fill="#F3D9A8"/>
+      <rect x="-34" y="-24" width="34" height="48" fill="#FF6FA8"/>
+    </g>
+    <path d="M206 -8 L222 0 L206 8 Z" fill="#17201A"/>
+    <path d="M10 0 H160" stroke="#D99A00" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- drawer front with shadow -->
+  <rect x="90" y="300" width="356" height="160" rx="28" fill="#17201A"/>
+  <rect x="70" y="280" width="372" height="164" rx="28" fill="#3C7DD9" stroke="#17201A" stroke-width="14"/>
+  <rect x="190" y="344" width="132" height="38" rx="19" fill="#17201A"/>
+</svg>
