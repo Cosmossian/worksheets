@@ -439,6 +439,14 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
         <div class="row"><button class="btn" id="acctMakeKid">Create his login</button></div>
         <div class="err" id="kidErr"></div>
       </div>
+      <div id="grownMaker" hidden>
+        <span class="lbl" style="margin:14px 0 0">Another grown-up (like his mom)</span>
+        <div class="who" id="grownList" style="font-size:14px"></div>
+        <input type="email" id="grownEmail" placeholder="Her email" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <input type="password" id="grownPass" placeholder="A password for her (6+ characters)" autocomplete="new-password">
+        <div class="row"><button class="btn" id="acctMakeGrown">Add this grown-up</button></div>
+        <div class="err" id="grownErr"></div>
+      </div>
       <div class="row"><button class="linkbtn" id="acctOutBtn">Sign out of the Study on this device</button></div>
     </div>
   </div>
@@ -2639,6 +2647,7 @@ function renderAccount() {
   $('acctOut').hidden = inside; $('acctIn2').hidden = !inside;
   if (!inside) return;
   $('kidMaker').hidden = cloud.role !== 'grownup';
+  $('grownMaker').hidden = cloud.role !== 'grownup'; if (cloud.role === 'grownup') listGrownups();
   $('sendBox').hidden = cloud.role !== 'grownup'; renderSpellQ();
   if (document.activeElement !== $('kidNameIn')) $('kidNameIn').value = kidName();
   $('pointsBtn').hidden = cloud.role !== 'kid';
@@ -2701,6 +2710,28 @@ $('acctMakeKid').onclick = async () => {
   if (m.error) return say2(`His account ${error ? 'already exists' : 'was made'}, but I couldn’t add him to the Study: ${m.error.message}. (Run the small study-setup update in Supabase, then try again.)`);
   say2(error ? `“${user}” already existed. It’s now set up for the Study. If you don’t know its password, pick another username.` : `His login is ready: username “${user}”. On his device, sign in with that username and password.`);
   $('kidPass').value = '';
+};
+// Another grown-up (his mom): same idea as his login, but with her email, and added as "grownup"
+async function listGrownups() {
+  try { const { data } = await cloud.sb.from('study_members').select('email,role').eq('role', 'grownup'); $('grownList').textContent = data && data.length ? 'Grown-ups now: ' + data.map(r => r.email).join(', ') : ''; } catch (e) { }
+}
+$('acctMakeGrown').onclick = async () => {
+  const email = $('grownEmail').value.trim().toLowerCase(), password = $('grownPass').value, say2 = t => { $('grownErr').textContent = t; };
+  say2('');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.endsWith('@' + KID_DOMAIN)) return say2('Type her email address.');
+  if (!window.supabase || !cloudMember() || cloud.role !== 'grownup') return say2('Sign in as yourself first.');
+  let existed = false;
+  if (password) {
+    if (password.length < 6) return say2('Pick a password with at least 6 characters.');
+    const temp = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-temp', persistSession: false, autoRefreshToken: false } });
+    const { error } = await temp.auth.signUp({ email, password });
+    if (error && !/registered|exists/i.test(error.message)) return say2(`Couldn’t create it: ${error.message}. You can add her in Supabase instead (Authentication → Users → Add user), then tap Add this grown-up again.`);
+    existed = !!error;
+  }
+  const m = await cloud.sb.from('study_members').upsert({ email, role: 'grownup' });
+  if (m.error) return say2(`Couldn’t add her to the Study: ${m.error.message}`);
+  say2(existed || !password ? `${email} is now a grown-up in the Study. She signs in with the password she already has for That One Drawer (Recipe Box, Library…).` : `Done. ${email} can sign in as Parent with that password. If she gets an email asking her to confirm, she should tap the link first.`);
+  $('grownPass').value = ''; listGrownups();
 };
 // keep his device up to date: when the page comes back into view, and every minute on the start screen
 document.addEventListener('visibilitychange', () => { if (!document.hidden && cloudMember() && !daily) cloudPull(); });
