@@ -65,11 +65,11 @@ drop policy if exists "members read state" on public.study_state;
 create policy "members read state" on public.study_state for select using (public.study_role() is not null);
 drop policy if exists "members write state" on public.study_state;
 create policy "members write state" on public.study_state for insert
-  with check (public.study_role() = 'grownup' or (public.study_role() = 'kid' and key not in ('daily', 'settings', 'sounds')));
+  with check (public.study_role() = 'grownup' or (public.study_role() = 'kid' and key not in ('daily', 'settings', 'sounds', 'chores')));
 drop policy if exists "members update state" on public.study_state;
 create policy "members update state" on public.study_state for update
-  using (public.study_role() = 'grownup' or (public.study_role() = 'kid' and key not in ('daily', 'settings', 'sounds')))
-  with check (public.study_role() = 'grownup' or (public.study_role() = 'kid' and key not in ('daily', 'settings', 'sounds')));
+  using (public.study_role() = 'grownup' or (public.study_role() = 'kid' and key not in ('daily', 'settings', 'sounds', 'chores')))
+  with check (public.study_role() = 'grownup' or (public.study_role() = 'kid' and key not in ('daily', 'settings', 'sounds', 'chores')));
 
 drop policy if exists "members read log" on public.study_log;
 create policy "members read log" on public.study_log for select using (public.study_role() is not null);

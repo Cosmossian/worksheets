@@ -606,6 +606,7 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
   <div class="done-today" id="kidDone" hidden></div>
   <div id="kidMicSlot" style="max-width:560px;margin:0 auto 14px"></div>
   <button class="btn big primary" id="kidStart">Start today’s words</button>
+  <div class="kid-sheets" id="kidChores" hidden></div>
   <div class="kid-hold"><button class="grownup" id="kidGrown">🔒 Grown-up screen <small>(hold)</small></button><button class="grownup" id="kidSwitch">↺ Switch user <small>(hold)</small></button><button class="grownup" id="kidTest">🧪 Test day <small>(hold)</small></button></div>
 </main>
 
@@ -2473,7 +2474,7 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const KID_DOMAIN = 'kids.thatonedrawer.com';   // usernames become <username>@kids.thatonedrawer.com behind the scenes (never emailed)
 const loginEmail = id => { id = id.trim().toLowerCase(); return id.includes('@') ? id : `${id}@${KID_DOMAIN}`; };
 const shownName = email => email.endsWith('@' + KID_DOMAIN) ? email.slice(0, -KID_DOMAIN.length - 1) : email;
-const SYNC = { 'study-wordfix': 'wordfix', 'sight-bank': 'sightbank', 'study-points': 'points', 'study-profile': 'profile', 'spell-queue': 'spellq', 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent', 'study-sheets': 'sheets' };   // sheets: on-screen worksheets assigned from the Worksheets page
+const SYNC = { 'study-wordfix': 'wordfix', 'sight-bank': 'sightbank', 'study-points': 'points', 'study-profile': 'profile', 'spell-queue': 'spellq', 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent', 'study-sheets': 'sheets', 'study-chores': 'chores' };   // sheets: on-screen worksheets assigned from the Worksheets page
 const cloud = { sb: null, user: null, role: null, pulling: false, timers: {} };
 const cloudMember = () => !!(cloud.sb && cloud.user && cloud.role);
 function cloudClient() {
@@ -2521,7 +2522,7 @@ window.addEventListener('online', () => cloudFlush());
 // store() calls this for every write; synced keys go up (debounced), except while pulling
 function cloudOnStore(k) {
   if (!SYNC[k] || cloud.pulling || !cloud.sb || TESTDAY()) return;
-  if (cloud.role === 'kid' && ['spell-daily', 'spell-settings', 'spell-sounds', 'study-sheets', 'spell-queue', 'study-profile'].includes(k)) return;   // set from the grown-up's device
+  if (cloud.role === 'kid' && ['spell-daily', 'spell-settings', 'spell-sounds', 'study-sheets', 'spell-queue', 'study-profile', 'study-chores'].includes(k)) return;   // set from the grown-up's device
   clearTimeout(cloud.timers[k]);
   cloud.timers[k] = setTimeout(() => {
     let data = store(k);
@@ -2721,6 +2722,11 @@ function renderKidHome() {
   $('kidSheets').innerHTML = sheets.length ? `<h3 class="kid-h">${words.length ? 'First: worksheets' : 'Worksheets'}</h3>` + sheets.map(a => { const d = doneFor(a), g = d && d.grade;
     return `<a class="${d ? 'done' : ''}" href="${href(a)}"><span>${esc(a.title)}</span>${d ? `<small>✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'weather' ? `day ${d.extra && d.extra.day} done today` : a.tool === 'steps' ? 'done today' : 'done'}${a.tool === 'weather' ? '' : ' · again?'}</small>` : ''}</a>`; }).join('') : '';
   recordAgenda(words, sheets);
+  // Chore chart (chores.html): grown-ups check chores off on their devices; here he just sees how he's doing
+  const ch = store('study-chores');
+  $('kidChores').hidden = !(ch && ch.chores && ch.chores.length);
+  if (ch && ch.chores) { const mk = ymd(Date.now()).slice(0, 7), lim = ch.limit || 8, xs = Object.keys(ch.marks || {}).filter(s => s.slice(0, 7) === mk).reduce((n, s) => n + Object.values(ch.marks[s]).filter(m => m && m.s === 'x').length, 0);
+    $('kidChores').innerHTML = `<h3 class="kid-h">My chores</h3><a href="chores.html"><span>🧹 My Chores</span><small>${xs >= lim ? `No ${esc(ch.reward || 'reward')} this month` : `${esc(ch.reward || 'Reward')}: still on · ${xs} X${xs === 1 ? '' : '’s'} this month`}</small></a>`; }
   $('kidStart').hidden = !words.length;
   $('kidDone').hidden = !today.length;
   if (today.length) { const r = today.at(-1), g = r.grade || gradeFor(r.results.filter(x => x.ok).length, r.results.length); $('kidDone').textContent = `You already did a check today: ${g.letter} (${g.pct}%). You can practice again!`; }

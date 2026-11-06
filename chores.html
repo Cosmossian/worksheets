@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chore Chart · The Study</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='14' width='56' height='40' rx='8' fill='%233C7DD9' stroke='%2317201A' stroke-width='4'/%3E%3Crect x='22' y='30' width='20' height='7' rx='3.5' fill='%2317201A'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-title" content="The Study">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* The chore chart from the fridge, kept in the Study. Grown-ups check chores off; his device only shows it. */
+:root { color-scheme: dark; --navy: #8DB8F2; --ink: #E5ECF4; --muted: #9AABBF; --line: #2B3A4D; --bg: #0E151D; --accent: #7FB0F0;
+  --study: #3C7DD9; --surface: #16202B; --surface-2: #1C2836; --field: #0F1822; --field-line: #3A4B60;
+  --good: #34D399; --good-bg: #0F2E25; --bad: #F87171; --bad-bg: #3A1618; --try: #FBBF24; --try-bg: #33270C; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: Andika, system-ui, sans-serif; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+a { color: var(--accent); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid #F59E0B; outline-offset: 3px; }
+[hidden] { display: none !important; }
+body.authwait main { visibility: hidden; }
+body.embed #tod-nav, body.embed .app-header { display: none !important; }
+body.kid #tod-nav .tod-links { display: none !important; }
+body.kid #tod-nav .tod-home { pointer-events: none; }
+body.kid .app-header { display: none; }   /* his screen has its own big title */
+
+.app-header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.app-header h1 { margin: 0; font: 700 24px Fredoka, sans-serif; color: var(--navy); flex: 1; }
+.hdr-btn { font: 600 15px Fredoka, sans-serif; border: 2px solid var(--line); border-radius: 12px; padding: 7px 14px; background: var(--surface-2); color: var(--ink); text-decoration: none; cursor: pointer; }
+main { max-width: 980px; margin: 0 auto; padding: 18px 16px 60px; display: flex; flex-direction: column; gap: 16px; }
+body.embed main { padding-top: 4px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; }
+.card h2 { margin: 0 0 4px; font: 700 22px Fredoka, sans-serif; }
+.card h3 { margin: 14px 0 6px; font: 700 18px Fredoka, sans-serif; }
+.help { color: var(--muted); margin: 0 0 10px; font-size: 15px; line-height: 1.4; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 16px Fredoka, sans-serif; border: 2px solid var(--line); border-radius: 12px; padding: 8px 14px; min-height: 42px; cursor: pointer; background: var(--surface-2); color: var(--ink); text-decoration: none; }
+.btn.primary { background: var(--study); border-color: var(--study); color: #fff; }
+.btn.small { font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 10px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.spacer { flex: 1; }
+
+/* reward: X's this month */
+.reward { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.reward .big { font: 700 44px Fredoka, sans-serif; line-height: 1; }
+.reward .big small { font-size: 20px; color: var(--muted); }
+.reward .what { flex: 1; min-width: 220px; }
+.reward .what b { font: 700 20px Fredoka, sans-serif; display: block; }
+.reward.lost { border-color: var(--bad); }
+.reward.close { border-color: var(--try); }
+.xs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.xs i { width: 30px; height: 30px; border-radius: 50%; border: 2px dashed var(--field-line); display: grid; place-items: center; font: 700 18px Fredoka, sans-serif; font-style: normal; }
+.xs i.on { border: 2px solid var(--bad); background: var(--bad-bg); color: var(--bad); }
+.pill { display: inline-block; font: 600 14px Fredoka, sans-serif; border-radius: 999px; padding: 3px 10px; border: 1px solid var(--line); color: var(--muted); }
+.pill.ok { color: var(--good); border-color: var(--good); background: var(--good-bg); }
+.pill.bad { color: var(--bad); border-color: var(--bad); background: var(--bad-bg); }
+.pill.warn { color: var(--try); border-color: var(--try); background: var(--try-bg); }
+
+/* the week grid, like the fridge chart */
+.weekhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.weekhead h2 { margin: 0; flex: 1; }
+.grid-wrap { overflow-x: auto; }
+table.grid { border-collapse: separate; border-spacing: 4px; width: 100%; min-width: 600px; }
+.grid th { font: 600 14px Fredoka, sans-serif; color: var(--muted); padding: 2px; text-align: center; }
+.grid th.today { color: #fff; }
+.grid th.today span { background: var(--study); border-radius: 8px; padding: 2px 8px; }
+.grid th small { display: block; font-size: 12px; }
+.grid td.name { text-align: left; font: 600 16px Fredoka, sans-serif; padding-right: 6px; white-space: nowrap; }
+.grid td.name .ic { font-size: 20px; margin-right: 6px; }
+.grid td.pts { font: 600 14px Fredoka, sans-serif; color: var(--muted); text-align: center; width: 50px; }
+.cellb { width: 100%; min-width: 44px; height: 46px; border-radius: 10px; border: 2px solid var(--field-line); background: var(--field); display: grid; place-items: center; font: 700 24px Fredoka, sans-serif; cursor: pointer; touch-action: manipulation; }
+.cellb.ok { background: var(--good-bg); border-color: var(--good); color: var(--good); }
+.cellb.x { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+.cellb.wait { border-style: dashed; color: var(--try); font-size: 16px; }
+.cellb.future, .cellb.off { opacity: .35; cursor: default; }
+.cellb.off { border-style: dotted; background: transparent; }
+.cellb small { font: 600 10px Fredoka, sans-serif; display: block; line-height: 1; margin-top: -6px; }
+.wk-cell { max-width: 160px; }
+.totals { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.totals div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; font: 600 15px Fredoka, sans-serif; }
+.totals b { font-size: 20px; }
+
+/* pick ✓ / ✗ for a box */
+.menu { position: fixed; z-index: 50; background: var(--surface); border: 2px solid var(--study); border-radius: 14px; padding: 8px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.55); min-width: 210px; }
+.menu .t { font: 600 14px Fredoka, sans-serif; color: var(--muted); padding: 2px 4px 4px; }
+.menu button { text-align: left; justify-content: flex-start; }
+.menu .m-ok { border-color: var(--good); color: var(--good); }
+.menu .m-x { border-color: var(--bad); color: var(--bad); }
+
+/* month misses */
+.miss { border-top: 1px solid var(--line); padding: 8px 0; display: flex; gap: 10px; align-items: flex-start; }
+.miss:first-of-type { border-top: 0; }
+.miss .n { font: 700 22px Fredoka, sans-serif; color: var(--bad); width: 44px; text-align: center; }
+.miss .n.zero { color: var(--good); }
+.miss .body { flex: 1; }
+.miss .body b { font: 600 17px Fredoka, sans-serif; }
+.miss .body div { color: var(--muted); font-size: 14px; margin-top: 2px; }
+.weeks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+.weeks div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; font-size: 14px; color: var(--muted); }
+.weeks b { color: var(--ink); font: 600 16px Fredoka, sans-serif; display: block; }
+
+/* change the chores */
+details.edit summary { cursor: pointer; font: 700 18px Fredoka, sans-serif; }
+.chore-row { display: grid; grid-template-columns: 60px 1fr 120px 80px auto; gap: 6px; align-items: center; margin: 6px 0; }
+.chore-row input, .chore-row select, .field input { background: var(--field); border: 2px solid var(--field-line); border-radius: 10px; padding: 7px 9px; min-width: 0; width: 100%; }
+.chore-row input.ic { text-align: center; font-size: 20px; padding: 4px; }
+.field { display: flex; flex-direction: column; gap: 4px; max-width: 320px; margin: 8px 0; }
+.field label { font: 600 15px Fredoka, sans-serif; }
+@media (max-width: 600px) { .chore-row { grid-template-columns: 52px 1fr 1fr; } .chore-row .rm { grid-column: span 3; justify-self: end; } }
+.status { font: 600 14px Fredoka, sans-serif; color: var(--muted); min-height: 1.2em; }
+.status.bad { color: var(--bad); }
+
+/* his screen: big and friendly, nothing to change */
+.kid .card h2 { font-size: 26px; }
+.kidlist { display: flex; flex-direction: column; gap: 10px; }
+.kidchore { display: flex; align-items: center; gap: 12px; background: var(--surface-2); border: 2px solid var(--line); border-radius: 18px; padding: 10px 14px; }
+.kidchore .ic { font-size: 38px; width: 50px; text-align: center; }
+.kidchore .nm { flex: 1; font: 700 22px Andika, sans-serif; }
+.kidchore.ok { border-color: var(--good); }
+.kidchore.x { border-color: var(--bad); }
+.kidchore .st { font: 700 18px Fredoka, sans-serif; text-align: right; }
+.kidchore.ok .st { color: var(--good); }
+.kidchore.x .st { color: var(--bad); }
+.kidchore .st small { display: block; font-size: 13px; color: var(--muted); }
+.say { border: 2px solid var(--line); background: var(--surface); border-radius: 12px; font-size: 22px; width: 46px; height: 46px; cursor: pointer; }
+.kidtop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.kidtop h1 { margin: 0; flex: 1; font: 700 32px Fredoka, sans-serif; }
+</style>
+</head>
+<body class="authwait">
+<script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); if (new URLSearchParams(location.search).get('embed') === '1' && window.parent !== window) document.body.classList.add('embed'); } catch (e) { }</script>
+<header class="app-header">
+  <h1 id="appTitle">🧹 Chore Chart</h1>
+  <a class="hdr-btn" id="backBtn" href="index.html#every">Back to The Study</a>
+</header>
+
+<!-- Grown-ups: check chores off, see the month -->
+<main id="parent" hidden>
+  <section class="card reward" id="pReward"></section>
+  <section class="card">
+    <div class="weekhead">
+      <h2 id="weekTitle">This week</h2>
+      <button class="btn small" id="wkPrev" aria-label="Week before">‹</button>
+      <button class="btn small" id="wkNow">This week</button>
+      <button class="btn small" id="wkNext" aria-label="Next week">›</button>
+    </div>
+    <p class="help">Tap a box to mark it: <b style="color:var(--good)">✓ done</b>, or <b style="color:var(--bad)">✗</b> if it wasn’t done or wasn’t done right. Boxes left empty aren’t counted as X’s, so mark them each night.</p>
+    <div class="grid-wrap"><table class="grid" id="grid"></table></div>
+    <div class="row" style="margin-top:10px"><button class="btn small" id="allToday">✓ Mark the rest of today done</button><span class="status" id="saveStatus"></span></div>
+    <div class="totals" id="weekTotals"></div>
+  </section>
+  <section class="card">
+    <div class="weekhead">
+      <h2 id="monthTitle">Misses this month</h2>
+      <button class="btn small" id="moPrev" aria-label="Month before">‹</button>
+      <button class="btn small" id="moNow">This month</button>
+      <button class="btn small" id="moNext" aria-label="Next month">›</button>
+    </div>
+    <div id="monthBody"></div>
+  </section>
+  <section class="card">
+    <details class="edit" id="editBox">
+      <summary>✏️ Change the chores</summary>
+      <p class="help" style="margin-top:8px">Daily chores get a box every day; weekly chores are due by Saturday night. Removing a chore keeps its old ✓ and ✗ in past months.</p>
+      <div id="choreRows"></div>
+      <div class="row"><button class="btn small" id="addDaily">+ Daily chore</button><button class="btn small" id="addWeekly">+ Weekly chore</button></div>
+      <div class="field"><label for="rewardIn">Monthly reward</label><input id="rewardIn" type="text"></div>
+      <div class="field"><label for="limitIn">X’s in a month that mean no reward</label><input id="limitIn" type="number" min="1" max="99"></div>
+      <div class="row"><button class="btn primary" id="saveChores">Save changes</button><span class="status" id="editStatus"></span></div>
+    </details>
+  </section>
+</main>
+
+<!-- His device: just looking -->
+<main id="kid" class="kid" hidden>
+  <div class="kidtop"><h1>🧹 My Chores</h1><a class="btn" href="spell.html">← My Agenda</a></div>
+  <section class="card reward" id="kReward"></section>
+  <section class="card"><h2 id="kTodayH">Today</h2><div class="kidlist" id="kToday"></div></section>
+  <section class="card"><h2>This week · do by Saturday night</h2><div class="kidlist" id="kWeekly"></div><div class="totals" id="kTotals"></div></section>
+</main>
+
+<main id="msg" hidden><section class="card"><h2 id="msgH"></h2><p class="help" id="msgP"></p></section></main>
+<div class="menu" id="menu" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SB_URL = 'https://wpgclwmssnmiidvnekml.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZ2Nsd21zc25taWlkdm5la21sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzE4NDUsImV4cCI6MjEwOTE0Nzg0NX0.o19X9l7zS1bk34DpR3id0gt6mAB42ZZb6olRr8ohzTc';
+const KEY = 'chores', LS = 'study-chores';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
+const EMBED = document.body.classList.contains('embed');
+
+/* ---------- dates (all local, as YYYY-MM-DD) ---------- */
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const toDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d, 12); };
+const addDays = (s, n) => { const d = toDate(s); d.setDate(d.getDate() + n); return ymd(d); };
+const todayS = () => ymd(new Date());
+const sundayOf = s => addDays(s, -toDate(s).getDay());
+const satOf = s => addDays(sundayOf(s), 6);
+const DOW = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const short = s => toDate(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+const dayName = s => toDate(s).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+const monthKey = s => s.slice(0, 7);
+const monthName = mk => toDate(mk + '-01').toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+const addMonths = (mk, n) => { const d = toDate(mk + '-01'); d.setMonth(d.getMonth() + n); return ymd(d).slice(0, 7); };
+
+/* ---------- the chart ----------
+   study_state "chores" = { reward, limit, setAt, chores: [{id, name, icon, kind: 'daily'|'weekly', pts, from, to?}],
+   marks: { 'YYYY-MM-DD': { <chore id>: {s: 'ok'|'x'|null, why: 'not'|'wrong', at, by} } } }
+   Daily chores are marked on their own day; weekly chores on the Saturday of their week (due Saturday night),
+   so a missed weekly chore counts in the month its Saturday is in. Two grown-ups can mark at once: each box keeps its own time and the newest wins. */
+const START = '2026-11-01';
+const SEED = () => ({ reward: 'Fortnite Crew Pass', limit: 8, setAt: 0, marks: {}, chores: [
+  { id: 'bed', name: 'Make bed', icon: '🛏️', kind: 'daily', pts: 1, from: START },
+  { id: 'sink', name: 'Clean bathroom sink', icon: '🚰', kind: 'daily', pts: 1, from: START },
+  { id: 'laundry', name: 'Laundry in hamper', icon: '🧺', kind: 'daily', pts: 1, from: START },
+  { id: 'litter', name: 'Scoop litter box', icon: '🐈', kind: 'daily', pts: 1, from: START },
+  { id: 'room', name: 'Clean room', icon: '🧸', kind: 'daily', pts: 1, from: START },
+  { id: 'vacbath', name: 'Vacuum bathroom (litter)', icon: '🧹', kind: 'daily', pts: 1, from: START },
+  { id: 'vacbed', name: 'Vacuum bedroom', icon: '🌀', kind: 'weekly', pts: 5, from: START },
+  { id: 'trash', name: 'Empty bathroom trash', icon: '🗑️', kind: 'weekly', pts: 5, from: START }
+] });
+let C = lsGet(LS) || null;   // the chart (cached on this device)
+let sb = null, me = '', role = null, pending = false, saving = false;
+const view = { week: sundayOf(todayS()), month: monthKey(todayS()) };
+
+const activeOn = (c, s) => (c.from || START) <= s && (!c.to || s <= c.to);
+const markAt = (s, id) => { const m = C.marks[s] && C.marks[s][id]; return m && m.s ? m : null; };
+const keyFor = (c, s) => c.kind === 'weekly' ? satOf(s) : s;
+const whyText = m => m.why === 'wrong' ? 'not done right' : 'not done';
+const choreById = id => C.chores.find(c => c.id === id) || { id, name: '(removed chore)', icon: '•', kind: 'daily', pts: 0 };
+
+function xsInMonth(mk) {   // every X dated in this calendar month
+  const out = [];
+  Object.keys(C.marks).filter(s => monthKey(s) === mk).sort().forEach(s => Object.entries(C.marks[s]).forEach(([id, m]) => { if (m && m.s === 'x') out.push({ s, id, m }); }));
+  return out;
+}
+function weekStats(sun) {
+  let dEarn = 0, dPos = 0, wEarn = 0, wPos = 0, xs = 0, open = 0; const t = todayS(), sat = addDays(sun, 6);
+  for (let i = 0; i < 7; i++) { const s = addDays(sun, i);
+    C.chores.filter(c => c.kind === 'daily' && activeOn(c, s)).forEach(c => { dPos += c.pts; const m = markAt(s, c.id); if (m && m.s === 'ok') dEarn += c.pts; if (m && m.s === 'x') xs++; if (!m && s <= t) open++; }); }
+  C.chores.filter(c => c.kind === 'weekly' && activeOn(c, sat)).forEach(c => { wPos += c.pts; const m = markAt(sat, c.id); if (m && m.s === 'ok') wEarn += c.pts; if (m && m.s === 'x') xs++; if (!m && sat < t) open++; });
+  return { dEarn, dPos, wEarn, wPos, xs, open };
+}
+function unmarkedIn(mk) {   // past boxes nobody has marked yet
+  let n = 0; const t = todayS();
+  for (let s = mk + '-01'; monthKey(s) === mk && s < t; s = addDays(s, 1)) {
+    C.chores.forEach(c => { if (!activeOn(c, s)) return; if (c.kind === 'weekly' && toDate(s).getDay() !== 6) return; if (!markAt(s, c.id)) n++; });
+  }
+  return n;
+}
+
+/* ---------- saving: fetch, merge box by box, save ---------- */
+function merge(remote, local) {
+  if (!remote) return local; if (!local) return remote;
+  const base = (local.setAt || 0) >= (remote.setAt || 0) ? local : remote;
+  const out = { reward: base.reward, limit: base.limit, setAt: base.setAt || 0, chores: base.chores, marks: {} };
+  new Set([...Object.keys(remote.marks || {}), ...Object.keys(local.marks || {})]).forEach(s => {
+    const a = (remote.marks || {})[s] || {}, b = (local.marks || {})[s] || {}, day = {};
+    new Set([...Object.keys(a), ...Object.keys(b)]).forEach(id => { const x = a[id], y = b[id]; day[id] = !x ? y : !y ? x : (y.at || 0) >= (x.at || 0) ? y : x; });
+    out.marks[s] = day;
+  });
+  return out;
+}
+async function pull() {
+  if (!sb) return;
+  const { data, error } = await sb.from('study_state').select('data').eq('key', KEY).maybeSingle();
+  if (error) throw error;
+  const remote = data && data.data && data.data.chores ? data.data : null;
+  C = pending ? merge(remote, C) : (remote || C);
+  if (!C) { C = SEED(); if (role === 'grownup') { pending = true; queueSave(0); } }
+  lsSet(LS, C);
+}
+let saveTimer = null;
+function queueSave(ms = 500) { pending = true; lsSet(LS, C); status('Saving…'); clearTimeout(saveTimer); saveTimer = setTimeout(save, ms); }
+async function save() {
+  if (saving) return queueSave(400);
+  if (!sb || role !== 'grownup') return;
+  saving = true;
+  try {
+    const { data, error } = await sb.from('study_state').select('data').eq('key', KEY).maybeSingle();
+    if (error) throw error;
+    const merged = merge(data && data.data && data.data.chores ? data.data : null, C);
+    const r = await sb.from('study_state').upsert({ key: KEY, data: merged, updated_at: new Date().toISOString() });
+    if (r.error) throw r.error;
+    C = merged; pending = false; lsSet(LS, C); status('Saved ✓');
+    render();
+  } catch (e) {
+    status(`Not saved yet (${e.message || e}). It will try again.`, true);
+    clearTimeout(saveTimer); saveTimer = setTimeout(save, 10000);
+  } finally { saving = false; }
+}
+window.addEventListener('online', () => { if (pending) save(); });
+function status(t, bad) { const el = $('saveStatus'); if (el) { el.textContent = t; el.classList.toggle('bad', !!bad); } }
+function setMark(s, id, v, why) {
+  C.marks[s] = C.marks[s] || {};
+  C.marks[s][id] = { s: v, why: v === 'x' ? why : undefined, at: Date.now(), by: me };
+  queueSave(); render();
+}
+
+/* ---------- reward box (both screens) ---------- */
+function rewardHtml(kid) {
+  const mk = monthKey(todayS()), xs = xsInMonth(mk).length, lim = C.limit || 8, lost = xs >= lim, left = lim - xs;
+  const circles = Array.from({ length: lim }, (_, i) => `<i class="${i < xs ? 'on' : ''}">${i < xs ? '✗' : ''}</i>`).join('');
+  const title = `🎮 ${esc(C.reward || 'Monthly reward')}`;
+  if (kid) return { cls: lost ? 'lost' : left <= 2 ? 'close' : '', html: `<div class="what"><b>${title}</b>
+    <div style="font:700 24px Fredoka,sans-serif;margin-top:4px;color:${lost ? 'var(--bad)' : 'var(--good)'}">${lost ? 'Not this month' : 'Still on! Keep it up!'}</div>
+    <div class="help" style="margin:6px 0 0">${xs === 0 ? 'No X’s this month. Great job!' : `${xs} X${xs > 1 ? '’s' : ''} this month.`} ${lim} X’s means no ${esc(C.reward || 'reward')}.</div><div class="xs">${circles}</div></div>
+    <button class="say" data-say="${esc(lost ? `No ${C.reward} this month.` : `${C.reward}: still on! You have ${xs} X${xs === 1 ? '' : 's'} this month. ${lim} X's means no ${C.reward}.`)}" aria-label="Hear it">🔊</button>` };
+  return { cls: lost ? 'lost' : left <= 2 ? 'close' : '', html: `<div class="big">${xs}<small> / ${lim} X’s</small></div>
+    <div class="what"><b>${title} · ${esc(monthName(mk))}</b>${lost ? `<span class="pill bad">No ${esc(C.reward)} this month</span>` : `<span class="pill ${left <= 2 ? 'warn' : 'ok'}">Still on: ${left} more X${left > 1 ? '’s' : ''} and it’s gone</span>`}<div class="xs">${circles}</div></div>` };
+}
+
+/* ---------- grown-up screen ---------- */
+function renderParent() {
+  const rw = rewardHtml(false); $('pReward').className = 'card reward ' + rw.cls; $('pReward').innerHTML = rw.html;
+  const sun = view.week, sat = addDays(sun, 6), t = todayS(), days = Array.from({ length: 7 }, (_, i) => addDays(sun, i));
+  $('weekTitle').textContent = sun === sundayOf(t) ? `This week · ${short(sun)} – ${short(sat)}` : `Week of ${short(sun)} – ${short(sat)}`;
+  $('wkNext').disabled = sun >= sundayOf(t);
+  const cell = (c, s, label) => {
+    if (!activeOn(c, s)) return `<button class="cellb off" disabled aria-label="${esc(c.name)} wasn’t a chore then"></button>`;
+    const m = markAt(s, c.id), future = c.kind === 'weekly' ? sundayOf(s) > t : s > t;
+    if (future) return `<button class="cellb future" disabled aria-label="${esc(c.name)}, ${esc(label)}: not yet"></button>`;
+    const cls = m ? m.s : s < t && (c.kind === 'daily' || s < t) ? 'wait' : '';
+    const txt = m ? (m.s === 'ok' ? '✓' : `✗<small>${m.why === 'wrong' ? 'not right' : ''}</small>`) : cls === 'wait' ? '?' : '';
+    return `<button class="cellb ${cls}" data-s="${s}" data-id="${esc(c.id)}" aria-label="${esc(c.name)}, ${esc(label)}: ${m ? (m.s === 'ok' ? 'done' : whyText(m)) : 'not marked'}">${txt}</button>`;
+  };
+  const daily = C.chores.filter(c => c.kind === 'daily' && days.some(s => activeOn(c, s)));
+  const weekly = C.chores.filter(c => c.kind === 'weekly' && activeOn(c, sat));
+  let h = `<tr><th></th>${days.map((s, i) => `<th class="${s === t ? 'today' : ''}"><span>${DOW[i]}</span><small>${toDate(s).getDate()}</small></th>`).join('')}</tr>`;
+  h += daily.map(c => `<tr><td class="name"><span class="ic">${esc(c.icon)}</span>${esc(c.name)}</td>${days.map(s => `<td>${cell(c, s, dayName(s))}</td>`).join('')}</tr>`).join('');
+  if (weekly.length) h += `<tr><th colspan="8" style="text-align:left;padding-top:10px">Weekly · due Saturday night (${short(sat)})</th></tr>` +
+    weekly.map(c => `<tr><td class="name"><span class="ic">${esc(c.icon)}</span>${esc(c.name)}</td><td colspan="2" class="wk-cell">${cell(c, sat, 'week of ' + short(sun))}</td><td colspan="5" class="pts" style="text-align:left">${c.pts} points</td></tr>`).join('');
+  $('grid').innerHTML = h;
+  $('allToday').hidden = !(t >= sun && t <= sat);
+  const w = weekStats(sun);
+  $('weekTotals').innerHTML = `<div>Daily points <b>${w.dEarn}</b> / ${w.dPos}</div><div>Weekly points <b>${w.wEarn}</b> / ${w.wPos}</div><div>Total <b>${w.dEarn + w.wEarn}</b> / ${w.dPos + w.wPos}</div><div style="color:${w.xs ? 'var(--bad)' : 'var(--good)'}">X’s this week <b>${w.xs}</b></div>${w.open ? `<div style="color:var(--try)">Not marked yet <b>${w.open}</b></div>` : ''}`;
+  renderMonth(); renderEditor();
+}
+function renderMonth() {
+  const mk = view.month, xs = xsInMonth(mk), lim = C.limit || 8, t = todayS();
+  $('monthTitle').textContent = `Misses · ${monthName(mk)}`;
+  $('moNext').disabled = mk >= monthKey(t);
+  const by = {}; xs.forEach(x => (by[x.id] = by[x.id] || []).push(x));
+  const shown = C.chores.filter(c => activeOn(c, mk + '-28') || activeOn(c, mk + '-01') || by[c.id]).map(c => c.id);
+  Object.keys(by).forEach(id => { if (!shown.includes(id)) shown.push(id); });
+  const rows = shown.map(id => ({ c: choreById(id), list: by[id] || [] })).sort((a, b) => b.list.length - a.list.length);
+  const open = unmarkedIn(mk);
+  const weeks = []; for (let s = sundayOf(mk + '-01'); s <= addDays(mk + '-01', 40) && (monthKey(s) <= mk); s = addDays(s, 7)) { if (monthKey(addDays(s, 6)) < mk) continue; weeks.push(s); }
+  $('monthBody').innerHTML = `<p class="help">${xs.length} X${xs.length === 1 ? '' : '’s'} in ${esc(monthName(mk))}${xs.length >= lim ? ` · <b style="color:var(--bad)">no ${esc(C.reward)} (${lim} X’s reached)</b>` : mk === monthKey(t) ? ` · ${lim - xs.length} more and there’s no ${esc(C.reward)}` : ` · ${esc(C.reward)} earned`}.${open ? ` <span style="color:var(--try)">${open} box${open > 1 ? 'es' : ''} not marked yet.</span>` : ''}</p>
+    ${rows.map(r => `<div class="miss"><div class="n ${r.list.length ? '' : 'zero'}">${r.list.length ? r.list.length : '✓'}</div><div class="body"><b>${esc(r.c.icon)} ${esc(r.c.name)}</b><div>${r.list.length ? r.list.map(x => `${esc(r.c.kind === 'weekly' ? 'week of ' + short(sundayOf(x.s)) : dayName(x.s))} (${whyText(x.m)})`).join(' · ') : 'No misses'}</div></div></div>`).join('')}
+    <h3>By week</h3><div class="weeks">${weeks.map(s => { const w = weekStats(s); return `<div><b>${short(s)} – ${short(addDays(s, 6))}</b>${s > t ? 'coming up' : `${w.dEarn + w.wEarn} / ${w.dPos + w.wPos} points · ${w.xs} X${w.xs === 1 ? '' : '’s'}`}</div>`; }).join('')}</div>`;
+}
+
+/* ✓ / ✗ menu */
+let menuFor = null;
+function openMenu(btn) {
+  const s = btn.dataset.s, c = choreById(btn.dataset.id), m = markAt(s, c.id), menu = $('menu');
+  menuFor = { s, id: c.id };
+  menu.innerHTML = `<div class="t">${esc(c.icon)} ${esc(c.name)} · ${esc(c.kind === 'weekly' ? 'week of ' + short(sundayOf(s)) : dayName(s))}</div>
+    <button class="btn m-ok" data-v="ok">✓ Done</button><button class="btn m-x" data-v="x" data-why="not">✗ Not done</button><button class="btn m-x" data-v="x" data-why="wrong">✗ Not done right</button>${m ? '<button class="btn" data-v="clear">Clear this box</button>' : ''}`;
+  menu.hidden = false;
+  const r = btn.getBoundingClientRect(), mw = menu.offsetWidth, mh = menu.offsetHeight;
+  menu.style.left = Math.max(8, Math.min(innerWidth - mw - 8, r.left + r.width / 2 - mw / 2)) + 'px';
+  menu.style.top = (r.bottom + mh + 8 < innerHeight ? r.bottom + 6 : Math.max(8, r.top - mh - 6)) + 'px';
+  menu.querySelector('button').focus();
+}
+const closeMenu = () => { $('menu').hidden = true; menuFor = null; };
+$('menu').addEventListener('click', e => {
+  const b = e.target.closest('button[data-v]'); if (!b || !menuFor) return;
+  const { s, id } = menuFor; closeMenu();
+  setMark(s, id, b.dataset.v === 'clear' ? null : b.dataset.v, b.dataset.why);
+});
+document.addEventListener('click', e => { if (!$('menu').hidden && !e.target.closest('#menu') && !e.target.closest('.cellb')) closeMenu(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+$('grid').addEventListener('click', e => { const b = e.target.closest('.cellb[data-s]'); if (b) openMenu(b); });
+$('allToday').onclick = () => {
+  const t = todayS(), left = C.chores.filter(c => c.kind === 'daily' && activeOn(c, t) && !markAt(t, c.id));
+  if (!left.length) return status('Everything today is already marked.');
+  if (!confirm(`Mark ${left.length} chore${left.length > 1 ? 's' : ''} done today?\n\n${left.map(c => c.name).join('\n')}`)) return;
+  C.marks[t] = C.marks[t] || {}; left.forEach(c => { C.marks[t][c.id] = { s: 'ok', at: Date.now(), by: me }; });
+  queueSave(); render();
+};
+$('wkPrev').onclick = () => { view.week = addDays(view.week, -7); render(); };
+$('wkNext').onclick = () => { view.week = addDays(view.week, 7); render(); };
+$('wkNow').onclick = () => { view.week = sundayOf(todayS()); render(); };
+$('moPrev').onclick = () => { view.month = addMonths(view.month, -1); render(); };
+$('moNext').onclick = () => { view.month = addMonths(view.month, 1); render(); };
+$('moNow').onclick = () => { view.month = monthKey(todayS()); render(); };
+
+/* change the chores */
+let draft = null;
+function renderEditor() {
+  if ($('editBox').open && draft) return;   // don't wipe what you're typing
+  draft = { reward: C.reward, limit: C.limit, chores: C.chores.filter(c => !c.to || c.to >= todayS()).map(c => ({ ...c })) };
+  drawRows();
+}
+function drawRows() {
+  $('choreRows').innerHTML = draft.chores.map((c, i) => `<div class="chore-row"><input class="ic" data-f="icon" data-i="${i}" value="${esc(c.icon)}" aria-label="Picture"><input data-f="name" data-i="${i}" value="${esc(c.name)}" aria-label="Chore"><select data-f="kind" data-i="${i}" aria-label="How often"><option value="daily" ${c.kind === 'daily' ? 'selected' : ''}>Daily</option><option value="weekly" ${c.kind === 'weekly' ? 'selected' : ''}>Weekly</option></select><input type="number" min="0" max="99" data-f="pts" data-i="${i}" value="${c.pts}" aria-label="Points"><button class="btn small rm" data-rm="${i}">Remove</button></div>`).join('');
+  $('rewardIn').value = draft.reward || ''; $('limitIn').value = draft.limit || 8;
+}
+$('editBox').addEventListener('toggle', () => { if ($('editBox').open) { draft = null; renderEditor(); } });
+$('choreRows').addEventListener('input', e => { const el = e.target, i = +el.dataset.i; if (!draft.chores[i]) return; draft.chores[i][el.dataset.f] = el.dataset.f === 'pts' ? Math.max(0, +el.value || 0) : el.value; });
+$('choreRows').addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (!b) return; draft.chores.splice(+b.dataset.rm, 1); drawRows(); });
+const addChore = kind => { draft.chores.push({ id: 'c' + Date.now().toString(36), name: '', icon: kind === 'weekly' ? '📅' : '⭐', kind, pts: kind === 'weekly' ? 5 : 1, from: todayS(), isNew: true }); drawRows(); $('choreRows').querySelector('.chore-row:last-child [data-f="name"]').focus(); };
+$('addDaily').onclick = () => addChore('daily');
+$('addWeekly').onclick = () => addChore('weekly');
+$('saveChores').onclick = () => {
+  const t = todayS(), keep = draft.chores.filter(c => c.name.trim());
+  const out = [];
+  C.chores.forEach(old => {   // removed chores end yesterday, so their past boxes still count; never-used ones just go
+    const now = keep.find(c => c.id === old.id);
+    if (now) out.push({ ...old, name: now.name.trim(), icon: now.icon.trim() || '⭐', pts: now.pts, kind: now.kind });
+    else if (old.to && old.to < t) out.push(old);
+    else { const used = Object.values(C.marks).some(d => d[old.id] && d[old.id].s); if (used) out.push({ ...old, to: addDays(t, -1) }); }
+  });
+  keep.filter(c => c.isNew).forEach(c => { const { isNew, ...rest } = c; out.push({ ...rest, name: c.name.trim(), icon: c.icon.trim() || '⭐', from: t }); });
+  C.chores = out; C.reward = $('rewardIn').value.trim() || 'Monthly reward'; C.limit = Math.max(1, Math.min(99, +$('limitIn').value || 8)); C.setAt = Date.now();
+  $('editStatus').textContent = 'Saved ✓'; setTimeout(() => { $('editStatus').textContent = ''; }, 2500);
+  $('editBox').open = false; draft = null; queueSave(0); render();
+};
+
+/* ---------- his screen ---------- */
+function renderKid() {
+  const rw = rewardHtml(true); $('kReward').className = 'card reward ' + rw.cls; $('kReward').innerHTML = rw.html;
+  const t = todayS(), sat = satOf(t);
+  const row = (c, s) => { const m = markAt(s, c.id);
+    const st = m ? (m.s === 'ok' ? '✓ Done!' : `✗<small>${whyText(m)}</small>`) : `<small>${c.kind === 'weekly' ? 'by Saturday night' : 'Mom or Dad will check'}</small>`;
+    const spoken = `${c.name}. ${m ? (m.s === 'ok' ? 'Done!' : whyText(m)) : c.kind === 'weekly' ? 'Do it by Saturday night.' : 'Mom or Dad will check it.'}`;
+    return `<div class="kidchore ${m ? m.s : ''}"><span class="ic">${esc(c.icon)}</span><span class="nm">${esc(c.name)}</span><span class="st">${st}</span><button class="say" data-say="${esc(spoken)}" aria-label="Hear it">🔊</button></div>`; };
+  $('kTodayH').textContent = `Today · ${toDate(t).toLocaleDateString(undefined, { weekday: 'long' })}`;
+  const daily = C.chores.filter(c => c.kind === 'daily' && activeOn(c, t)), weekly = C.chores.filter(c => c.kind === 'weekly' && activeOn(c, sat));
+  $('kToday').innerHTML = daily.map(c => row(c, t)).join('') || '<p class="help">No chores today.</p>';
+  $('kWeekly').innerHTML = weekly.map(c => row(c, sat)).join('') || '<p class="help">No weekly chores.</p>';
+  const w = weekStats(sundayOf(t));
+  $('kTotals').innerHTML = `<div>⭐ Points this week <b>${w.dEarn + w.wEarn}</b> / ${w.dPos + w.wPos}</div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-say]'); if (!b || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(b.dataset.say); u.rate = 0.9; speechSynthesis.speak(u);
+});
+
+/* ---------- start ---------- */
+function render() {
+  if (!C) return;
+  if (role === 'grownup') renderParent(); else if (role === 'kid') renderKid();
+  if (EMBED) try { parent.postMessage({ studyH: document.documentElement.scrollHeight }, location.origin); } catch (e) { }
+}
+function showOnly(id) { ['parent', 'kid', 'msg'].forEach(x => $(x).hidden = x !== id); document.body.classList.remove('authwait'); }
+function showMsg(h, p) { $('msgH').textContent = h; $('msgP').innerHTML = p; showOnly('msg'); }
+if (EMBED) new ResizeObserver(() => { try { parent.postMessage({ studyH: document.documentElement.scrollHeight }, location.origin); } catch (e) { } }).observe(document.body);
+(async () => {
+  if (!window.supabase || !window.supabase.createClient) {   // offline: show the last copy this device saw
+    if (C) { try { role = localStorage.getItem('study-role') === 'grownup' ? 'grownup' : 'kid'; } catch (e) { role = 'kid'; } showOnly(role === 'kid' ? 'kid' : 'parent'); render(); status('Offline: showing the last saved chart. Changes can’t be saved right now.', true); return; }
+    return showMsg('Can’t reach the Study right now', 'Check the internet and reload this page.');
+  }
+  sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } });
+  let session = null;
+  try { session = (await sb.auth.getSession()).data.session; } catch (e) { }
+  if (!session) { location.replace('spell.html?next=chores.html'); return; }
+  me = session.user.email.toLowerCase();
+  try { const { data, error } = await sb.from('study_members').select('role').eq('email', me).maybeSingle(); if (error) throw error; role = data ? data.role : null; }
+  catch (e) { return showMsg('Couldn’t open the chore chart', `The Study didn’t answer (${esc(e.message || e)}). <a href="">Try again</a>`); }
+  if (!role) { location.replace('spell.html'); return; }
+  try { localStorage.setItem('study-role', role); } catch (e) { }
+  document.body.classList.toggle('kid', role === 'kid');
+  if (role === 'kid') { $('backBtn').href = 'spell.html'; $('backBtn').textContent = '← My Agenda'; $('appTitle').textContent = '🧹 My Chores'; }
+  try { await pull(); } catch (e) { if (!C) return showMsg('Couldn’t load the chore chart', `${esc(e.message || e)}. <a href="">Try again</a>`); }
+  showOnly(role === 'kid' ? 'kid' : 'parent'); render();
+  const refresh = async () => { if (document.hidden || saving || !$('menu').hidden) return; try { await pull(); render(); } catch (e) { } };
+  document.addEventListener('visibilitychange', refresh);
+  setInterval(refresh, 60000);
+})();
+</script>
+<script src="/nav.js" defer></script>
+</body>
+</html>

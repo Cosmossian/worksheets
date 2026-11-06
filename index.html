@@ -306,6 +306,7 @@ select::-ms-expand { display: none; }
   <button role="tab" data-tool="fixup">Spelling Fix-Up</button>
   <button role="tab" data-tool="question">What Is the Question Asking?</button>
   <button role="tab" data-tool="steps">Daily Steps Chart</button>
+  <button role="tab" data-tool="chores">🧹 Chore Chart</button>
   <button role="tab" data-tool="eagles">Count the Eagles</button>
   <button role="tab" data-tool="weather">My Weather Watch</button>
 </nav>
@@ -1149,7 +1150,7 @@ const CLASSES = [
   { id: 'pe', name: 'PE', icon: '🏃', tools: [] },
   { id: 'science', name: 'Science', icon: '🔬', tools: ['weather'] },
   { id: 'social', name: 'Social Studies', icon: '🌎', tools: [] },
-  { id: 'every', name: 'Every Day', icon: '📋', tools: ['steps'] }
+  { id: 'every', name: 'Every Day', icon: '📋', tools: ['steps', 'chores'] }
 ];
 const classOf = t => (CLASSES.find(c => c.tools.includes(t)) || CLASSES[3]).id;
 /* What's on his day right now (so you don't assign the same thing twice): tags on the tabs and dots on the classes */
@@ -1186,7 +1187,7 @@ async function openDay() {
   const sb = await studySession();
   if (!sb) { list.innerHTML = '<p class="help">Sign in first to see his day.</p>'; return; }
   try {
-    const { data: st } = await sb.from('study_state').select('key,data').in('key', ['daily', 'sheets', 'spellq', 'sightbank', 'points', 'profile']);
+    const { data: st } = await sb.from('study_state').select('key,data').in('key', ['daily', 'sheets', 'spellq', 'sightbank', 'points', 'profile', 'chores']);
     const S = Object.fromEntries((st || []).map(r => [r.key, r.data]));
     const start = new Date(); start.setHours(0, 0, 0, 0);
     const { data: logs } = await sb.from('study_log').select('kind,t,data').gte('t', new Date(Date.now() - 30 * 864e5).toISOString());
@@ -1212,6 +1213,14 @@ async function openDay() {
       items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'steps' || a.tool === 'weather' ? 'done today' : 'done'}` : 'not done yet', ok: !!mine,
         acts: a.tool === 'fixup' ? '' : `<button class="btn btn-small" data-tryday="${k}">Try it</button>` });
     });
+    const ch = S.chores;
+    if (ch && ch.chores) {   // the chore chart (grown-ups check these off; his device only shows them)
+      const td = dayOf(Date.now()), on = c => (c.from || '') <= td && (!c.to || td <= c.to), mk = td.slice(0, 7);
+      const daily = ch.chores.filter(c => c.kind === 'daily' && on(c)), mt = (ch.marks || {})[td] || {};
+      const done = daily.filter(c => mt[c.id] && mt[c.id].s === 'ok').length, xd = daily.filter(c => mt[c.id] && mt[c.id].s === 'x').length;
+      const xs = Object.keys(ch.marks || {}).filter(s => s.slice(0, 7) === mk).reduce((n, s) => n + Object.values(ch.marks[s]).filter(m => m && m.s === 'x').length, 0), lim = ch.limit || 8;
+      items.push({ title: `🧹 Chores today · ${daily.length}`, sub: `${esc(daily.map(c => c.name).join(', '))}<br>X’s this month: ${xs} of ${lim}${xs >= lim ? ` (no ${esc(ch.reward)} this month)` : ''}`, st: `${done} ✓${xd ? ` · ${xd} ✗` : ''} · ${daily.length - done - xd} not marked`, ok: done + xd === daily.length, acts: '<button class="btn btn-small" data-goto="chores">Check off chores</button>' });
+    }
     list.innerHTML = items.length ? items.map((it, i) => `<div class="dayitem${it.off ? ' off' : ''}"><span class="n">${i + 1}</span><div class="body"><b>${it.title}</b><div class="sub">${it.sub}</div>${it.acts ? `<div class="acts2">${it.acts}</div>` : ''}</div><span class="st${it.ok ? ' ok' : ''}">${it.st}</span></div>`).join('')
       : '<p class="help">Nothing on his device yet. Type today’s sight words (Phonics → Daily Sight Words) or assign a worksheet.</p>';
     list.onclick = async e => {
@@ -1225,7 +1234,7 @@ async function openDay() {
         return openDay();
       }
       const go = e.target.closest('[data-goto]');
-      if (go) { document.getElementById('dayWrap').hidden = true; state.tool = go.dataset.goto; state.cls = 'phonics'; save(); history.replaceState(null, '', '#' + state.tool); return renderPanel(); }
+      if (go) { document.getElementById('dayWrap').hidden = true; state.tool = go.dataset.goto; state.cls = classOf(state.tool); save(); history.replaceState(null, '', '#' + state.tool); return renderPanel(); }
       const b = e.target.closest('[data-tryday]'); if (!b) return; const a = S.sheets.list[+b.dataset.tryday]; lsSet('study-sheet-try', { ...a, id: 'try' }); window.open('do.html?try=1', '_blank'); };
   } catch (e) { list.innerHTML = `<p class="help">Couldn’t load his day right now (${esc(e.message || e)}).</p>`; }
 }
@@ -1234,7 +1243,8 @@ document.getElementById('dayClose').onclick = () => { document.getElementById('d
 document.getElementById('dayWrap').onclick = e => { if (e.target.id === 'dayWrap') e.target.hidden = true; };
 document.getElementById('switchUser').onclick = async () => { try { const sb = sbClient(); if (sb) await sb.auth.signOut(); } catch (e) { } location.href = 'spell.html'; };
 
-const EMBED = { daily: 'Daily Sight Words', helper: 'Spelling Helper' };
+const EMBED = { daily: 'Daily Sight Words', helper: 'Spelling Helper', chores: 'Chore Chart' };
+const embedSrc = t => t === 'chores' ? 'chores.html?embed=1' : `spell.html?embed=1#${t}`;
 let frame = null;
 // the page inside tells us its height, and when to go full screen (while he's doing the words) and back
 window.addEventListener('message', e => {
@@ -1255,7 +1265,7 @@ function renderPanel() {
   if (EMBED[t]) {   // Daily Sight Words / Spelling Helper: their page, shown right here (it goes full screen while he works)
     document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tool === t));
     ws.classList.add('embedded');
-    if (!frame || frame.dataset.tool !== t) { $preview.innerHTML = `<iframe class="embed" id="embedFrame" data-tool="${t}" title="${esc(EMBED[t])}" src="spell.html?embed=1#${t}"></iframe>`; frame = document.getElementById('embedFrame'); }
+    if (!frame || frame.dataset.tool !== t) { $preview.innerHTML = `<iframe class="embed" id="embedFrame" data-tool="${t}" title="${esc(EMBED[t])}" src="${embedSrc(t)}"></iframe>`; frame = document.getElementById('embedFrame'); }
     return;
   }
   ws.classList.remove('embedded'); frame = null;
@@ -1469,7 +1479,7 @@ if (fromLink.get('fixup')) {
   history.replaceState(null, '', location.pathname + '#fixup');
 }
 const fromHash = location.hash.slice(1);
-if (['daily', 'helper', 'sight', 'master', 'fixup', 'question', 'steps', 'eagles', 'weather'].includes(fromHash)) { state.tool = fromHash; state.cls = classOf(fromHash); }
+if (['daily', 'helper', 'sight', 'master', 'fixup', 'question', 'steps', 'eagles', 'weather', 'chores'].includes(fromHash)) { state.tool = fromHash; state.cls = classOf(fromHash); }
 else if (CLASSES.some(c => c.id === fromHash)) state.cls = fromHash;
 renderPanel();
 // The Worksheets page is for grown-ups: nobody signed in → the Parent / Child screen; his login → his start screen.
