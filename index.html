@@ -1015,7 +1015,36 @@ function panelMaster() {
   <div class="field"><label for="mWords">Mastered words</label><textarea id="mWords" rows="2">${esc(st.words)}</textarea><small>Separate with commas or spaces. Up to 6.</small></div>
   <div class="field"><span class="lbl">Picture sentences</span><small>Change a sentence or picture if you like. Leave a sentence blank to skip that word in this part.</small></div>
   <div id="cards">${wordCards('master')}</div>
-  ${printBlock(true)}`;
+  ${printBlock(true)}
+  <div class="onscreen mtest"><h3>⭐ Mastered Words Test</h3><p class="help" style="margin:0 0 8px">For Fridays. Picks 6 random words from his <b>Mastered</b> list (Daily Sight Words). It’s harder than the daily quiz: no sentence, and he can hear each word only 2 times. Right = “Mastered, confirmed” and +5 points. Wrong = −3 points and the word goes back to the front of his word bank.</p>
+    <div class="btn-row"><button class="btn btn-assign" id="mtAssign">Assign the test to his device</button><button class="btn btn-small" id="mtTry">Try it on screen</button></div>
+    <div class="assign-msg" id="mtMsg"></div></div>`;
+}
+/* Mastered Words Test: 6 random words from his mastered list (study_state "sightbank", kept by the Spelling Helper) */
+async function mtestSnap() {
+  const sb = await studySession(); if (!sb) return { need: 'Sign in first (Phonics → Daily Sight Words, “Shared across devices”).' };
+  const { data, error } = await sb.from('study_state').select('data').eq('key', 'sightbank').maybeSingle();
+  if (error) return { need: 'Couldn’t load his mastered words: ' + esc(error.message) };
+  const m = ((data && data.data && data.data.mastered) || []).map(x => x.w);
+  if (!m.length) return { need: 'He has no mastered words yet. Words move to Mastered when he spells them right on the daily quiz.' };
+  const pick = [...m].sort(() => Math.random() - 0.5).slice(0, 6);
+  return { sb, ok: true, title: TOOL_NAMES.mtest, data: { words: pick } };
+}
+function wireMtest() {
+  const msg = (h, bad) => { const el = document.getElementById('mtMsg'); el.innerHTML = h; el.style.color = bad ? 'var(--warn-ink)' : '#34D399'; };
+  document.getElementById('mtAssign').onclick = async () => {
+    msg('Picking 6 words…'); const s = await mtestSnap(); if (!s.ok) return msg(s.need, true);
+    try {
+      const list = (await loadSheets(s.sb)).filter(a => a.tool !== 'mtest');   // only one test on his day at a time
+      list.push({ id: Date.now().toString(36), tool: 'mtest', title: s.title, at: Date.now(), data: s.data });
+      await saveSheets(s.sb, list.slice(-12));
+      msg(`Assigned ✓ The test is on his start screen (${esc(s.data.words.join(', '))}).`); refreshOnDay();
+    } catch (e) { msg(`Couldn’t assign it: ${esc(e.message || e)}`, true); }
+  };
+  document.getElementById('mtTry').onclick = async () => {
+    const s = await mtestSnap(); if (!s.ok) return msg(s.need, true);
+    lsSet('study-sheet-try', { id: 'try', tool: 'mtest', title: s.title, at: Date.now(), data: s.data }); window.open('do.html?try=1', '_blank');
+  };
 }
 /* Latest daily sight word check from the Spelling Helper (spell.html saves it in this browser) */
 function latestCheck() { try { return JSON.parse(localStorage.getItem('spell-check-latest') || 'null'); } catch (e) { return null; } }
@@ -1123,13 +1152,14 @@ const CLASSES = [
 const classOf = t => (CLASSES.find(c => c.tools.includes(t)) || CLASSES[3]).id;
 /* What's on his day right now (so you don't assign the same thing twice): tags on the tabs and dots on the classes */
 let onDay = null;
+const bankWords = b => b && Array.isArray(b.current) && b.current.length ? b.current.map(c => c.w) : null;   // his 6 words from the word bank
 async function refreshOnDay(sheetList) {
   const sb = await studySession(); if (!sb) return;
   try {
-    const { data } = await sb.from('study_state').select('key,data').in('key', sheetList ? ['daily', 'spellq'] : ['daily', 'spellq', 'sheets']);
+    const { data } = await sb.from('study_state').select('key,data').in('key', sheetList ? ['daily', 'spellq', 'sightbank'] : ['daily', 'spellq', 'sheets', 'sightbank']);
     const S = Object.fromEntries((data || []).map(r => [r.key, r.data]));
     const list = sheetList || ((S.sheets && S.sheets.list) || []), d = S.daily || {};
-    onDay = { tools: new Set(list.map(a => a.tool)), daily: d.on !== false && parseWords(d.words || '').length > 0, spellq: !!(S.spellq && S.spellq.words && S.spellq.words.length) };
+    onDay = { tools: new Set(list.map(a => a.tool === 'mtest' ? 'master' : a.tool)), daily: d.on !== false && (bankWords(S.sightbank) || parseWords(d.words || '')).length > 0, spellq: !!(S.spellq && S.spellq.words && S.spellq.words.length) };
     renderClasses();
   } catch (e) { }
 }
@@ -1154,14 +1184,16 @@ async function openDay() {
   const sb = await studySession();
   if (!sb) { list.innerHTML = '<p class="help">Sign in first to see his day.</p>'; return; }
   try {
-    const { data: st } = await sb.from('study_state').select('key,data').in('key', ['daily', 'sheets', 'spellq']);
+    const { data: st } = await sb.from('study_state').select('key,data').in('key', ['daily', 'sheets', 'spellq', 'sightbank', 'points', 'profile']);
     const S = Object.fromEntries((st || []).map(r => [r.key, r.data]));
     const start = new Date(); start.setHours(0, 0, 0, 0);
     const { data: logs } = await sb.from('study_log').select('kind,t,data').gte('t', new Date(Date.now() - 30 * 864e5).toISOString());
     const L = (logs || []).map(r => ({ kind: r.kind, ...r.data, t: r.data.t || Date.parse(r.t) }));
     const today = x => x.t >= start.getTime();
     const items = [];
-    const d = S.daily || {}, words = parseWords(d.words || '');
+    const d = S.daily || {}, words = bankWords(S.sightbank) || parseWords(d.words || '');
+    const plog = (S.points && S.points.log) || [], ptot = plog.reduce((a, e) => a + (e.pts || 0), 0), ptoday = plog.filter(today).reduce((a, e) => a + (e.pts || 0), 0);
+    if (plog.length) items.push({ title: `⭐ ${esc((S.profile && S.profile.name) || 'His')} points: ${ptot}`, sub: `Today: ${ptoday >= 0 ? '+' : ''}${ptoday}. Every point, day by day, is in Parent Review (Daily Sight Words → Parent Review).`, st: '', ok: true });
     if (words.length) {
       const steps = [d.look !== false ? `Look &amp; Listen (3 rounds${d.mic !== false ? ', with the microphone' : ''})` : '', d.practice !== false ? 'practice each word with the Spelling Helper' : '', 'the check (spoken words, letter grade)'].filter(Boolean).join(' → ');
       const chk = L.filter(x => x.kind === 'check' && today(x) && x.t > (d.resetAt || 0)).sort((a, b) => b.t - a.t)[0];
@@ -1175,7 +1207,7 @@ async function openDay() {
     ((S.sheets && S.sheets.list) || []).forEach((a, k) => {
       const mine = L.filter(x => (x.aid || x.cid) === a.id && (!['steps', 'weather'].includes(a.tool) || today(x))).sort((x, y) => y.t - x.t)[0];
       const g = mine && mine.grade;
-      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc((CLASSES.find(c => c.tools.includes(a.tool)) || {}).name || '')} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'steps' || a.tool === 'weather' ? 'done today' : 'done'}` : 'not done yet', ok: !!mine,
+      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'steps' || a.tool === 'weather' ? 'done today' : 'done'}` : 'not done yet', ok: !!mine,
         acts: a.tool === 'fixup' ? '' : `<button class="btn btn-small" data-tryday="${k}">Try it</button>` });
     });
     list.innerHTML = items.length ? items.map((it, i) => `<div class="dayitem${it.off ? ' off' : ''}"><span class="n">${i + 1}</span><div class="body"><b>${it.title}</b><div class="sub">${it.sub}</div>${it.acts ? `<div class="acts2">${it.acts}</div>` : ''}</div><span class="st${it.ok ? ' ok' : ''}">${it.st}</span></div>`).join('')
@@ -1227,6 +1259,7 @@ function renderPanel() {
   ws.classList.remove('embedded'); frame = null;
   $panel.innerHTML = { sight: panelSight, master: panelMaster, fixup: panelFixup, question: panelQuestion, steps: panelSteps, eagles: panelEagles, weather: panelWeather }[t]() + onScreenBlock();
   if (t === 'weather') wireWeather();
+  if (t === 'master') wireMtest();
   wireOnScreen();
   document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tool === t));
   document.getElementById('printBtn').onclick = () => window.print();
@@ -1238,7 +1271,7 @@ function renderPanel() {
    His start screen in the Spelling Helper shows each one as a button; do.html runs it (fixup.html for Spelling Fix-Up). */
 const SB_URL = 'https://wpgclwmssnmiidvnekml.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZ2Nsd21zc25taWlkdm5la21sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzE4NDUsImV4cCI6MjEwOTE0Nzg0NX0.o19X9l7zS1bk34DpR3id0gt6mAB42ZZb6olRr8ohzTc';
-const TOOL_NAMES = { sight: 'Sight Word Practice', master: 'Word Master Challenge', fixup: 'Spelling Fix-Up', question: 'What Is the Question Asking?', steps: 'Daily Steps', eagles: 'Count the Eagles', weather: 'My Weather Watch' };
+const TOOL_NAMES = { sight: 'Sight Word Practice', master: 'Word Master Challenge', fixup: 'Spelling Fix-Up', question: 'What Is the Question Asking?', steps: 'Daily Steps', eagles: 'Count the Eagles', weather: 'My Weather Watch', mtest: 'Mastered Words Test' };
 let sbc = null;
 const sbClient = () => sbc || (window.supabase && window.supabase.createClient ? (sbc = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } })) : null);
 const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };

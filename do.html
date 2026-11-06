@@ -146,6 +146,8 @@ body.inpart .prog { margin: 0 auto; }
 /* his login stays in the Study: the top bar keeps the logo (not a link) and drops the links to the other sections */
 body.kid #tod-nav .tod-links { display: none !important; }
 body.kid #tod-nav .tod-home { pointer-events: none; }
+.sumlist .res .mark { min-width: 40px; }
+.mt-pts { font: 700 30px Fredoka, sans-serif; color: #FDE68A; } .mt-pts.neg { color: #FCA5A5; }
 .nextbar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--surface); border: 2px solid var(--study); border-radius: 999px; padding: 10px 22px; display: flex; align-items: center; gap: 14px; z-index: 60; font: 600 18px Fredoka, sans-serif; box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
 .nextbar i { width: 140px; height: 12px; border-radius: 999px; background: var(--field); overflow: hidden; display: block; }
 .nextbar b { display: block; height: 100%; width: 0; background: var(--good); border-radius: 999px; animation: nextfill linear forwards; }
@@ -663,7 +665,7 @@ function askSure(typed) {
    practice: a wrong answer is cleared and he tries again (after 2 misses it spells it out, then he types it). Resolves when right.
    test: "Done" asks "Are you sure?", and that answer is final.
    Resolves { typed (his first answer), ok (right the first time), tries }. */
-function freeType({ answer, test = false, match = (a, b) => norm(a) === norm(b), hint = 'Not quite. Look closely and try again.' }) {
+function freeType({ answer, test = false, reveal = true, match = (a, b) => norm(a) === norm(b), hint = 'Not quite. Look closely and try again.' }) {
   return new Promise(resolve => {
     let typed = '', tries = 0, first = null; const attempts = [];
     const space = /\s/.test(answer);
@@ -679,7 +681,7 @@ function freeType({ answer, test = false, match = (a, b) => norm(a) === norm(b),
       if (test) {
         if (!(await askSure(t))) return;
         onKey = null; const ok = match(t, answer);
-        $('ans').innerHTML = boxes(t, ok ? 'rightl' : 'wrongl'); $('doneBtn').disabled = true; $('backBtn').disabled = true;
+        $('ans').innerHTML = boxes(t, !reveal ? 'typed' : ok ? 'rightl' : 'wrongl'); $('doneBtn').disabled = true; $('backBtn').disabled = true;
         return resolve({ typed: t, ok, tries: 0, attempts: [t] });
       }
       if (first === null) first = t; attempts.push(t);
@@ -1508,6 +1510,60 @@ function weatherResults() {
   saveAndSend(rec);
 }
 
+/* ================= Mastered Words Test (Fridays, assigned by a grown-up): words he already mastered, a little harder than the
+   daily quiz: no sentence, he can hear each word only 2 times, and no right/wrong until the end.
+   Right = "Mastered, confirmed" and +5 points. Wrong = −3 points and the word goes back to the front of his word bank. ================= */
+function mtestSheet() {
+  const words = (SD.words || []).map(w => String(w).toLowerCase());
+  const run = async () => {
+    await each(words.length, async i => {
+      const w = words[i]; let plays = 0;
+      app.innerHTML = head('Listen carefully, then spell it from memory. You can hear each word only 2 times!') + `<div class="count">Word ${i + 1} of ${words.length}</div>
+        <button class="btn big" id="hear">${SPK}Hear the word <small id="plays" style="opacity:.75">(2 left)</small></button><div id="io"></div>`;
+      const hear = () => { if (plays >= 2) return; plays++; playWord(w); $('plays').textContent = plays >= 2 ? '(no more)' : `(${2 - plays} left)`; if (plays >= 2) $('hear').disabled = true; };
+      $('hear').onclick = hear; hear();
+      const r = await freeType({ answer: displayWord(w), test: true, reveal: false });
+      mark('Mastered Words Test', displayWord(w), r.ok, r.typed, displayWord(w), w, { text: `He heard “${displayWord(w)}” (no sentence, ${plays} listen${plays > 1 ? 's' : ''}) and spelled it from memory.` }, r.attempts);
+      setMsg('Got it. On to the next one!');
+      await nextUp(1000, i < words.length - 1 ? 'Next word coming…' : 'Almost done…');
+    });
+    showResults();
+  };
+  PARTS = [{ name: 'Mastered Words Test', run }];
+  return { intro: `${words.length} words you already mastered. Show what you remember! No sentences this time, and you can hear each word only 2 times. Take your time and try your best.` };
+}
+const ymdD = d => { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+async function cloudState(key, data) {   // save Study state (his word bank / points) so every device sees it
+  try { const sb = sbClient(); if (!sb) return; const { data: s } = await sb.auth.getSession(); if (!s.session) return; await sb.from('study_state').upsert({ key, data, updated_at: new Date().toISOString() }); } catch (e) { }
+}
+async function mtestResults() {
+  onKey = null; partIdx = PARTS.length; renderProg(); document.body.classList.remove('inpart'); window.scrollTo(0, 0);
+  const t = Date.now(), day = ymdD(t), its = items.filter(x => x.part === 'Mastered Words Test');
+  let bank = store('sight-bank'), pts = store('study-points') || { log: [] };
+  if (!TRY) {   // start from the freshest copies, so nothing from another device gets lost
+    try { const sb = sbClient(); const { data: s } = await sb.auth.getSession(); if (s.session) { const { data } = await sb.from('study_state').select('key,data').in('key', ['sightbank', 'points']); (data || []).forEach(r => { if (r.key === 'sightbank') bank = r.data; if (r.key === 'points') pts = r.data || { log: [] }; }); } } catch (e) { }
+  }
+  const entries = its.map(x => ({ t, day, pts: x.ok ? 5 : -3, kind: 'mtest', word: x.word, why: x.ok ? `Still remembered “${x.word}” on the Mastered Words Test: confirmed` : `Missed mastered word “${x.word}” on the test (he put “${x.typed}”); it goes back to practice` }));
+  if (bank && Array.isArray(bank.mastered)) its.forEach(x => {
+    if (x.ok) { const m = bank.mastered.find(y => y.w === x.word); if (m) { m.confirmed = true; m.confirmedAt = day; } }
+    else { bank.mastered = bank.mastered.filter(y => y.w !== x.word); bank.bank = (bank.bank || []).filter(w => w !== x.word); if (!(bank.current || []).some(c => c.w === x.word)) bank.bank.unshift(x.word); }
+  });
+  const gained = entries.reduce((a, e) => a + e.pts, 0), right = its.filter(x => x.ok).length;
+  if (!TRY) { pts.log = [...(pts.log || []), ...entries].slice(-3000); store('study-points', pts); cloudState('points', pts); if (bank) { store('sight-bank', bank); cloudState('sightbank', bank); } }
+  const g = gradeFor(right, its.length);
+  app.innerHTML = `<div class="part-title"><h2>You finished the Mastered Words Test!</h2><p>${right} of ${its.length} still remembered.</p></div>
+    <div class="grade"><span class="letter" style="background:${g.color}">${g.letter}</span><span class="pct">${g.pct}%<small>${right} of ${its.length} right</small></span></div>
+    <div class="mt-pts ${gained < 0 ? 'neg' : ''}">⭐ ${gained >= 0 ? '+' : ''}${gained} points</div>
+    <div class="sumlist">${its.map(x => x.ok ? `<div class="res ok"><span class="mark">✓✓</span><div><div class="w">${esc(x.label)}</div><div class="his">Mastered, confirmed! +5</div></div></div>`
+      : `<div class="res no"><span class="mark">✗</span><div><div class="his">You put <s>${esc(x.typed)}</s></div><div class="w">${esc(x.label)}</div><div class="his">Back to practice. −3</div></div></div>`).join('')}</div>
+    <p class="note" id="sent">${TRY ? 'Trying it out: nothing was saved.' : ''}</p>
+    <div class="row"><a class="btn big primary" href="${TRY ? 'index.html' : 'spell.html'}" style="text-decoration:none">Finished</a></div>`;
+  say(`You still remembered ${right} out of ${its.length}. ${gained >= 0 ? `You earned ${gained} points!` : `That's ${-gained} points off. Keep practicing!`}`, 0.95);
+  if (right === its.length) confetti();
+  const rec = { id: t.toString(36), t, aid: A.id, tool: 'mtest', title: A.title, grade: { pct: g.pct, letter: g.letter }, right, of: its.length, items, missed: [], parts: [['Points', `${gained >= 0 ? '+' : ''}${gained}`]], extra: { points: gained }, sent: false };
+  saveAndSend(rec);
+}
+
 /* ============ Results: grade, what to fix, save, email ============ */
 function gradeFor(right, n) {
   const pct = n ? Math.round(right / n * 100) : 0;
@@ -1526,6 +1582,7 @@ const shortDate = t => new Date(t).toLocaleDateString(undefined, { weekday: 'sho
 const STAR = c => `<svg width="52" height="52" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14.9 8.6 L22 9.3 L16.6 14 L18.2 21 L12 17.3 L5.8 21 L7.4 14 L2 9.3 L9.1 8.6 Z" fill="${c}" stroke="#F59E0B" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 function showResults() {
   if (A.tool === 'weather') return weatherResults();
+  if (A.tool === 'mtest') return mtestResults();
   onKey = null; partIdx = PARTS.length; renderProg(); document.body.classList.remove('inpart'); window.scrollTo(0, 0);
   const G = items.filter(x => !x.free), right = G.filter(x => x.ok).length, n = G.length, graded = n >= 2;   // Look & Say isn't graded
   const g = graded ? gradeFor(right, n) : null;
@@ -1619,7 +1676,7 @@ async function cloudSaveSheet(rec) {
 }
 
 /* ============ Start ============ */
-const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet, steps: stepsSheet, eagles: eaglesSheet, weather: weatherSheet };
+const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet, steps: stepsSheet, eagles: eaglesSheet, weather: weatherSheet, mtest: mtestSheet };
 (async () => {
   if (TRY) { $('trybar').hidden = false; $('backLink').href = 'index.html'; }
   else {   // he has to be signed in to the Study (the sign-in screen is on the Spelling Helper page)
