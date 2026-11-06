@@ -161,6 +161,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 .pin-dots { display: flex; gap: 14px; } .pin-dots span { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #FDE68A; } .pin-dots span.on { background: #FDE68A; }
 .pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 10px; } .pin-pad button { height: 64px; border-radius: 16px; border: 2px solid #334155; background: #1E293B; color: #fff; font: 700 26px Fredoka, sans-serif; cursor: pointer; } .pin-pad .pin-sm { font-size: 16px; }
 .pin-box.shake { animation: pinshake .3s; } @keyframes pinshake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.skip-part { position: fixed; left: 14px; bottom: 14px; z-index: 70; display: none; font: 600 15px Fredoka, sans-serif; background: #33270C; color: #FBBF24; border: 2px solid #FBBF24; border-radius: 999px; padding: 8px 16px; cursor: pointer; } body.inpart .skip-part { display: block; }
 .sumlist .res .mark { min-width: 40px; }
 .mt-pts { font: 700 30px Fredoka, sans-serif; color: #FDE68A; } .mt-pts.neg { color: #FCA5A5; }
 .nextbar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--surface); border: 2px solid var(--study); border-radius: 999px; padding: 10px 22px; display: flex; align-items: center; gap: 14px; z-index: 60; font: 600 18px Fredoka, sans-serif; box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
@@ -296,6 +297,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 .pin-dots { display: flex; gap: 14px; } .pin-dots span { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #FDE68A; } .pin-dots span.on { background: #FDE68A; }
 .pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 10px; } .pin-pad button { height: 64px; border-radius: 16px; border: 2px solid #334155; background: #1E293B; color: #fff; font: 700 26px Fredoka, sans-serif; cursor: pointer; } .pin-pad .pin-sm { font-size: 16px; }
 .pin-box.shake { animation: pinshake .3s; } @keyframes pinshake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.skip-part { position: fixed; left: 14px; bottom: 14px; z-index: 70; display: none; font: 600 15px Fredoka, sans-serif; background: #33270C; color: #FBBF24; border: 2px solid #FBBF24; border-radius: 999px; padding: 8px 16px; cursor: pointer; } body.inpart .skip-part { display: block; }
 </style>
 </head>
 <body>
@@ -585,38 +587,52 @@ function say(text, rate = 0.9) {
   heardLog(text, rate);
   const busy = speechSynthesis.speaking || speechSynthesis.pending; speechSynthesis.cancel();
   return new Promise(res => {
-    const u = new SpeechSynthesisUtterance(text);
-    if (voice) u.voice = voice;
-    u.lang = (voice && voice.lang) || 'en-US'; u.rate = rate; u.pitch = 1.05;
-    u.onend = u.onerror = () => res();
-    if (busy) setTimeout(() => speechSynthesis.speak(u), 120); else speechSynthesis.speak(u);   // iPads can garble or skip a word spoken right after cutting off another
-    setTimeout(res, Math.min(6000, 1500 + text.length * 80));   // never wait forever if the voice gets stuck
+    let started = false, finished = false, tries = 0;
+    const done = () => { if (!finished) { finished = true; res(); } };
+    const make = () => {
+      const u = new SpeechSynthesisUtterance(text);
+      if (voice) u.voice = voice;
+      u.lang = (voice && voice.lang) || 'en-US'; u.rate = rate; u.pitch = 1.05;
+      u.onstart = () => { started = true; };
+      u.onend = done;
+      u.onerror = e => { if (!started && !finished && tries < 1 && !/interrupted|canceled/.test(e && e.error || '')) retry(); else done(); };
+      return u;
+    };
+    // iPads sometimes drop the first thing said right after the microphone turns on: if it never starts, say it again once
+    const retry = () => { tries++; speechSynthesis.cancel(); setTimeout(() => { if (!finished) speechSynthesis.speak(make()); }, 150); };
+    if (busy) setTimeout(() => speechSynthesis.speak(make()), 120); else speechSynthesis.speak(make());   // iPads can garble or skip a word spoken right after cutting off another
+    setTimeout(() => { if (!started && !finished && tries < 1) retry(); }, 1000);
+    setTimeout(done, Math.min(7500, 2600 + text.length * 80));   // never wait forever if the voice gets stuck
   });
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 /* Double-check: before an answer is locked in, each letter he typed lights up and is read out loud, and "Yes" waits until it's done */
 let dcToken = 0;
 async function doubleCheck() {
-  const my = ++dcToken, yes = $('confirmYes'), spans = [...$('confirmWord').querySelectorAll('.lbox:not(.sp)')];
+  if (typeof sayEpoch !== 'undefined') sayEpoch++; const my = ++dcToken, yes = $('confirmYes'), spans = [...$('confirmWord').querySelectorAll('.lbox:not(.sp)')];
   $('confirmQ').textContent = 'Double-check your work!'; yes.disabled = true;
-  await say('Double-check your work. Look at every letter.', 0.95);
+  await Promise.race([say('Double-check your work. Look at every letter.', 0.95), wait(2500)]);   // never wait on a voice that's slow to say it's done
   for (const s of spans) {
     if (my !== dcToken || $('confirm').hidden) return;
     spans.forEach(x => x.classList.remove('chk')); s.classList.add('chk');
-    await say(letterName(s.textContent.trim().toLowerCase()), 0.9); await wait(250);
+    const nm = letterName(s.textContent.trim().toLowerCase());
+    await Promise.race([say(nm, 0.9), wait(500 + 110 * nm.length)]); await wait(150);   // long enough for "double you", short enough not to feel stuck
   }
   if (my !== dcToken || $('confirm').hidden) return;
   spans.forEach(x => x.classList.remove('chk')); yes.disabled = false;
   say('Is every letter right?', 0.95);
 }
 /* Between screens: a bar that fills up so he can see the next one is coming (taps and keys pause meanwhile). Never waits on the voice. */
+let partGen = 0;   // goes up when a part starts (or is skipped), so a skipped part can't carry on
+const stale = g => new Promise(() => { });   // never finishes: the skipped part stops here
 async function nextUp(ms = 1200, label = 'Next one coming…') {
-  onKey = null; document.body.classList.add('advancing');
+  const g = partGen; onKey = null; document.body.classList.add('advancing');
   const bar = document.createElement('div'); bar.className = 'nextbar'; bar.setAttribute('role', 'status');
   bar.innerHTML = `<span>${esc(label)}</span><i><b style="animation-duration:${ms}ms"></b></i>`;
   document.body.appendChild(bar); await wait(ms); bar.remove(); document.body.classList.remove('advancing');
+  if (g !== partGen) return stale(g);
 }
-const letterName = ch => ({ a: 'ay', e: 'ee', i: 'eye', o: 'oh', u: 'you', y: 'why', z: 'zee' }[ch] || ch.toUpperCase());
+const letterName = ch => ({ a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye', j: 'jay', k: 'kay', l: 'el', m: 'em', n: 'en', o: 'oh', p: 'pee', q: 'cue', r: 'ar', s: 'ess', t: 'tee', u: 'you', v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zee' }[String(ch).toLowerCase()] || ch);   // spoken letter names (a capital letter makes iPads say "capital F")
 function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
 const voices = store('spell-voice') || {};
 function playClip(url) {
@@ -809,24 +825,37 @@ const picsOf = list => Object.fromEntries(list.map(([k, n, emo]) => [n, emo ? `<
 const mark = (part, label, ok, typed, answer, word = null, shown = null, picks = null) => { const h = takeHeard(); items.push({ part, label, ok, typed: typed ?? '', answer: answer ?? '', word, shown: h ? { ...(shown || {}), heard: h } : shown, picks: picks || (typed ? [String(typed)] : []) }); };
 
 function renderProg() { $('prog').innerHTML = PARTS.length > 1 ? PARTS.map((p, i) => `<span class="${i === partIdx ? 'now' : i < partIdx ? 'done' : ''}">${i + 1}. ${esc(p.name)}</span>`).join('') : ''; }
-function startPart(i) {
+function startPart(i) { partGen++;
   partIdx = i; renderProg(); window.scrollTo(0, 0); document.body.classList.add('inpart');
   if (canTalk) speechSynthesis.cancel(); onKey = null;
   PARTS[i].run();
 }
+function goNextPart() { if (document.body.classList.contains('advancing')) return; const g = $('go'); if (g) g.disabled = true; nextUp(1000, partIdx < PARTS.length - 1 ? 'Next part coming…' : 'Almost done…').then(nextPart); }   // a moment between parts, so he can't tap through
 function nextPart() { if (partIdx < PARTS.length - 1) startPart(partIdx + 1); else showResults(); }
+/* Grown-up testing (Try it or Test day): "Skip this part" jumps to the next part */
+function skipPart() {
+  if (partIdx < 0 || partIdx >= PARTS.length) return;
+  partGen++; onKey = null; if (canTalk) speechSynthesis.cancel();
+  document.querySelectorAll('.nextbar, .ph-wrap, .pin-wrap').forEach(x => x.remove()); document.body.classList.remove('advancing');
+  const c = $('confirm'); if (c) c.hidden = true;
+  nextPart();
+}
+function addSkipButton() {
+  const b = document.createElement('button'); b.className = 'skip-part'; b.id = 'skipPart'; b.textContent = '⏭ Skip this part (testing)';
+  b.onclick = skipPart; document.body.appendChild(b);
+}
 function partDone(msg) {
   partSum.push([PARTS[partIdx].name, msg]);
   if (partIdx >= PARTS.length - 1) return showResults();
   app.innerHTML = `<div class="part-title"><h2>${esc(PARTS[partIdx].name)}: done!</h2><p>${esc(msg)}</p></div>
     <button class="btn big primary" id="go">Next: ${esc(PARTS[partIdx + 1].name)} →</button>`;
   say(`${PARTS[partIdx].name}, done! ${msg}`, 0.95);
-  $('go').onclick = nextPart;
+  $('go').onclick = goNextPart;
 }
 const head = sub => `<div class="part-title"><h2>${PARTS.length > 1 ? `${partIdx + 1}. ` : ''}${esc(PARTS[partIdx].name)}</h2><p>${sub}</p></div>`;
 const firstTry = (part) => { const xs = items.filter(x => x.part === part); return `${xs.filter(x => x.ok).length} of ${xs.length} right the first time`; };
 // Run fn(i) for i = 0..n-1, one screen at a time
-async function each(n, fn) { for (let i = 0; i < n; i++) await fn(i); }
+async function each(n, fn) { const g = partGen; for (let i = 0; i < n; i++) { if (g !== partGen) return stale(g); await fn(i); } if (g !== partGen) return stale(g); }
 
 /* ================= Sight Word Practice: Look & Say, Trace, Cover & Write (Check); Word Shapes, Missing Letters, Finish the Sentence ================= */
 function sightSheet() {
@@ -1057,9 +1086,10 @@ function sightSheet() {
     partDone(firstTry('Finish the Sentence') + '.');
   };
   PARTS = [{ name: 'Look & Say', run: lookSay }, { name: 'Trace', run: trace }, { name: 'Cover & Write', run: coverWrite }, { name: 'Word Shapes', run: shapes }];
+  if (SD.noSay) PARTS = PARTS.filter(p => p.name !== 'Look & Say');   // daily routine: he already said each word 3 times in Look & Listen
   if (W.some(x => x.w.length > 1)) PARTS.push({ name: 'Missing Letters', run: missing });
   if (W.some(x => (SD.sentences && SD.sentences[x.w] || '').includes('___'))) PARTS.push({ name: 'Finish the Sentence', run: sentences });
-  return { intro: `${W.length} words · ${PARTS.length} parts`, words: W.map(x => x.dw) };
+  return { intro: `${W.length} words · ${PARTS.length} parts.`, words: W.map(x => x.dw) };
 }
 
 /* ================= Word Master Challenge: Fix It!, Picture Sentences, Spelling Detective. A test: one try each. ================= */
@@ -1198,7 +1228,7 @@ function questionSheet() {
       <div>It wants: <b style="color:#FB923C">an animal</b></div><div>Answer: <b style="color:var(--good)">cow</b></div><div style="color:var(--muted)">Not “moo”! Moo is not an animal.</div></div>
       <button class="btn big primary" id="go">Now you try →</button>`;
     say('What animal says moo? The words what animal tell me it wants an animal. So the answer is cow. Not moo! Moo is not an animal.', 0.9);
-    $('go').onclick = nextPart;
+    $('go').onclick = goNextPart;
   } });
   return { intro: `${list.length} question${list.length === 1 ? '' : 's'}. For each one: find the What words, say what kind of answer it wants, then answer it.` };
 }
@@ -1832,6 +1862,7 @@ const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet
     document.body.classList.add('emb');
     document.addEventListener('click', e => { const a = e.target.closest('a[href]'); if (!a) return; e.preventDefault(); window.parent.postMessage({ studySheetDone: true, quit: a.id === 'backLink' }, location.origin); }, true);
   }
+  if (TRY) addSkipButton();
   if (TRY) { $('trybar').hidden = false; $('backLink').href = HOME; if (TESTDAY) $('trybar').textContent = '🧪 Test day: nothing is saved, so his real day stays the same.'; }
   else {   // he has to be signed in to the Study (the sign-in screen is on the Spelling Helper page)
     try { const sb = sbClient(); if (sb) { const { data } = await sb.auth.getSession(); if (!data.session) { location.replace('spell.html'); return; } } } catch (e) { }

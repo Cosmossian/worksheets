@@ -395,6 +395,12 @@ body.sheeton { overflow: hidden; }
 .pin-box.shake { animation: pinshake .3s; } @keyframes pinshake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 .pin-set { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); } .pin-set input { font: 600 20px Andika, sans-serif; width: 120px; padding: 8px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--field, #0B1118); color: inherit; letter-spacing: 6px; } .pin-set small { color: var(--muted); display: block; margin-top: 6px; }
 .date-rows { display: flex; flex-direction: column; gap: 6px; } .date-row { display: flex; gap: 10px; align-items: flex-start; } .date-l { font: 700 14px Fredoka, sans-serif; color: var(--muted); min-width: 66px; padding-top: 8px; } .date-row .chips { flex: 1; }
+.nextbar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--surface, #131C26); border: 2px solid var(--study, #3C7DD9); border-radius: 999px; padding: 10px 22px; display: flex; align-items: center; gap: 14px; z-index: 60; font: 600 18px Fredoka, sans-serif; box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
+.nextbar i { width: 140px; height: 12px; border-radius: 999px; background: var(--field, #0B1118); overflow: hidden; display: block; }
+.nextbar b { display: block; height: 100%; width: 0; background: var(--good, #34D399); border-radius: 999px; animation: nextfill linear forwards; }
+@keyframes nextfill { to { width: 100%; } }
+body.advancing main button, body.advancing main .key { pointer-events: none; }
+.skip-part { position: fixed; left: 14px; bottom: 14px; z-index: 70; display: none; font: 600 15px Fredoka, sans-serif; background: #33270C; color: #FBBF24; border: 2px solid #FBBF24; border-radius: 999px; padding: 8px 16px; cursor: pointer; } body.testday.playing .skip-part:not([hidden]), body.testday.dailyon .skip-part:not([hidden]) { display: block; }
 </style>
 </head>
 <body class="authwait">
@@ -406,7 +412,7 @@ body.sheeton { overflow: hidden; }
   <a class="review-btn" id="settingsLink" href="#settings" style="text-decoration:none;margin-left:10px">⚙️ Parent Settings</a>
   <a class="back" href="./">Back to Worksheets</a>
 </header>
-<div class="testbar" id="testBar" hidden><span>🧪 <b>Test day</b>: nothing is saved, so his real day stays the same.</span> <button class="btn btn-small" id="testEnd">End test</button></div>
+<div class="testbar" id="testBar" hidden><span>🧪 <b>Test day</b>: nothing is saved, so his real day stays the same.</span> <button class="btn btn-small" id="testEnd">End test</button><button class="skip-part" id="testSkip" hidden>⏭ Skip this part (testing)</button></div>
 
 <div class="daily-bar" id="dailyBar" hidden><span id="dailyBarText"></span></div>
 
@@ -712,31 +718,42 @@ function say(text, rate = 0.9) {
   if (!canTalk || !text) return Promise.resolve();
   const busy = speechSynthesis.speaking || speechSynthesis.pending; speechSynthesis.cancel();
   return new Promise(res => {
-    const u = new SpeechSynthesisUtterance(text);
-    if (voice) u.voice = voice;
-    u.lang = (voice && voice.lang) || 'en-US'; u.rate = rate; u.pitch = 1.05;
-    u.onend = u.onerror = () => res();
-    if (busy) setTimeout(() => speechSynthesis.speak(u), 120); else speechSynthesis.speak(u);   // iPads can garble or skip a word spoken right after cutting off another
-    setTimeout(res, 6000);
+    let started = false, finished = false, tries = 0;
+    const done = () => { if (!finished) { finished = true; res(); } };
+    const make = () => {
+      const u = new SpeechSynthesisUtterance(text);
+      if (voice) u.voice = voice;
+      u.lang = (voice && voice.lang) || 'en-US'; u.rate = rate; u.pitch = 1.05;
+      u.onstart = () => { started = true; };
+      u.onend = done;
+      u.onerror = e => { if (!started && !finished && tries < 1 && !/interrupted|canceled/.test(e && e.error || '')) retry(); else done(); };
+      return u;
+    };
+    // iPads sometimes drop the first thing said right after the microphone turns on: if it never starts, say it again once
+    const retry = () => { tries++; speechSynthesis.cancel(); setTimeout(() => { if (!finished) speechSynthesis.speak(make()); }, 150); };
+    if (busy) setTimeout(() => speechSynthesis.speak(make()), 120); else speechSynthesis.speak(make());   // iPads can garble or skip a word spoken right after cutting off another
+    setTimeout(() => { if (!started && !finished && tries < 1) retry(); }, 1000);
+    setTimeout(done, Math.min(7500, 2600 + text.length * 80));   // never wait forever if the voice gets stuck
   });
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 /* Double-check: before an answer is locked in, each letter he typed lights up and is read out loud, and "Yes" waits until it's done */
 let dcToken = 0;
 async function doubleCheck() {
-  const my = ++dcToken, yes = $('confirmYes'), spans = [...$('confirmWord').querySelectorAll('.lbox:not(.sp)')];
+  sayEpoch++; const my = ++dcToken, yes = $('confirmYes'), spans = [...$('confirmWord').querySelectorAll('.lbox:not(.sp)')];
   $('confirmQ').textContent = 'Double-check your work!'; yes.disabled = true;
-  await say('Double-check your work. Look at every letter.', 0.95);
+  await Promise.race([say('Double-check your work. Look at every letter.', 0.95), wait(2500)]);   // never wait on a voice that's slow to say it's done
   for (const s of spans) {
     if (my !== dcToken || $('confirm').hidden) return;
     spans.forEach(x => x.classList.remove('chk')); s.classList.add('chk');
-    await say(letterName(s.textContent.trim().toLowerCase()), 0.9); await wait(250);
+    const nm = letterName(s.textContent.trim().toLowerCase());
+    await Promise.race([say(nm, 0.9), wait(500 + 110 * nm.length)]); await wait(150);   // long enough for "double you", short enough not to feel stuck
   }
   if (my !== dcToken || $('confirm').hidden) return;
   spans.forEach(x => x.classList.remove('chk')); yes.disabled = false;
   say('Is every letter right?', 0.95);
 }
-const letterName = ch => ({ a: 'ay', e: 'ee', i: 'eye', o: 'oh', u: 'you', y: 'why', z: 'zee' }[ch] || ch.toUpperCase());
+const letterName = ch => ({ a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye', j: 'jay', k: 'kay', l: 'el', m: 'em', n: 'en', o: 'oh', p: 'pee', q: 'cue', r: 'ar', s: 'ess', t: 'tee', u: 'you', v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zee' }[String(ch).toLowerCase()] || ch);   // spoken letter names (a capital letter makes iPads say "capital F")
 
 /* ============ Splitting a word into sound parts ============ */
 const DIGRAPHS = ['tch', 'ch', 'sh', 'th', 'wh', 'ph', 'ck', 'ng', 'gh', 'qu', 'kn', 'wr'];
@@ -1308,7 +1325,7 @@ function applyMastery(results, checkId) {
 }
 const kidName = () => ((store('study-profile') || {}).name || '').trim();
 const agendaTitle = () => `📋 My Agenda · ${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}`;
-function show(id) { if (cloud.sb && !cloud.user && id !== 'gate') id = 'gate'; if (id === 'gate') { $('gatePick').hidden = false; $('gateForm').hidden = true; $('gateErr').textContent = ''; } if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome', 'gate'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('gated', id === 'gate'); $('grownBar').hidden = !(id === 'setup' && cloud.role === 'kid' && grownMode); document.body.classList.toggle('kidgrown', cloud.role === 'kid' && grownMode); $('appTitle').textContent = id === 'kidhome' ? agendaTitle() : id === 'gate' ? 'The Study' : id === 'review' ? 'Parent Review' : id === 'setup' && location.hash === '#settings' ? 'Parent Settings' : 'Spelling Helper'; document.body.classList.toggle('onreview', id === 'review'); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
+function show(id) { if (cloud.sb && !cloud.user && id !== 'gate') id = 'gate'; if (id === 'gate') { $('gatePick').hidden = false; $('gateForm').hidden = true; $('gateErr').textContent = ''; } if (id === 'setup' && cloud.role === 'kid' && !grownMode) id = 'kidhome'; if (id === 'setup' || id === 'kidhome') placeMicTest(id); if (testing && id !== 'setup' && id !== 'kidhome') stopMicTest(); if (id === 'kidhome') renderKidHome(); if (id !== 'done') document.querySelectorAll('.confetti').forEach(c => c.remove()); ['setup', 'play', 'done', 'check', 'results', 'look', 'review', 'kidhome', 'gate'].forEach(x => $(x).hidden = x !== id); document.body.classList.toggle('gated', id === 'gate'); $('grownBar').hidden = !(id === 'setup' && cloud.role === 'kid' && grownMode); document.body.classList.toggle('kidgrown', cloud.role === 'kid' && grownMode); $('appTitle').textContent = id === 'kidhome' ? agendaTitle() : id === 'gate' ? 'The Study' : id === 'review' ? 'Parent Review' : id === 'setup' && location.hash === '#settings' ? 'Parent Settings' : 'Spelling Helper'; document.body.classList.toggle('onreview', id === 'review'); if (id === 'review') renderReview(); document.body.classList.toggle('playing', id === 'play' || id === 'check' || id === 'look'); document.body.classList.toggle('dailyon', !!daily && ['play', 'done', 'check', 'look'].includes(id)); if (id !== 'look') stopMic(); if (id === 'setup' || id === 'kidhome') { daily = null; renderDailyBar(); renderLastCheck(); renderClips(); } if (canTalk) speechSynthesis.cancel(); }
 
 function start() {
   stopRecord();
@@ -1317,7 +1334,17 @@ function start() {
   r.unshift(raw); store('spell-recent', r.slice(0, 12)); renderRecent();
   begin();
 }
+let talkGen = 0;   // goes up each time a new word starts
+/* Between screens: a bar that fills up so he can see the next one is coming (and can't tap through too fast) */
+function nextUp(ms = 1200, label = 'Next one coming…') {
+  document.body.classList.add('advancing');
+  const bar = document.createElement('div'); bar.className = 'nextbar'; bar.setAttribute('role', 'status');
+  bar.innerHTML = `<span>${esc(label)}</span><i><b style="animation-duration:${ms}ms"></b></i>`;
+  document.body.appendChild(bar);
+  return new Promise(r => setTimeout(() => { bar.remove(); document.body.classList.remove('advancing'); r(); }, ms));
+}
 function begin() {
+  talkGen++;
   document.querySelectorAll('.confetti').forEach(c => c.remove());
   plan = buildPlan($('wordIn').value);
   pos = 0; helpedAt = new Set(); helpUsedAt = new Set(); stats = { tries: 0, helps: 0, letters: 0 }; skipFixed();
@@ -1507,8 +1534,9 @@ function finish() {
   }
   $('compare').hidden = !cmp; $('compare').textContent = cmp;
   $('summary').textContent = `For the grown-up: ${stats.letters} letters, ${stats.tries} tries in all. ${helped ? `${helped} letter${helped > 1 ? 's' : ''} took more than one try (amber boxes)` : 'Every letter right on the first try'}${stats.helps ? `, and he used Help me ${stats.helps} time${stats.helps > 1 ? 's' : ''}.` : ', with no Help me.'}${cmpGrown}`;
-  const cheer = voices[wordKey(plan.text)] ? say('You spelled it!', 0.95).then(() => playWord(plan.text)) : say('You spelled ' + plan.text + '!', 0.95);
-  if (cmpSay) cheer.then(() => say(cmpSay, 0.95));
+  const g = talkGen, live = () => g === talkGen;   // if he taps Next while this is talking, the rest isn't said over the next word
+  const cheer = voices[wordKey(plan.text)] ? say('You spelled it!', 0.95).then(() => live() && playWord(plan.text)) : say('You spelled ' + plan.text + '!', 0.95);
+  if (cmpSay) cheer.then(() => live() && say(cmpSay, 0.95));
   renderRecent();
   dailyAfterWord();
 }
@@ -1871,7 +1899,8 @@ function lookFind(w) {
   };
 }
 $('lookAgain').onclick = () => playWord(daily.lookOrder[daily.i], 0.85);
-$('lookNext').onclick = () => {
+$('lookNext').onclick = () => { if (document.body.classList.contains('advancing')) return; nextUp(900, 'Next word coming…').then(lookNextGo); };
+function lookNextGo() {
   if (daily.i < daily.lookOrder.length - 1) { daily.i++; return lookWord(); }
   if (daily.round < 3) {
     daily.round++; daily.i = 0;
@@ -1899,11 +1928,17 @@ function dailyAfterWord() {
   $('nextWord').textContent = !last ? 'Next word →' : daily.phase === 'practice' && !daily.only ? 'On to the check →' : 'All done →';
 }
 $('nextWord').onclick = () => {
+  if (document.body.classList.contains('advancing')) return;
+  talkGen++; if (canTalk) speechSynthesis.cancel();   // stop the cheer; the next word gets a clean start
+  const last = !daily || daily.i >= daily.words.length - 1;
+  nextUp(1200, last ? 'Almost done…' : 'Next word coming…').then(nextWordGo);
+};
+function nextWordGo() {
   if (!daily) return show('setup');
   if (daily.i < daily.words.length - 1) { daily.i++; return practiceWord(); }
   if (daily.phase === 'practice') return daily.only ? practiceListDone() : readyForCheck();
   show('setup');
-};
+}
 /* A practice list sent from the grown-up's device: saved like a worksheet result (Parent Review + email) */
 function practiceListDone() {
   const d = daily, t = Date.now();
@@ -1926,7 +1961,7 @@ let typed = '';
 function dailySheet() {
   const words = daily.words.map(w => w.toLowerCase()), day = ymd(Date.now());
   store('study-sheet-daily', { id: 'daily-' + day, tool: 'sight', title: 'Sight Word Practice · today’s words', at: Date.now(),
-    data: { words, label: 'today’s words', sentences: Object.fromEntries(words.map(w => [w, SENTENCES[w] && SENTENCES[w][0].includes('___') ? SENTENCES[w][0] : ''])) } });
+    data: { words, label: 'today’s words', noSay: !!daily.looked3, sentences: Object.fromEntries(words.map(w => [w, SENTENCES[w] && SENTENCES[w][0].includes('___') ? SENTENCES[w][0] : ''])) } });
   daily.phase = 'sheet'; stopMic(); renderDailyBar(); $('dailyBar').hidden = true;
   const f = document.createElement('iframe'); f.className = 'sheet-frame'; f.id = 'sheetFrame'; f.title = 'Sight Word Practice'; f.allow = 'microphone; autoplay';
   f.src = 'do.html?daily=1&embed=1'; document.body.appendChild(f); document.body.classList.add('sheeton');
@@ -1957,9 +1992,10 @@ function buildCheckKeys() {
   $('spaceBtn').hidden = !daily.words.some(w => w.includes(' '));
 }
 const sentenceFor = w => { const x = SENTENCES[w.toLowerCase()]; return x && x[0].includes('___') ? x[0].replace('___', spoken(w)) : ''; };
+let sayEpoch = 0;   // goes up when something new starts talking (the double-check, the next word), so an older word + sentence stops part way
 function sayCheckWord(withSentence) {
-  const w = daily.order[daily.i], sent = sentenceFor(w);
-  return playWord(w, 0.85).then(() => withSentence && sent ? wait(300).then(() => say(sent, 0.85)).then(() => wait(300)).then(() => playWord(w, 0.85)) : null);
+  const w = daily.order[daily.i], sent = sentenceFor(w), e = ++sayEpoch, live = () => e === sayEpoch;
+  return playWord(w, 0.85).then(() => withSentence && sent && live() ? wait(300).then(() => live() && say(sent, 0.85)).then(() => wait(300)).then(() => live() && playWord(w, 0.85)) : null);
 }
 function checkWord() {
   if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();   // so Enter can't press a hidden button
@@ -2081,8 +2117,9 @@ $('resList').addEventListener('click', async e => {
   const done = daily.missed.every(m => daily.looked.has(m));
   $('reviewedBtn').disabled = !done;
   $('reviewNote').textContent = done ? 'Great looking! Now let’s practice them.' : 'Tap each word you missed to see and hear how it’s spelled.';
-  await playWord(w, 0.85); await wait(250);
-  await say([...w.replace(/\s+/g, '')].map(letterName).join(', '), 0.7); await wait(250);   // "w, h, i, l, e"
+  const e2 = ++sayEpoch, live = () => e2 === sayEpoch;   // tapping another word stops this one
+  await playWord(w, 0.85); await wait(250); if (!live()) return;
+  await say([...w.replace(/\s+/g, '')].map(letterName).join(', '), 0.7); await wait(250); if (!live()) return;   // "w, h, i, l, e"
   await playWord(w, 0.85);
 });
 $('reviewedBtn').onclick = () => {
@@ -2209,7 +2246,7 @@ function answerRows(list) {
     const cg = chunkGroups(r.shown && r.shown.text, picks[0]);
     const tries = cg ? `<div class="ans-picks">He typed each part (wrong letters crossed out): ${cg.map(x => `<b>${esc(x.part)}</b>: ${x.g.map(l => l.ok ? esc(l.c) : `<s class="w">${esc(l.c)}</s>`).join('')}`).join(' → ')}</div>` : picks.length ? `<div class="ans-picks">${ch ? 'He tapped' : letterKeys ? 'He typed these letters, in order' : 'He typed'}: ${picks.map((v, i) => `<span class="${letterKeys || /^line \d/.test(v) ? '' : isRight(v) ? 'r' : 'w'}">${picks.length > 1 ? `${i + 1}. ` : ''}${esc(v.replace(/^letters he typed: /, ''))}</span>`).join(' → ')}</div>` : '';
     return `<div class="ans-row ${r.ok ? 'ok' : 'no'}"><div class="ans-h"><span class="mk">${r.ok ? '✓' : '✗'}</span><b>${esc(r.part)}</b><span>${esc(r.label)}</span></div>
-      ${r.shown && r.shown.text ? `<div class="ans-saw">On his screen: ${esc(r.shown.text)}</div>` : ''}${chips}${bank}${tries}
+      ${r.shown && r.shown.text ? `<div class="ans-saw">On his screen: ${esc(r.shown.text)}</div>` : ''}${r.shown && r.shown.img ? `<div class="traces"><figure><img src="${r.shown.img}" alt="What he wrote"><figcaption>written by hand</figcaption></figure></div>` : ''}${chips}${bank}${tries}
       ${r.answer ? `<div class="ans-right">Right answer: <b>${esc(r.answer)}</b></div>` : ''}</div>`;
   }).join('');
 }
@@ -2264,7 +2301,7 @@ function drawReplay() {
   $('rpTitle').textContent = rp.title; $('rpCount').textContent = `Screen ${rp.i + 1} of ${rp.steps.length}`;
   let saw = '';
   const text = sh.text || '';
-  if (st.img) saw = `<img class="rp-img" src="${st.img}" alt="His tracing">`;
+  if (st.img || sh.img) saw = `<img class="rp-img" src="${st.img || sh.img}" alt="What he drew">${sh.img ? `<div class="rp-saw">${esc(text)}</div>` : ''}`;
   else if (sh.html) saw = `<div class="rp-pic">${cleanPic(sh.html)}</div>${/___/.test(text) ? (() => { const [a, b] = text.split('___'); return `<div class="rp-sent">${esc(a)}<span class="bl"></span>${esc(b || '')}</div>`; })() : `<div class="rp-saw">${esc(text)}</div>`}`;
   else if (st.part === 'Look & Say') saw = `<div class="rp-big">${esc(st.label)}</div><div class="rp-saw">${esc(text)}</div>`;
   else if (st.part === 'Fix It!') saw = `<div class="rp-oops">${esc(st.label)}</div>`;
@@ -2404,11 +2441,26 @@ async function endTestDay() {
   sessionStorage.removeItem('study-testday'); sessionStorage.removeItem('study-testday-snap');
   daily = null; renderTestBar(); await cloudPull(); show('kidhome'); window.scrollTo(0, 0);
 }
-function renderTestBar() { $('testBar').hidden = !TESTDAY(); document.body.classList.toggle('testday', TESTDAY()); }
+/* Test day: "Skip this part" in his daily routine (Look & Listen → practice → Sight Word Practice → quiz) */
+function skipDailyPart() {
+  if (!daily) return;
+  talkGen++; sayEpoch++; if (canTalk) speechSynthesis.cancel();
+  document.querySelectorAll('.nextbar, .ph-wrap, .pin-wrap').forEach(x => x.remove()); document.body.classList.remove('advancing'); $('confirm').hidden = true;
+  if (daily.phase === 'look') { clearTimeout(lookTimer); listenToken++; return afterLook(); }
+  if (daily.phase === 'practice') return daily.only ? practiceListDone() : readyForCheck();
+  if (daily.phase === 'check') {   // the quiz: anything not answered yet counts as blank
+    if (!daily.order) return;
+    const have = new Set((daily.results || []).map(r => r.word));
+    daily.order.forEach(w => { if (!have.has(w)) daily.results.push({ word: w, typed: '', ok: false }); });
+    return showResults();
+  }
+}
+function renderTestBar() { $('testSkip').hidden = !TESTDAY(); $('testBar').hidden = !TESTDAY(); document.body.classList.toggle('testday', TESTDAY()); }
 $('kidTest').addEventListener('pointerdown', e => { e.preventDefault(); const b = $('kidTest'); b.classList.add('holding'); b._t = setTimeout(() => { b.classList.remove('holding'); askPin().then(ok => ok && askTestKind()); }, 2000); });
 ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => $('kidTest').addEventListener(ev, () => { clearTimeout($('kidTest')._t); $('kidTest').classList.remove('holding'); }));
 $('kidTest').addEventListener('contextmenu', e => e.preventDefault());
 $('testEnd').onclick = () => endTestDay();
+$('testSkip').onclick = () => skipDailyPart();
 renderTestBar();
 
 /* ================= Shared across devices: the Recipe Box's Supabase database =================
