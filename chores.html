@@ -178,7 +178,7 @@ details.edit summary { cursor: pointer; font: 700 18px Fredoka, sans-serif; }
 
 <!-- His device: just looking -->
 <main id="kid" class="kid" hidden>
-  <div class="kidtop"><h1>🧹 My Chores</h1><a class="btn" href="spell.html">← My Agenda</a></div>
+  <div class="kidtop"><h1>🧹 My Chores</h1><a class="btn" href="spell.html">My Agenda</a></div>
   <section class="card reward" id="kReward"></section>
   <section class="card"><h2 id="kTodayH">Today</h2><div class="kidlist" id="kToday"></div></section>
   <section class="card"><h2>This week · do by Saturday night</h2><div class="kidlist" id="kWeekly"></div><div class="totals" id="kTotals"></div></section>
@@ -472,7 +472,7 @@ if (EMBED) new ResizeObserver(() => { try { parent.postMessage({ studyH: documen
   if (!role) { location.replace('spell.html'); return; }
   try { localStorage.setItem('study-role', role); } catch (e) { }
   document.body.classList.toggle('kid', role === 'kid');
-  if (role === 'kid') { $('backBtn').href = 'spell.html'; $('backBtn').textContent = '← My Agenda'; $('appTitle').textContent = '🧹 My Chores'; }
+  if (role === 'kid') { $('backBtn').href = 'spell.html'; $('backBtn').textContent = 'My Agenda'; $('appTitle').textContent = '🧹 My Chores'; }
   try { await pull(); } catch (e) { if (!C) return showMsg('Couldn’t load the chore chart', `${esc(e.message || e)}. <a href="">Try again</a>`); }
   showOnly(role === 'kid' ? 'kid' : 'parent'); render();
   const refresh = async () => { if (document.hidden || saving || !$('menu').hidden) return; try { await pull(); render(); } catch (e) { } };
