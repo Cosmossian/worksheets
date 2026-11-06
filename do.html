@@ -677,6 +677,7 @@ let A = null, SD = {}, PARTS = [], partIdx = 0;
 const items = [];       // every graded answer: { part, label, ok, typed, answer, word }
 const partSum = [];     // [part name, how it went]
 let extra = {};         // anything else worth keeping (coin marks, step times)
+const picsOf = list => Object.fromEntries(list.map(([k, n, emo]) => [n, emo ? `<span style="font-size:46px;line-height:1">${emo}</span>` : WX_ICON(k, 64)]));
 const mark = (part, label, ok, typed, answer, word = null, shown = null, picks = null) => items.push({ part, label, ok, typed: typed ?? '', answer: answer ?? '', word, shown, picks: picks || (typed ? [String(typed)] : []) });
 
 function renderProg() { $('prog').innerHTML = PARTS.length > 1 ? PARTS.map((p, i) => `<span class="${i === partIdx ? 'now' : i < partIdx ? 'done' : ''}">${i + 1}. ${esc(p.name)}</span>`).join('') : ''; }
@@ -724,6 +725,7 @@ function sightSheet() {
     partDone('You looked at and said every word.');
   };
   // Trace with a finger (touch screen) or the mouse, over the big gray word. Done checks every letter got traced and he stayed on the letters.
+  let usedPen = false;   // remembered for the whole worksheet
   const trace = async () => {
     let redo = 0;
     try { await document.fonts.load('700 140px Andika'); } catch (e) { }
@@ -756,9 +758,11 @@ function sightSheet() {
       };
       draw();
       const pt = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * Wd / r.width, (e.clientY - r.top) * Ht / r.height]; };
-      cv.onpointerdown = e => { e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) { } cur = [pt(e)]; strokes.push(cur); draw(); };
-      cv.onpointermove = e => { if (!cur) return; cur.push(pt(e)); draw(); };
-      cv.onpointerup = cv.onpointercancel = () => { cur = null; };
+      // Apple Pencil: once a pen is used, his palm or finger resting on the screen is ignored (only one line draws at a time)
+      let penId = null;
+      cv.onpointerdown = e => { e.preventDefault(); if (e.pointerType === 'pen') usedPen = true; if ((usedPen && e.pointerType === 'touch') || (cur && penId !== e.pointerId)) return; penId = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch (er) { } cur = [pt(e)]; strokes.push(cur); draw(); };
+      cv.onpointermove = e => { if (!cur || e.pointerId !== penId) return; const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : []; (evs.length ? evs : [e]).forEach(ev => cur.push(pt(ev))); draw(); };
+      cv.onpointerup = cv.onpointercancel = e => { if (e.pointerId === penId) { cur = null; penId = null; } };
       $('clearBtn').onclick = () => { strokes = []; orange.clear(); setMsg(''); draw(); };
       $('doneBtn').onclick = () => {
         if (!strokes.length) return setMsg('Use your finger to trace the gray letters.', 'try');
@@ -862,7 +866,7 @@ function sightSheet() {
         if (b.dataset.w === x.w) {
           b.classList.add('right'); app.querySelectorAll('.bank .pill').forEach(p => p.disabled = true); used.add(x.w);
           $('shape').innerHTML = shape(x.dw, c, 0, true);
-          mark('Word Shapes', x.dw, !missed, missed ? pickedWrong : x.dw, x.dw, null, { text: `A shape of ${[...x.dw].filter(isLetter).length} boxes (${sig(x.dw).replace(/T/g, 'tall ').replace(/G/g, 'hanging ').replace(/s/g, 'short ').trim()})${hl ? `, hint: starts with “${x.dw.slice(0, hl)}”` : ''}`, choices: W.filter(y => !used.has(y.w) || y.w === x.w).map(y => y.dw) }, tapped);
+          mark('Word Shapes', x.dw, !missed, missed ? pickedWrong : x.dw, x.dw, null, { html: shape(x.dw, c, hl), text: `A shape of ${[...x.dw].filter(isLetter).length} boxes (${sig(x.dw).replace(/T/g, 'tall ').replace(/G/g, 'hanging ').replace(/s/g, 'short ').trim()})${hl ? `, hint: starts with “${x.dw.slice(0, hl)}”` : ''}`, choices: W.filter(y => !used.has(y.w) || y.w === x.w).map(y => y.dw) }, tapped);
           setMsg('Yes! It fits!', 'good'); playWord(x.w); nextUp(1300).then(done);
         } else {
           if (!missed) pickedWrong = b.dataset.w; missed = true; b.classList.add('wrong'); b.disabled = true; shakeEl(b);
@@ -943,7 +947,7 @@ function masterSheet() {
         <button class="btn" id="hear">${SPK}Hear the sentence</button><div id="io"></div>`;
       $('hear').onclick = () => sayBlank(s); sayBlank(s);
       const r = await freeType({ answer: x.dw, test: true });
-      mark('Picture Sentences', s, r.ok, r.typed, x.dw, x.w, { text: s + (ic ? ` (picture: ${ic})` : '') }, r.attempts);
+      mark('Picture Sentences', s, r.ok, r.typed, x.dw, x.w, { text: s, html: ic ? pic(ic, 110) : '' }, r.attempts);
       setMsg(r.ok ? 'Right!' : `The word was: ${x.dw}`, r.ok ? 'good' : 'try'); await nextUp(r.ok ? 1200 : 2200);
     });
     partDone(firstTry('Picture Sentences').replace(' the first time', '') + '.');
@@ -1017,7 +1021,7 @@ function questionSheet() {
           picked.push(b.dataset.v);
           if (noArticle(b.dataset.v) === noArticle(answer)) {
             b.classList.add('right'); $('bank').querySelectorAll('.pill').forEach(p => p.disabled = true);
-            mark(part, label, !missed, missed ? firstPick : b.dataset.v, answer, null, { text: it.q, choices: bank }, picked);
+            mark(part, label, !missed, missed ? firstPick : b.dataset.v, answer, null, { text: it.q, choices: bank, choiceHtml: iconOf ? Object.fromEntries(bank.map(v => [v, iconOf(v) ? `<span class="pic">${icon(iconOf(v), 44)}</span>` : ''])) : null }, picked);
             setMsg('Yes!', 'good'); say(b.dataset.v, 0.9); nextUp(1100, 'Next step coming…').then(done);
           } else {
             if (!missed) firstPick = b.dataset.v; missed = true; b.classList.add('wrong'); b.disabled = true; shakeEl(b);
@@ -1133,7 +1137,7 @@ function eaglesSheet() {
         const f = e.target.closest('[data-flip]'), m = e.target.closest('[data-m]');
         if (f) { const c = coins[+f.dataset.flip]; c.side = c.side === 'heads' ? 'tails' : 'heads'; f.classList.toggle('flipped', c.side === 'tails'); setTimeout(draw, 420); return; }
         if (m) { marks[+m.dataset.k] = m.dataset.m; draw(); return; }
-        if (e.target.closest('#countBtn')) { app.onclick = null; coins.forEach((c, k) => mark('Marking quarters', `Quarter ${k + 1} (${c.design === 'eagle' ? 'eagle' : 'a ' + c.design})`, (marks[k] === 'has') === (c.design === 'eagle'), marks[k] === 'has' ? 'eagle' : 'no eagle', c.design === 'eagle' ? 'eagle' : 'no eagle', null, { text: `The back of quarter ${k + 1} showed ${c.design === 'eagle' ? 'an eagle' : 'a ' + c.design}.` }, [marks[k] === 'has' ? 'eagle' : 'no eagle']));
+        if (e.target.closest('#countBtn')) { app.onclick = null; coins.forEach((c, k) => mark('Marking quarters', `Quarter ${k + 1} (${c.design === 'eagle' ? 'eagle' : 'a ' + c.design})`, (marks[k] === 'has') === (c.design === 'eagle'), marks[k] === 'has' ? 'eagle' : 'no eagle', c.design === 'eagle' ? 'eagle' : 'no eagle', null, { html: `<div style="width:150px;height:150px">${coinFace('tails', c.design)}</div>`, text: `Quarter ${k + 1}, tails side: ${c.design === 'eagle' ? 'an eagle' : 'a ' + c.design}.`, choices: ['eagle', 'no eagle'] }, [marks[k] === 'has' ? 'eagle' : 'no eagle']));
           const wrong = coins.filter((c, k) => (marks[k] === 'has') !== (c.design === 'eagle')).length; partDone(wrong ? `${wrong} quarter${wrong > 1 ? 's' : ''} marked wrong.` : 'Every quarter marked right!'); }
       };
       return;
@@ -1161,7 +1165,7 @@ function eaglesSheet() {
       const b = e.target.closest('[data-n]'); if (!b || b.disabled) return;
       const n = +b.dataset.n; counted.push(String(n));
       if (n === has) {
-        mark('Count the eagles', 'How many eagles?', tries === 0, String(tries ? extra.firstCount : n), String(has), null, { text: `His marks showed ${has} eagle${has === 1 ? '' : 's'}.` }, counted);
+        mark('Count the eagles', 'How many eagles?', tries === 0, String(tries ? extra.firstCount : n), String(has), null, { html: document.querySelector('.marks') ? document.querySelector('.marks').outerHTML : '', text: `His marks showed ${has} eagle${has === 1 ? '' : 's'}.` }, counted);
         extra.count = has; $('np').querySelectorAll('button').forEach(x => x.disabled = true);
         setMsg(`Yes! You had ${has} eagle${has === 1 ? '' : 's'}!`, 'good'); say(`Yes! You had ${has} eagle${has === 1 ? '' : 's'}!`, 0.95);
         nextUp(1500).then(() => partDone(tries ? `Counted ${has} eagles on try ${tries + 1}.` : `Counted ${has} eagles right the first time.`));
@@ -1263,6 +1267,7 @@ function weatherSheet() {
     S.obs.sky = k;
     if (!S.real) { await reveal(`<div class="big">You saw: ${esc(skyName(k))}</div>${noData()}`); return nextPart(); }
     const rk = sky(S.real.code), same = rk === k, close = (near[k] || []).includes(rk);
+    mark('The Sky', 'What the weather looked like', same || close, skyName(k), skyName(rk), null, { text: 'Look outside! What is the weather like right now?', choices: WX_SKY.map(x => x[1]), choiceHtml: picsOf(WX_SKY) }, [skyName(k)]);
     S.obs.skyMatch = same ? 'same' : close ? 'close' : 'different'; S.obs.skyReal = rk;
     await reveal(`<div class="wxrow"><div>You saw<br>${WX_ICON(k, 70)}<br><b>${esc(skyName(k))}</b></div><div>Weather station<br>${WX_ICON(rk, 70)}<br><b>${esc(skyName(rk))}</b></div></div>
       <div class="${same || close ? 'good' : 'try'}">${same ? 'You matched the weather station!' : close ? 'So close! Weather watchers often see it a little differently.' : 'Hmm, different! Look out the window again. The weather can change fast.'}</div>`,
@@ -1284,8 +1289,9 @@ function weatherSheet() {
       hint = tries >= 2 ? `It’s ${t}${U}. Type ${t}.` : v < t ? `Not ${v}. Look a little higher. Count the little lines up from the last number.` : `Not ${v}. Look a little lower. Count the little lines up from the last number.`;
     }
     S.obs.read = firstRead; S.skills.push(['Read the thermometer', tries === 0]);
-    mark('Thermometer', `It was ${t}${U}`, tries === 0, String(firstRead), `${t}`, null, { text: `A thermometer showing ${t}${U}.` }, reads);
+    mark('Thermometer', `It was ${t}${U}`, tries === 0, String(firstRead), `${t}`, null, { html: thermo(t), text: `A thermometer showing ${t}${U}.` }, reads);
     const rf = feel(t), ok = rf === S.obs.feel;
+    mark('Hot, warm or cold', 'How it felt outside', ok, S.obs.feel, rf, null, { text: 'Does it feel hot, warm, or cold?', choices: FEEL.map(x => x[1].toLowerCase()), choiceHtml: Object.fromEntries(FEEL.map(([a, n, e]) => [a, `<span style="font-size:46px;line-height:1">${e}</span>`])) }, [S.obs.feel]);
     await reveal(`<div class="big">It is ${t}${U}. That’s ${rf}!</div><div class="${ok ? 'good' : 'try'}">${ok ? `You felt ${S.obs.feel} too. Good weather sense!` : `You felt ${S.obs.feel}. The thermometer says ${rf}.`}</div>
       <div class="learn">Today’s high: ${S.real.hi}${U} · low: ${S.real.lo}${U}. ${F ? '80° and up is hot. 60° to 79° is warm. Under 60° is cold.' : '27° and up is hot. 15° to 26° is warm. Under 15° is cold.'}</div>`, `It is ${t} degrees. That's ${rf}.`);
     nextPart();
@@ -1295,6 +1301,7 @@ function weatherSheet() {
     S.obs.wind = await choose(WX_WIND);
     if (!S.real) { await reveal(`<div class="big">You saw: ${S.obs.wind}</div>${noData()}`); return nextPart(); }
     const rk = windK(S.real.wind), ok = rk === S.obs.wind;
+    mark('Wind', `${S.real.wind} mph`, ok, S.obs.wind, rk, null, { text: 'Look at trees, flags and leaves. How is the wind?', choices: WX_WIND.map(x => x[0]), choiceHtml: Object.fromEntries(WX_WIND.map(([a]) => [a, WX_ICON(a, 64)])) }, [S.obs.wind]);
     await reveal(`<div class="wxrow">${WX_ICON(rk, 80)}<div class="big">The wind is ${S.real.wind} miles per hour.<br>That’s ${rk}!</div></div><div class="${ok ? 'good' : 'try'}">${ok ? 'You read the trees just right!' : `You said ${S.obs.wind}. The weather station says ${rk}.`}</div>
       <div class="learn">Calm: under 4 mph, leaves are still. Breezy: 4 to 15 mph, leaves and small branches move. Windy: over 15 mph, big branches sway.</div>`, `The wind is ${S.real.wind} miles per hour. That's ${rk}.`);
     nextPart();
@@ -1310,7 +1317,7 @@ function weatherSheet() {
       tries++; b.classList.add('wrong'); b.disabled = true; setMsg('Not that way. Find the round end of the arrow, where the wind starts.', 'try');
     }
     S.obs.from = d; S.skills.push(['Read the compass', tries === 0]);
-    mark('Compass', 'Where the wind comes from', tries === 0, '', d, null, { text: `A compass with the wind arrow coming from the ${DIRN[d]}.`, choices: ['N', 'E', 'S', 'W'] }, taps);
+    mark('Compass', 'Where the wind comes from', tries === 0, '', d, null, { html: compass(S.real.dir), text: `The wind arrow starts on the ${DIRN[d]} side.`, choices: ['N', 'E', 'S', 'W'] }, taps);
     await reveal(`<div class="big">The wind comes from the ${DIRN[d]}!</div><div class="learn">We call it a ${DIRN[d]} wind. It’s blowing toward the ${DIRN[{ N: 'S', S: 'N', E: 'W', W: 'E' }[d]]}.</div>`, `The wind comes from the ${DIRN[d]}. We call it a ${DIRN[d]} wind.`);
     nextPart();
   } });
@@ -1319,6 +1326,7 @@ function weatherSheet() {
     S.obs.rain = await choose([['yes', 'Yes', '🌧️'], ['no', 'No', '☀️']], true);
     if (!S.real) { await reveal(`<div class="big">You said: ${S.obs.rain}</div>${noData()}`); return nextPart(); }
     const wet = S.real.rain >= 0.01, ok = (S.obs.rain === 'yes') === wet;
+    mark('Rain', `${S.real.rain.toFixed(2)} inches today`, ok, S.obs.rain, wet ? 'yes' : 'no', null, { html: gauge(S.real.rain), text: 'Has it rained today?', choices: ['yes', 'no'] }, [S.obs.rain]);
     await reveal(`<div class="wxrow">${gauge(S.real.rain)}<div class="big">${wet ? `The rain gauge got ${S.real.rain.toFixed(2)} inches today.` : 'The rain gauge is empty today. No rain!'}</div></div><div class="${ok ? 'good' : 'try'}">${ok ? 'You got it!' : wet ? 'It did rain a little. Maybe it dried up fast!' : 'No rain at the weather station today.'}</div>`, wet ? 'It rained today.' : 'No rain today.');
     nextPart();
   } });
@@ -1334,7 +1342,7 @@ function weatherSheet() {
       tries++; $('io').insertAdjacentHTML('beforeend', '<div class="message try">Look at the dashed line in the middle. Is the blue above it or below it?</div>'); say('Look at the dashed line in the middle. Is the blue above it or below it?', 0.95); await wait(2600);
     }
     S.obs.air = more ? 'damp' : 'dry'; S.skills.push(['Read the humidity cup', tries === 0]);
-    mark('Humidity cup', `${S.real.hum}% humidity`, tries === 0, cups[0], more ? 'more than half' : 'less than half', null, { text: `A cup filled to ${S.real.hum}%.`, choices: ['more than half', 'less than half'] }, cups);
+    mark('Humidity cup', `${S.real.hum}% humidity`, tries === 0, cups[0], more ? 'more than half' : 'less than half', null, { html: humCup(S.real.hum), text: `A cup filled to ${S.real.hum}%.`, choices: ['more than half', 'less than half'] }, cups);
     await reveal(`<div class="big">The humidity is ${S.real.hum}%. The air is ${more ? 'damp' : 'dry'}!</div><div class="learn">${more ? 'Damp air can feel sticky. Lots of water vapor can turn into clouds and rain.' : 'Dry air helps puddles and wet clothes dry faster.'}</div>`, `The humidity is ${S.real.hum} percent. The air is ${more ? 'damp' : 'dry'}.`);
     nextPart();
   } });
@@ -1344,6 +1352,7 @@ function weatherSheet() {
     const names = { puffy: 'Puffy clouds are called cumulus.', flat: 'A flat gray blanket is called stratus. It often brings drizzle.', wispy: 'Thin, wispy clouds are called cirrus. They are very high up.', clear: 'No clouds means a clear sky.' };
     if (!S.real) { await reveal(`<div class="big">${esc(names[S.obs.clouds])}</div>${noData()}`); return nextPart(); }
     const c = S.real.cloud, tens = Math.round(c / 10);
+    mark('Clouds', `${c}% of the sky`, true, (WX_CLOUDS.find(x => x[0] === S.obs.clouds) || [])[1], '', null, { text: 'Look up at the sky. What do the clouds look like?', choices: WX_CLOUDS.map(x => x[1]), choiceHtml: picsOf(WX_CLOUDS) }, [(WX_CLOUDS.find(x => x[0] === S.obs.clouds) || [])[1]]);
     await reveal(`<div class="big">${esc(names[S.obs.clouds])}</div><div>The weather station says clouds cover <b>${c}%</b> of the sky. That’s about <b>${tens} out of 10</b> parts.</div>
       <div class="wxrow">${Array.from({ length: 10 }, (_, i) => `<span style="font-size:30px;opacity:${i < tens ? 1 : .25}">☁️</span>`).join('')}</div>`, names[S.obs.clouds]);
     nextPart();
@@ -1364,6 +1373,7 @@ function weatherSheet() {
     screen('Will tomorrow be hot, warm, or cold?');
     const ff = await choose(FEEL);
     S.forecast = { sky: fs, feel: ff, station: S.real ? S.real.tomorrow : null };
+    mark('Forecast', 'What he thinks tomorrow will be', true, `${skyName(fs)}, ${ff}`, '', null, { text: 'Be a weather forecaster! What will tomorrow be like?', choices: WX_SKY.map(x => x[1]), choiceHtml: picsOf(WX_SKY) }, [skyName(fs)]);
     const st = S.real && S.real.tomorrow;
     await reveal(`<div class="big">Your forecast: ${esc(skyName(fs))} and ${ff}</div>${st ? `<div class="wxrow">${WX_ICON(sky(st.code), 64)}<div>The weather station thinks tomorrow will be <b>${esc(skyName(sky(st.code)))}</b>,<br>with a high of <b>${st.hi}${U}</b> (${feel(st.hi)}).</div></div>` : ''}<div class="learn">Come back tomorrow to see who was right!</div>`, 'Come back tomorrow to see if your forecast comes true!');
     nextPart();

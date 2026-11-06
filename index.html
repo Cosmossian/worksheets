@@ -28,6 +28,10 @@ a { color: var(--accent); }
 .classes button[aria-pressed="true"] { border-color: var(--study); background: #1B2D47; box-shadow: inset 0 -4px 0 var(--study); }
 .tablink { font: 600 16px Fredoka, sans-serif; border: 2px solid #0F9F8F; background: #0E2A28; color: #FFFFFF; border-radius: 999px; padding: 8px 16px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .tablink:hover { background: #12403B; }
+.workspace.embedded { grid-template-columns: 1fr; } .workspace.embedded .panel { display: none; }
+iframe.embed { width: 100%; height: 900px; border: 0; display: block; background: var(--bg); border-radius: 16px; }
+iframe.embed.full { position: fixed; inset: 0; width: 100vw; height: 100vh !important; z-index: 200; border-radius: 0; }
+body.framefull { overflow: hidden; }
 .onday { display: inline-flex; align-items: center; margin-left: 8px; font: 700 12px Fredoka, sans-serif; color: #0E151D; background: #34D399; border-radius: 999px; padding: 2px 8px; vertical-align: middle; }
 .classes button .dot { width: 10px; height: 10px; border-radius: 50%; background: #34D399; display: inline-block; box-shadow: 0 0 0 3px rgba(52, 211, 153, .25); }
 .hdr-btn.day { background: #0E2A28; border-color: #0F9F8F; color: #fff; }
@@ -292,8 +296,8 @@ select::-ms-expand { display: none; }
 </header>
 <nav class="classes" id="classes" aria-label="Classes"></nav>
 <nav class="tabs" role="tablist" aria-label="Worksheets in this class">
-  <a class="tablink" data-cls="phonics" data-day="daily" href="spell.html#daily">📝 Daily Sight Words →</a>
-  <a class="tablink" data-cls="phonics" data-day="spellq" href="spell.html#helper">✏️ Spelling Helper →</a>
+  <button role="tab" data-tool="daily" data-day="daily">📝 Daily Sight Words</button>
+  <button role="tab" data-tool="helper" data-day="spellq">✏️ Spelling Helper</button>
   <button role="tab" data-tool="sight">Sight Word Practice</button>
   <button role="tab" data-tool="master">Word Master Challenge</button>
   <button role="tab" data-tool="fixup">Spelling Fix-Up</button>
@@ -950,6 +954,7 @@ function buildSheets() {
 }
 
 function renderPreview() {
+  if (EMBED[state.tool]) return;
   if (typeof CLASSES !== 'undefined') { const c = CLASSES.find(x => x.id === (state.cls || classOf(state.tool))); if (c && !c.tools.length) return; }
   const html = buildSheets();
   if (!html) { $preview.innerHTML = '<p class="help">Add some words or questions to see your worksheet here.</p>'; return; }
@@ -1106,7 +1111,7 @@ const CLASSES = [
   { id: 'ela', name: 'ELA', icon: '📖', tools: ['question'] },
   { id: 'math', name: 'Math', icon: '🔢', tools: ['eagles'] },
   { id: 'music', name: 'Music', icon: '🎵', tools: [] },
-  { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['sight', 'master', 'fixup'], extra: 2 },
+  { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['daily', 'helper', 'sight', 'master', 'fixup'] },
   { id: 'pe', name: 'PE', icon: '🏃', tools: [] },
   { id: 'science', name: 'Science', icon: '🔬', tools: ['weather'] },
   { id: 'social', name: 'Social Studies', icon: '🌎', tools: [] },
@@ -1129,10 +1134,9 @@ function renderClasses() {
   const cls = state.cls || classOf(state.tool);
   const on = onDay || { tools: new Set(), daily: false, spellq: false }, hasOn = c => c.tools.some(t => on.tools.has(t)) || (c.id === 'phonics' && (on.daily || on.spellq));
   document.getElementById('classes').innerHTML = CLASSES.map(c => `<button data-cls="${c.id}" aria-pressed="${c.id === cls}"><span aria-hidden="true">${c.icon}</span>${esc(c.name)}<small>${c.tools.length + (c.extra || 0)}</small>${hasOn(c) ? '<span class="dot" title="Something here is on his day"></span>' : ''}</button>`).join('');
-  document.querySelectorAll('.tabs [data-tool]').forEach(b => { const tag = b.querySelector('.onday'); if (on.tools.has(b.dataset.tool)) { if (!tag) b.insertAdjacentHTML('beforeend', '<span class="onday">✓ On his day</span>'); } else if (tag) tag.remove(); });
+  document.querySelectorAll('.tabs [data-tool]:not([data-day])').forEach(b => { const tag = b.querySelector('.onday'); if (on.tools.has(b.dataset.tool)) { if (!tag) b.insertAdjacentHTML('beforeend', '<span class="onday">✓ On his day</span>'); } else if (tag) tag.remove(); });
   document.querySelectorAll('.tabs [data-day]').forEach(a => { const tag = a.querySelector('.onday'); if (on[a.dataset.day]) { if (!tag) a.insertAdjacentHTML('beforeend', '<span class="onday">✓ On his day</span>'); } else if (tag) tag.remove(); });
   document.querySelectorAll('.tabs [data-tool]').forEach(b => { b.hidden = classOf(b.dataset.tool) !== cls; });
-  document.querySelectorAll('.tabs .tablink').forEach(a => { a.hidden = a.dataset.cls !== cls; });
 }
 document.getElementById('classes').addEventListener('click', e => {
   const b = e.target.closest('[data-cls]'); if (!b) return;
@@ -1158,12 +1162,12 @@ async function openDay() {
     if (words.length) {
       const steps = [d.look !== false ? `Look &amp; Listen (3 rounds${d.mic !== false ? ', with the microphone' : ''})` : '', d.practice !== false ? 'practice each word with the Spelling Helper' : '', 'the check (spoken words, letter grade)'].filter(Boolean).join(' → ');
       const chk = L.filter(x => x.kind === 'check' && today(x) && x.t > (d.resetAt || 0)).sort((a, b) => b.t - a.t)[0];
-      items.push({ off: d.on === false, title: `📝 Today’s sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : chk && chk.grade ? `✓ done: ${chk.grade.letter} (${chk.grade.pct}%)` : 'not done yet', ok: !!chk, acts: `<a class="btn btn-small" href="spell.html#daily">Change the words</a>${chk ? '<button class="btn btn-small" data-reset="daily">↺ Reset today, keep the words</button>' : ''}` });
+      items.push({ off: d.on === false, title: `📝 Today’s sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : chk && chk.grade ? `✓ done: ${chk.grade.letter} (${chk.grade.pct}%)` : 'not done yet', ok: !!chk, acts: `<button class="btn btn-small" data-goto="daily">Change the words</button>${chk ? '<button class="btn btn-small" data-reset="daily">↺ Reset today, keep the words</button>' : ''}` });
     }
     const q = S.spellq;
     if (q && q.words && q.words.length) {
       const done = L.find(x => x.kind === 'sheet' && x.aid === q.id);
-      items.push({ title: `✏️ Spelling practice · ${q.words.length}`, sub: `${esc(q.words.join(', '))}<br>each word with the Spelling Helper, on his own`, st: done ? '✓ done' : 'not done yet', ok: !!done, acts: `<a class="btn btn-small" href="spell.html#helper">Change the words</a>${done ? '<button class="btn btn-small" data-reset="spellq">↺ Do it again, same words</button>' : ''}` });
+      items.push({ title: `✏️ Spelling practice · ${q.words.length}`, sub: `${esc(q.words.join(', '))}<br>each word with the Spelling Helper, on his own`, st: done ? '✓ done' : 'not done yet', ok: !!done, acts: `<button class="btn btn-small" data-goto="helper">Change the words</button>${done ? '<button class="btn btn-small" data-reset="spellq">↺ Do it again, same words</button>' : ''}` });
     }
     ((S.sheets && S.sheets.list) || []).forEach((a, k) => {
       const mine = L.filter(x => (x.aid || x.cid) === a.id && (!['steps', 'weather'].includes(a.tool) || today(x))).sort((x, y) => y.t - x.t)[0];
@@ -1183,6 +1187,8 @@ async function openDay() {
         lsSet(key === 'daily' ? 'spell-daily' : 'spell-queue', data);
         return openDay();
       }
+      const go = e.target.closest('[data-goto]');
+      if (go) { document.getElementById('dayWrap').hidden = true; state.tool = go.dataset.goto; state.cls = 'phonics'; save(); history.replaceState(null, '', '#' + state.tool); return renderPanel(); }
       const b = e.target.closest('[data-tryday]'); if (!b) return; const a = S.sheets.list[+b.dataset.tryday]; lsSet('study-sheet-try', { ...a, id: 'try' }); window.open('do.html?try=1', '_blank'); };
   } catch (e) { list.innerHTML = `<p class="help">Couldn’t load his day right now (${esc(e.message || e)}).</p>`; }
 }
@@ -1191,6 +1197,14 @@ document.getElementById('dayClose').onclick = () => { document.getElementById('d
 document.getElementById('dayWrap').onclick = e => { if (e.target.id === 'dayWrap') e.target.hidden = true; };
 document.getElementById('switchUser').onclick = async () => { try { const sb = sbClient(); if (sb) await sb.auth.signOut(); } catch (e) { } location.href = 'spell.html'; };
 
+const EMBED = { daily: 'Daily Sight Words', helper: 'Spelling Helper' };
+let frame = null;
+// the page inside tells us its height, and when to go full screen (while he's doing the words) and back
+window.addEventListener('message', e => {
+  if (e.origin !== location.origin || !frame || e.source !== frame.contentWindow || !e.data || typeof e.data !== 'object') return;
+  if (typeof e.data.studyH === 'number') frame.style.height = Math.max(400, e.data.studyH + 8) + 'px';
+  if (typeof e.data.studyFull === 'boolean') { frame.classList.toggle('full', e.data.studyFull); document.body.classList.toggle('framefull', e.data.studyFull); }
+});
 function renderPanel() {
   renderClasses();
   const cls = CLASSES.find(c => c.id === (state.cls || classOf(state.tool)));
@@ -1200,6 +1214,14 @@ function renderPanel() {
     return;
   }
   const t = state.tool;
+  const ws = document.querySelector('.workspace');
+  if (EMBED[t]) {   // Daily Sight Words / Spelling Helper: their page, shown right here (it goes full screen while he works)
+    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tool === t));
+    ws.classList.add('embedded');
+    if (!frame || frame.dataset.tool !== t) { $preview.innerHTML = `<iframe class="embed" id="embedFrame" data-tool="${t}" title="${esc(EMBED[t])}" src="spell.html?embed=1#${t}"></iframe>`; frame = document.getElementById('embedFrame'); }
+    return;
+  }
+  ws.classList.remove('embedded'); frame = null;
   $panel.innerHTML = { sight: panelSight, master: panelMaster, fixup: panelFixup, question: panelQuestion, steps: panelSteps, eagles: panelEagles, weather: panelWeather }[t]() + onScreenBlock();
   if (t === 'weather') wireWeather();
   wireOnScreen();
@@ -1405,7 +1427,7 @@ if (fromLink.get('fixup')) {
   history.replaceState(null, '', location.pathname + '#fixup');
 }
 const fromHash = location.hash.slice(1);
-if (['sight', 'master', 'fixup', 'question', 'steps', 'eagles', 'weather'].includes(fromHash)) { state.tool = fromHash; state.cls = classOf(fromHash); }
+if (['daily', 'helper', 'sight', 'master', 'fixup', 'question', 'steps', 'eagles', 'weather'].includes(fromHash)) { state.tool = fromHash; state.cls = classOf(fromHash); }
 else if (CLASSES.some(c => c.id === fromHash)) state.cls = fromHash;
 renderPanel();
 // The Worksheets page is for grown-ups: nobody signed in → the Parent / Child screen; his login → his start screen.

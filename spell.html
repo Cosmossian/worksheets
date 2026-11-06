@@ -138,6 +138,38 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .rv-day h3 { margin: 0 0 8px; font: 700 21px Fredoka, sans-serif; color: var(--navy); }
 .rv-sec { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
 .rv-sec h4 { margin: 0 0 6px; font: 700 17px Fredoka, sans-serif; }
+.ans { margin-top: 0; }
+.ans-btns { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; margin-top: 8px; }
+.replay-btn { font: 600 15px Fredoka, sans-serif; color: #fff; background: var(--study); border: 2px solid var(--study); border-radius: 10px; padding: 5px 12px; cursor: pointer; }
+.replay { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: flex; flex-direction: column; }
+.replay[hidden] { display: none; }
+.rp-top { display: flex; align-items: center; gap: 14px; padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--line); font: 600 17px Fredoka, sans-serif; }
+.rp-top span { color: var(--muted); margin-right: auto; }
+.rp-screen { flex: 1; overflow: auto; padding: 18px 16px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.rp-nav { display: flex; justify-content: center; gap: 64px; padding: 12px; border-top: 1px solid var(--line); background: var(--surface); }
+.rp-part { font: 700 28px Fredoka, sans-serif; margin: 0; } .rp-sub { color: var(--muted); font-size: 18px; margin: 0; }
+.rp-verdict { font: 700 22px Fredoka, sans-serif; } .rp-verdict.ok { color: var(--good); } .rp-verdict.no { color: var(--try); }
+.rp-big { font: 700 52px Andika, sans-serif; letter-spacing: 3px; background: #fff; color: #1F2937; border-radius: 18px; padding: 2px 24px; }
+.rp-oops { font: 700 46px Andika, sans-serif; color: #FCA5A5; text-decoration: underline wavy #F87171; text-underline-offset: 10px; }
+.rp-sent { font-size: 28px; max-width: 30ch; line-height: 1.4; } .rp-sent .bl { display: inline-block; min-width: 100px; border-bottom: 4px solid var(--try); margin: 0 6px; }
+.rp-saw { color: var(--muted); font-size: 18px; max-width: 46ch; }
+.rp-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 760px; }
+.rp-opts.two { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 520px; }
+.rp-opts.four { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 520px; }
+.rp-opt { position: relative; border: 3px solid var(--line); background: var(--surface-2); border-radius: 18px; font: 700 32px Andika, sans-serif; padding: 12px 8px; }
+.rp-opt.right { border-color: var(--good); background: #0F2E25; } .rp-opt.wrong { border-color: #F87171; background: #3A1717; color: #FCA5A5; text-decoration: line-through; }
+.rp-opt i { position: absolute; top: -10px; left: -10px; font: 700 15px Fredoka, sans-serif; font-style: normal; background: var(--try); color: #0E151D; border-radius: 999px; width: 28px; height: 28px; display: grid; place-items: center; text-decoration: none; }
+.rp-try { display: flex; align-items: center; gap: 10px; } .rp-try small { font: 600 16px Fredoka, sans-serif; color: var(--muted); width: 54px; text-align: right; }
+.rp-box { width: 50px; height: 62px; border-radius: 12px; border: 3px solid var(--line); background: var(--surface-2); display: inline-grid; place-items: center; font: 700 38px Andika, sans-serif; margin: 0 3px; }
+.rp-box.g { border-color: var(--good); background: #0F2E25; color: #fff; } .rp-box.b { border-color: #F87171; background: #3A1717; color: #FCA5A5; } .rp-box.e { border-style: dashed; }
+.rp-keys { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; } .rp-keys span { width: 48px; height: 48px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface-2); display: grid; place-items: center; font: 700 26px Andika, sans-serif; }
+.rp-bank { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; } .rp-bank span { border: 2px solid var(--line); border-radius: 999px; padding: 3px 14px; font: 700 22px Andika, sans-serif; } .rp-bank span.r { border-color: var(--good); }
+.rp-img { max-width: min(900px, 95vw); background: #fff; border-radius: 16px; }
+.rp-pic { background: #fff; border-radius: 18px; padding: 10px 14px; color: #1F2937; max-width: 95vw; overflow: auto; }
+.rp-pic .marks { background: #fff; border: 0; color: #1F2937; display: grid; grid-template-columns: auto auto auto; gap: 4px 22px; font: 600 20px Fredoka, sans-serif; }
+.rp-pic .pic { background: none; padding: 0; }
+.rp-optpic { display: flex; justify-content: center; margin-bottom: 4px; } .rp-optpic svg { background: #fff; border-radius: 12px; padding: 4px; }
+.rp-opt { font-size: 26px; } .rp-opt.chosen { border-color: #F59E0B; background: #33270C; }
 .ans { margin-top: 8px; }
 .ans summary { cursor: pointer; font: 600 15px Fredoka, sans-serif; color: var(--accent); display: inline-block; border: 2px solid var(--line); border-radius: 10px; padding: 5px 12px; background: var(--surface); }
 .ans[open] summary { margin-bottom: 8px; }
@@ -176,6 +208,8 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .sendbox { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); display: flex; flex-direction: column; gap: 8px; }
 .sendbox textarea { width: 100%; }
 body.only-daily #helperCard, body.only-helper #dailyCard { display: none; }
+body.embed #tod-nav, body.embed .app-header { display: none !important; }
+body.embed.playing .app-header { display: none !important; }
 .kid-hold { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
 body.authwait main, body.authwait .app-header .review-btn, body.authwait .app-header .back { visibility: hidden; }
 body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-header .back { display: none; }
@@ -468,6 +502,11 @@ body.gated .app-header .review-btn, body.gated .app-header .back, body.kid .app-
 </main>
 
 <!-- Grown-up: Parent Review (recordings + results, by day) -->
+<div class="replay" id="replay" hidden role="dialog" aria-modal="true" aria-label="Replay">
+  <div class="rp-top"><b id="rpTitle"></b><span id="rpCount"></span><button class="btn" id="rpClose">✕ Close</button></div>
+  <div class="rp-screen" id="rpScreen"></div>
+  <div class="rp-nav"><button class="btn big" id="rpBack">← Back</button><button class="btn big primary" id="rpNext">Next →</button></div>
+</div>
 <main class="setup" id="review" hidden>
   <div class="card">
     <h2>Parent Review</h2>
@@ -1772,7 +1811,67 @@ function answerRows(list) {
       ${r.answer ? `<div class="ans-right">Right answer: <b>${esc(r.answer)}</b></div>` : ''}</div>`;
   }).join('');
 }
-const seeAll = (rows, extraHtml = '') => rows || extraHtml ? `<details class="ans"><summary>See every answer</summary>${extraHtml}${rows}</details>` : '';
+const seeAll = (rows, extraHtml = '', key = '') => rows || extraHtml ? `<div class="ans-btns">${key ? `<button class="replay-btn" data-replay="${esc(key)}">▶ Replay</button>` : ''}<details class="ans"><summary>See every answer</summary>${extraHtml}${rows}</details></div>` : '';
+/* ▶ Replay: his screens one at a time, rebuilt from what was recorded, with what he tapped/typed in order */
+let rp = null;
+// pictures saved with his answers (coins, shapes, thermometer…): keep drawings only, nothing that could run
+function cleanPic(html) {
+  if (!html) return '';
+  const d = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
+  d.querySelectorAll('script, iframe, object, embed, foreignObject, link, style, a, form, input, button').forEach(n => n.remove());
+  d.querySelectorAll('*').forEach(n => [...n.attributes].forEach(a => { if (/^on/i.test(a.name) || /javascript:/i.test(a.value) || (/href$/i.test(a.name) && !a.value.startsWith('#'))) n.removeAttribute(a.name); }));
+  return d.body.firstChild.innerHTML;
+}
+function replaySteps(key) {
+  const [kind, id] = key.split(':');
+  if (kind === 'check') { const x = (store('spell-check-log') || []).find(r => String(r.id) === id); return x && { title: 'Sight word check', steps: x.results.map(r => ({ part: 'Check', label: r.word, ok: r.ok, answer: r.word, hear: true, shown: { text: 'He heard the word and a sentence. The word wasn’t shown.' }, picks: [r.typed] })) }; }
+  if (kind === 'fixup') { const x = (store('fixup-log') || []).find(r => String(r.id) === id); return x && { title: 'Spelling Fix-Up', steps: (x.detail || x.test.map(r => ({ part: 'Practice Test', label: r.word, ok: r.ok, answer: r.word, picks: [r.typed] }))).map(r => ({ ...r, hear: /Practice Test|Pick/.test(r.part) })) }; }
+  const x = (store('sheet-log') || []).find(r => String(r.id) === id); if (!x) return null;
+  const steps = [...((x.extra && x.extra.traces) || []).map(tr => ({ part: 'Trace', label: tr.word, ok: !tr.redo, img: tr.img, shown: { text: tr.redo ? `He had to trace more ${tr.redo} time${tr.redo > 1 ? 's' : ''}.` : 'Traced neatly the first time.' }, picks: [] })), ...(x.items || [])];
+  return { title: x.title, steps };
+}
+function openReplay(key) { const r = replaySteps(key); if (!r || !r.steps.length) return; rp = { ...r, i: 0 }; $('replay').hidden = false; drawReplay(); }
+function drawReplay() {
+  const st = rp.steps[rp.i], sh = st.shown || {}, picks = st.picks && st.picks.length ? st.picks : st.typed ? [st.typed] : [];
+  const n = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+  const isRight = v => n(v) === n(st.answer) || n(v).replace(/^(a|an|the) /, '') === n(st.answer).replace(/^(a|an|the) /, '');
+  $('rpTitle').textContent = rp.title; $('rpCount').textContent = `Screen ${rp.i + 1} of ${rp.steps.length}`;
+  let saw = '';
+  const text = sh.text || '';
+  if (st.img) saw = `<img class="rp-img" src="${st.img}" alt="His tracing">`;
+  else if (sh.html) saw = `<div class="rp-pic">${cleanPic(sh.html)}</div>${/___/.test(text) ? (() => { const [a, b] = text.split('___'); return `<div class="rp-sent">${esc(a)}<span class="bl"></span>${esc(b || '')}</div>`; })() : `<div class="rp-saw">${esc(text)}</div>`}`;
+  else if (st.part === 'Fix It!') saw = `<div class="rp-oops">${esc(st.label)}</div>`;
+  else if (st.part === 'Word Shapes') {   // draw the shape he saw: tall, short and hanging boxes (+ any hint letters)
+    const kinds = ((text.match(/\(([^)]*)\)/) || [])[1] || '').split(' ').filter(Boolean), hint = (text.match(/starts with “(.+)”/) || [])[1] || '';
+    let x = 0; const r = kinds.map((k, q) => { const [y, h] = k === 'tall' ? [0, 60] : k === 'hanging' ? [24, 60] : [24, 36]; const o = `<rect x="${x + 2}" y="${y + 2}" width="36" height="${h - 4}" rx="6" fill="#fff" stroke="#3C7DD9" stroke-width="3"/>${hint[q] ? `<text x="${x + 20}" y="53" text-anchor="middle" font-family="Andika" font-size="34" font-weight="700" fill="#3C7DD9">${esc(hint[q])}</text>` : ''}`; x += 40; return o; }).join('');
+    saw = `<div class="rp-big" style="padding:12px 16px"><svg width="${x}" height="86" viewBox="0 0 ${x} 86">${r}</svg></div>${hint ? `<div class="rp-saw">Hint: it starts with “${esc(hint)}”</div>` : ''}`;
+  }
+  else if (/___/.test(text)) { const [a, b] = text.replace(/ \(picture: .*\)$/, '').split('___'); saw = `<div class="rp-sent">${esc(a)}<span class="bl"></span>${esc(b || '')}</div>`; }
+  else if (st.part === 'Cover & Write') saw = `<div class="rp-big">${esc(st.answer)}</div><div class="rp-saw">Then the word was covered.</div>`;
+  else if (st.part === 'Missing Letters') saw = `<div class="rp-big">${esc((text.match(/“(.+)”/) || [])[1] || st.label)}</div>`;
+  else if (st.part === 'Circle the What words' || /What|Which|How/.test(text) && !sh.choices) saw = `<div class="rp-sent">${esc(text)}</div>`;
+  const hear = st.hear || st.part === 'Check' ? `<button class="btn" id="rpHear">🔊 Hear what he heard</button>` : '';
+  let pick = '';
+  if (sh.choices) {
+    const two = sh.choices.length <= 4 && sh.choices.every(c => c.length > 6);
+    pick = `<div class="rp-opts${sh.choices.length === 4 && sh.choices.every(c => c.length <= 3) ? ' four' : sh.choices.length <= 2 || two ? ' two' : ''}">${sh.choices.map(c => { const k = picks.findIndex(p => n(p) === n(c)); const ph = sh.choiceHtml && sh.choiceHtml[c] ? `<div class="rp-optpic">${cleanPic(sh.choiceHtml[c])}</div>` : ''; return `<div class="rp-opt ${st.answer && isRight(c) ? 'right' : k >= 0 ? (st.answer ? 'wrong' : 'chosen') : ''}">${k >= 0 ? `<i>${k + 1}</i>` : ''}${ph}${esc(c)}</div>`; }).join('')}</div>`;
+  } else if (picks.length && /^[a-z]( [a-z])*$/.test(picks[0]) && picks.length === 1 && n(picks[0]).replace(/ /g, '') !== n(st.answer).replace(/ /g, '')) {
+    pick = `<div class="rp-saw">The letters he typed, in order:</div><div class="rp-keys">${picks[0].split(' ').map(c => `<span>${esc(c)}</span>`).join('')}</div>`;
+  } else if (picks.length && st.answer && !/^line \d/.test(picks[0])) {
+    const A = [...n(st.answer).replace(/ /g, '')];
+    pick = picks.map((v, k) => { const L = [...String(v).toLowerCase().replace(/[^a-z0-9]/g, '')]; const cells = Array.from({ length: Math.max(L.length, A.length) }, (_, q) => L[q] ? `<span class="rp-box ${L[q] === A[q] ? 'g' : 'b'}">${esc(L[q])}</span>` : `<span class="rp-box e"></span>`).join('');
+      return `<div class="rp-try"><small>${picks.length > 1 ? `Try ${k + 1}` : 'He put'}</small>${cells}</div>`; }).join('');
+  } else if (picks.length) pick = `<div class="rp-keys" style="flex-direction:column">${picks.map(v => `<div>${esc(v)}</div>`).join('')}</div>`;
+  const bank = sh.bank ? `<div class="rp-bank">${sh.bank.map(c => `<span class="${isRight(c) ? 'r' : ''}">${esc(c)}</span>`).join('')}</div>` : '';
+  $('rpScreen').innerHTML = `<p class="rp-part">${esc(st.part)}</p>${text && !saw.includes(esc(text)) && !saw.includes(esc(text.split('___')[0])) && !st.img ? `<p class="rp-sub">${esc(text)}</p>` : ''}${saw}${hear}${bank}${pick}
+    <div class="rp-verdict ${st.ok ? 'ok' : 'no'}">${!st.answer && !st.img ? 'His pick (nothing to check against)' : st.ok ? '✓ Right the first time' : '✗ Not the first time'}${st.answer && !st.img ? ` · right answer: ${esc(st.answer)}` : ''}</div>`;
+  $('rpBack').disabled = rp.i === 0; $('rpNext').textContent = rp.i < rp.steps.length - 1 ? 'Next →' : 'Done ✓';
+  if ($('rpHear')) $('rpHear').onclick = () => { const s = typeof sentenceFor === 'function' ? sentenceFor(st.answer) : ''; playWord(st.answer).then(() => s && say(s, 0.85)); };
+}
+$('rpBack').onclick = () => { if (rp && rp.i > 0) { rp.i--; drawReplay(); } };
+$('rpNext').onclick = () => { if (!rp) return; if (rp.i < rp.steps.length - 1) { rp.i++; drawReplay(); } else $('rpClose').click(); };
+$('rpClose').onclick = () => { $('replay').hidden = true; rp = null; if (canTalk) speechSynthesis.cancel(); };
+document.addEventListener('keydown', e => { if ($('replay').hidden) return; if (e.key === 'ArrowRight') $('rpNext').click(); else if (e.key === 'ArrowLeft') $('rpBack').click(); else if (e.key === 'Escape') $('rpClose').click(); });
 async function renderReview() {
   if (cloudMember()) { $('reviewList').innerHTML = '<p class="rv-empty">Loading…</p>'; await cloudPullLogs(); if ($('review').hidden) return; }
   const looks = lookLog(), checks = store('spell-check-log') || [], fixes = store('fixup-log') || [], sheets = store('sheet-log') || [];
@@ -1792,7 +1891,7 @@ async function renderReview() {
         <div class="ln">${x.micOk === false && x.micWanted ? 'The microphone wasn’t available, so it couldn’t check.' : x.total ? `Said out loud: ${x.heard} of ${x.total}` : ''}</div>
         ${x.clips && x.clips.length ? `<div class="clips">${clipButtons(x)}</div><button class="del" data-delsess="${x.session}">Delete these recordings</button>` : '<div class="ln rv-empty">No recordings saved.</div>'}</div>`;
       if (it.kind === 'check') { const right = x.results.filter(r => r.ok).length, g = x.grade || gradeFor(right, x.results.length);
-        return `<div class="rv-sec"><h4>Sight word check<span>${esc(timeOf(x.t))} · ${g.pct}% ${g.letter} · ${right} of ${x.results.length} right${x.sent ? ' · emailed ✓' : ''}</span></h4><div class="ln">${wordList(x.results)}</div>${seeAll(answerRows(x.results.map(r => ({ part: 'Check', label: r.word, ok: r.ok, answer: r.word, shown: { text: 'He heard the word and a sentence. The word wasn’t shown.' }, picks: [r.typed] }))))}</div>`; }
+        return `<div class="rv-sec"><h4>Sight word check<span>${esc(timeOf(x.t))} · ${g.pct}% ${g.letter} · ${right} of ${x.results.length} right${x.sent ? ' · emailed ✓' : ''}</span></h4><div class="ln">${wordList(x.results)}</div>${seeAll(answerRows(x.results.map(r => ({ part: 'Check', label: r.word, ok: r.ok, answer: r.word, shown: { text: 'He heard the word and a sentence. The word wasn’t shown.' }, picks: [r.typed] }))), '', 'check:' + x.id)}</div>`; }
       if (it.kind === 'sheet') {
         const wrong = (x.items || []).filter(r => !r.ok);
         return `<div class="rv-sec"><h4>${esc(x.title)}<span>${esc(timeOf(x.t))}${x.grade ? ` · ${x.grade.pct}% ${x.grade.letter} · ${x.right} of ${x.of} right the first time` : ' · done'}${x.sent ? ' · emailed ✓' : ''}</span></h4>
@@ -1800,14 +1899,15 @@ async function renderReview() {
           ${x.extra && x.extra.marks ? `<div class="ln">Quarters: ${x.extra.marks.map((m, i) => `${i + 1} ${m === 'has' ? '🦅' : '✗'}`).join(' · ')}</div>` : ''}
           ${x.extra && x.extra.stepTimes ? `<div class="ln">Steps done at ${x.extra.stepTimes.map(t => esc(timeOf(t))).join(', ')}</div>` : ''}
           ${(x.parts || []).length > 1 ? `<div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div>` : ''}
-          ${seeAll(answerRows(x.items || []), x.extra && x.extra.traces ? `<div class="ans-row"><div class="ans-h"><b>Trace</b><span>what he traced with his finger</span></div><div class="traces">${x.extra.traces.map(tr => `<figure><img src="${tr.img}" alt="His tracing of ${esc(tr.word)}"><figcaption>${esc(tr.word)}${tr.redo ? ` · traced more ${tr.redo}×` : ''}</figcaption></figure>`).join('')}</div></div>` : '')}</div>`;
+          ${seeAll(answerRows(x.items || []), x.extra && x.extra.traces ? `<div class="ans-row"><div class="ans-h"><b>Trace</b><span>what he traced with his finger</span></div><div class="traces">${x.extra.traces.map(tr => `<figure><img src="${tr.img}" alt="His tracing of ${esc(tr.word)}"><figcaption>${esc(tr.word)}${tr.redo ? ` · traced more ${tr.redo}×` : ''}</figcaption></figure>`).join('')}</div></div>` : '', 'sheet:' + x.id)}</div>`;
       }
       const right = x.test.filter(r => r.ok).length;
       return `<div class="rv-sec"><h4>Spelling Fix-Up<span>${esc(timeOf(x.t))} · Practice Test ${x.grade.pct}% ${x.grade.letter} · ${right} of ${x.test.length} right</span></h4>
-        <div class="ln">${wordList(x.test)}</div><div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div>${seeAll(answerRows(x.detail || x.test.map(r => ({ part: 'Practice Test', label: r.word, ok: r.ok, answer: r.word, picks: [r.typed] }))))}</div>`;
+        <div class="ln">${wordList(x.test)}</div><div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div>${seeAll(answerRows(x.detail || x.test.map(r => ({ part: 'Practice Test', label: r.word, ok: r.ok, answer: r.word, picks: [r.typed] }))), '', 'fixup:' + x.id)}</div>`;
     }).join('') + '</div>').join('');
 }
 $('reviewList').addEventListener('click', async e => {
+  const rpb = e.target.closest('[data-replay]'); if (rpb) return openReplay(rpb.dataset.replay);
   const c = e.target.closest('[data-clip]'); if (c) return playLogClip(c.dataset.clip);
   const d = e.target.closest('[data-delsess]');
   if (!d) return;
@@ -2087,6 +2187,15 @@ function renderKidHome() {
 renderRecent();
 renderSetup();
 renderDailySetup();
+/* Shown inside the Study page (index.html, ?embed=1): no header or top bar; tell the Study page our height,
+   and to go full screen whenever he's doing the words (anything but the setup screen), and back after. */
+const EMBEDDED = new URLSearchParams(location.search).get('embed') === '1' && window.parent !== window;
+if (EMBEDDED) {
+  document.body.classList.add('embed');
+  const tell = m => { try { window.parent.postMessage(m, location.origin); } catch (e) { } };
+  new ResizeObserver(() => tell({ studyH: document.documentElement.scrollHeight })).observe(document.body);
+  new MutationObserver(() => tell({ studyFull: $('setup').hidden })).observe($('setup'), { attributes: true, attributeFilter: ['hidden'] });
+}
 const onlyCard = () => { document.body.classList.toggle('only-daily', location.hash === '#daily'); document.body.classList.toggle('only-helper', location.hash === '#helper'); };   // Daily Sight Words and the Spelling Helper are separate pages from the Study
 onlyCard(); window.addEventListener('hashchange', onlyCard);
 (async () => {   // who's signed in? Nobody → the Parent / Child screen. (If the sign-in can't load at all, it works on this device only, like before.)
