@@ -309,6 +309,12 @@ select::-ms-expand { display: none; }
   <button role="tab" data-tool="chores">🧹 Chore Chart</button>
   <button role="tab" data-tool="eagles">Count the Eagles</button>
   <button role="tab" data-tool="weather">My Weather Watch</button>
+  <button role="tab" data-tool="tenmore">10 More or Less</button>
+  <button role="tab" data-tool="sound">Sound Investigator</button>
+  <button role="tab" data-tool="story">Story Time</button>
+  <button role="tab" data-tool="chains">Word Chains</button>
+  <button role="tab" data-tool="heart">Heart Word</button>
+  <button role="tab" data-tool="letter">Handwriting</button>
 </nav>
 <div class="daywrap" id="dayWrap" hidden role="dialog" aria-modal="true" aria-labelledby="dayTitle"><div class="daybox">
   <div class="dayhead"><h2 id="dayTitle">His day today</h2><button class="hdr-btn" id="dayClose">✕ Close</button></div>
@@ -877,6 +883,7 @@ function countEagles() {
 }
 
 </script>
+<script src="lessons.js?v=1"></script>
 <script>
 /* First Grade Fun Worksheets — the page you use to make worksheets. */
 
@@ -903,7 +910,8 @@ const DEFAULTS = {
   fixup: { label: '', words: 'first, while, more, against', wrote: {}, sentences: {}, showParent: true },
   question: { title: '', wordBank: true, example: false, picked: [0, 1, 2, 3, 4, 5, 6], custom: [] },
   steps: DEFAULT_STEPS,
-  weather: { place: null, unit: 'F', days: 3 }
+  weather: { place: null, unit: 'F', days: 3 },
+  ...L_defaults()   // the lesson worksheets in lessons.js (each has a 📄 School copy and a ✏️ My own version)
 };
 
 let state;
@@ -956,6 +964,7 @@ function buildSheets() {
   if (t === 'steps') return dailySteps(state.steps);
   if (t === 'eagles') return countEagles();
   if (t === 'weather') return weatherWatch(state.weather);
+  if (LT[t]) return L_build(t);
   return '';
 }
 
@@ -1143,10 +1152,10 @@ async function findPlace(q) {
 
 /* ---------- Classes: the worksheets grouped like his school subjects ---------- */
 const CLASSES = [
-  { id: 'ela', name: 'ELA', icon: '📖', tools: ['question'] },
-  { id: 'math', name: 'Math', icon: '🔢', tools: ['eagles'] },
+  { id: 'ela', name: 'ELA', icon: '📖', tools: ['question', 'letter'] },
+  { id: 'math', name: 'Math', icon: '🔢', tools: ['eagles', 'tenmore'] },
   { id: 'music', name: 'Music', icon: '🎵', tools: [] },
-  { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['daily', 'helper', 'sight', 'master', 'fixup'] },
+  { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['daily', 'helper', 'sight', 'master', 'fixup', 'sound', 'story', 'chains', 'heart'] },
   { id: 'pe', name: 'PE', icon: '🏃', tools: [] },
   { id: 'science', name: 'Science', icon: '🔬', tools: ['weather'] },
   { id: 'social', name: 'Social Studies', icon: '🌎', tools: [] },
@@ -1269,7 +1278,7 @@ function renderPanel() {
     return;
   }
   ws.classList.remove('embedded'); frame = null;
-  $panel.innerHTML = { sight: panelSight, master: panelMaster, fixup: panelFixup, question: panelQuestion, steps: panelSteps, eagles: panelEagles, weather: panelWeather }[t]() + onScreenBlock();
+  $panel.innerHTML = ({ sight: panelSight, master: panelMaster, fixup: panelFixup, question: panelQuestion, steps: panelSteps, eagles: panelEagles, weather: panelWeather }[t] || (() => L_panel(t)))() + onScreenBlock();
   if (t === 'weather') wireWeather();
   if (t === 'master') wireMtest();
   wireOnScreen();
@@ -1283,12 +1292,13 @@ function renderPanel() {
    His start screen in the Spelling Helper shows each one as a button; do.html runs it (fixup.html for Spelling Fix-Up). */
 const SB_URL = 'https://wpgclwmssnmiidvnekml.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZ2Nsd21zc25taWlkdm5la21sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzE4NDUsImV4cCI6MjEwOTE0Nzg0NX0.o19X9l7zS1bk34DpR3id0gt6mAB42ZZb6olRr8ohzTc';
-const TOOL_NAMES = { sight: 'Sight Word Practice', master: 'Word Master Challenge', fixup: 'Spelling Fix-Up', question: 'What Is the Question Asking?', steps: 'Daily Steps', eagles: 'Count the Eagles', weather: 'My Weather Watch', mtest: 'Mastered Words Test' };
+const TOOL_NAMES = { sight: 'Sight Word Practice', master: 'Word Master Challenge', fixup: 'Spelling Fix-Up', question: 'What Is the Question Asking?', steps: 'Daily Steps', eagles: 'Count the Eagles', weather: 'My Weather Watch', mtest: 'Mastered Words Test', ...Object.fromEntries(L_IDS.map(k => [k, LT[k].name])) };
 let sbc = null;
 const sbClient = () => sbc || (window.supabase && window.supabase.createClient ? (sbc = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } })) : null);
 const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
 function snapshot(t) {   // what the on-screen worksheet needs, frozen at the moment you assign it
+  if (LT[t]) return L_snapshot(t);
   if (t === 'sight') { const words = parseWords(state.sight.words); return { title: TOOL_NAMES.sight + (state.sight.label.trim() ? ' · ' + state.sight.label.trim() : ''), data: { words, label: state.sight.label.trim(), sentences: Object.fromEntries(words.map(w => [w, sentenceFor('sight', w)])) }, ok: words.length > 0 }; }
   if (t === 'master') { const words = parseWords(state.master.words); return { title: TOOL_NAMES.master, data: { words, sentences: Object.fromEntries(words.map(w => [w, sentenceFor('master', w)])), icons: Object.fromEntries(words.map(w => [w, iconFor(w)])) }, ok: words.length > 0 }; }
   if (t === 'fixup') { const words = parseWords(state.fixup.words); return { title: TOOL_NAMES.fixup + (state.fixup.label.trim() ? ' · ' + state.fixup.label.trim() : ''), data: { words: words.map(w => ({ w, his: state.fixup.wrote[w] || '' })) }, ok: words.length > 0 }; }
@@ -1394,6 +1404,7 @@ document.querySelector('.tabs').addEventListener('click', e => {
 let cardsTimer;
 $panel.addEventListener('input', e => {
   const el = e.target, t = state.tool;
+  if (L_input(el)) { save(); scheduleRender(); return; }
   if (t === 'sight') {
     if (el.id === 'sLabel') state.sight.label = el.value;
     if (el.id === 'sWords') { state.sight.words = el.value; clearTimeout(cardsTimer); cardsTimer = setTimeout(() => { document.getElementById('cards').innerHTML = wordCards('sight'); }, 400); }
@@ -1421,6 +1432,7 @@ $panel.addEventListener('input', e => {
 
 $panel.addEventListener('change', e => {
   const el = e.target, t = state.tool;
+  if (L_input(el)) { save(); scheduleRender(); return; }
   if (t === 'sight' && el.id === 'sParent') state.sight.showParent = el.checked;
   if (t === 'fixup' && el.id === 'fParent') state.fixup.showParent = el.checked;
   if (t === 'master' && el.dataset.icon) state.master.icons[el.dataset.icon] = el.value;
@@ -1448,6 +1460,7 @@ $panel.addEventListener('change', e => {
 
 $panel.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
+  const lc = L_click(el); if (lc) { save(); if (lc === 'panel') renderPanel(); else scheduleRender(); return; }
   if (el.id === 'fUseCheck') { const lc = latestCheck(); if (lc) useCheck(lc.results.filter(r => !r.ok), 'Sight word check · ' + checkDate(lc.t)); renderPanel(); return; }
   const st = state.steps;
   if (el.id === 'qShuffle') { state.question.picked = shuffle(state.question.picked, Date.now() % 9973); }
@@ -1479,7 +1492,7 @@ if (fromLink.get('fixup')) {
   history.replaceState(null, '', location.pathname + '#fixup');
 }
 const fromHash = location.hash.slice(1);
-if (['daily', 'helper', 'sight', 'master', 'fixup', 'question', 'steps', 'eagles', 'weather', 'chores'].includes(fromHash)) { state.tool = fromHash; state.cls = classOf(fromHash); }
+if (['daily', 'helper', 'sight', 'master', 'fixup', 'question', 'steps', 'eagles', 'weather', 'chores', ...L_IDS].includes(fromHash)) { state.tool = fromHash; state.cls = classOf(fromHash); }
 else if (CLASSES.some(c => c.id === fromHash)) state.cls = fromHash;
 renderPanel();
 // The Worksheets page is for grown-ups: nobody signed in → the Parent / Child screen; his login → his start screen.

@@ -565,6 +565,7 @@ function shuffle(arr, seed) {
 const seedOf = words => words.join('').split('').reduce((a, c) => a + c.charCodeAt(0), 7);
 const COLORS = ['#3C7DD9', '#0F9F8F', '#8B5CF6', '#EA580C', '#DB2777', '#16A34A', '#6366F1', '#D97706'];
 </script>
+<script src="lessons.js?v=1"></script>
 <script>
 /* ============ Talking, keys, little helpers (same as the Fix-Up page) ============ */
 const canTalk = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
@@ -1856,7 +1857,7 @@ async function cloudSaveSheet(rec) {
 }
 
 /* ============ Start ============ */
-const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet, steps: stepsSheet, eagles: eaglesSheet, weather: weatherSheet, mtest: mtestSheet };
+const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet, steps: stepsSheet, eagles: eaglesSheet, weather: weatherSheet, mtest: mtestSheet, ...(typeof LT !== 'undefined' ? Object.fromEntries(L_IDS.map(k => [k, LT[k].run])) : {}) };   // lessons.js: 10 More or Less, Sound Investigator, Story Time, Word Chains, Heart Word, Handwriting
 (async () => {
   if (DAILY) {   // links that would leave go back to his daily routine instead
     document.body.classList.add('emb');
