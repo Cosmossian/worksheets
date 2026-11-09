@@ -42,7 +42,7 @@ body.framefull { overflow: hidden; }
 .daywrap[hidden] { display: none; }
 .daybox { background: var(--surface); border: 2px solid var(--study); border-radius: 22px; padding: 20px 22px; width: 100%; max-width: 640px; }
 .assign-day { display: flex; align-items: center; gap: 8px; font-weight: 700; margin: 0 0 8px; } .assign-day select { flex: 1; }
-.daynav { display: flex; align-items: center; gap: 8px; margin: 2px 0 8px; } .daynav b { flex: 1; text-align: center; font: 700 18px Fredoka, sans-serif; } .daynav button:disabled { opacity: .35; }
+.daynav { display: flex; align-items: center; gap: 8px; margin: 2px 0 2px; } .daytoday { text-align: center; margin: 0 0 6px; } .daytoday .btn { font-size: 13px; padding: 4px 12px; } .daynav b { flex: 1; text-align: center; font: 700 18px Fredoka, sans-serif; } .daynav button:disabled { opacity: .35; }
 .dayhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
 .dayhead h2 { margin: 0; font: 700 24px Fredoka, sans-serif; color: var(--navy); }
 .dayitem { display: flex; gap: 12px; align-items: flex-start; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
@@ -327,7 +327,8 @@ select::-ms-expand { display: none; }
 </nav>
 <div class="daywrap" id="dayWrap" hidden role="dialog" aria-modal="true" aria-labelledby="dayTitle"><div class="daybox">
   <div class="dayhead"><h2 id="dayTitle">His day</h2><button class="hdr-btn" id="dayClose">✕ Close</button></div>
-  <div class="daynav"><button class="btn btn-small" id="dayPrev" aria-label="Day before">‹</button><b id="dayName"></b><button class="btn btn-small" id="dayNext" aria-label="Day after">›</button><button class="btn btn-small" id="dayToday">Today</button></div>
+  <div class="daynav"><button class="btn btn-small" id="dayPrev" aria-label="Day before">‹</button><b id="dayName"></b><button class="btn btn-small" id="dayNext" aria-label="Day after">›</button></div>
+  <div class="daytoday"><button class="btn btn-small" id="dayToday">↩ Back to today</button></div>
   <p class="help" style="margin:0 0 10px" id="dayHelp">This is what his start screen shows right now, in order.</p>
   <div id="dayList"></div>
 </div></div>
@@ -1208,7 +1209,7 @@ async function openDay(ds) {
   const isToday = ds === td, future = ds > td;
   document.getElementById('dayName').textContent = dayName(ds, true);
   document.getElementById('dayPrev').disabled = ds <= addDays(td, -30); document.getElementById('dayNext').disabled = ds >= addDays(td, 14);
-  document.getElementById('dayToday').hidden = isToday;
+  document.getElementById('dayToday').style.visibility = isToday ? 'hidden' : 'visible';   // keeps its space, so the arrows never move
   document.getElementById('dayHelp').textContent = isToday ? 'This is what his start screen shows right now, in order.' : future ? 'This is what his start screen will show that day, in order. Sight words: the list that’s on now, unless you change it before then.' : 'This is what was on his list that day, and what he finished.';
   wrap.hidden = false; list.innerHTML = '<p class="help">Loading…</p>';
   const sb = await studySession();
