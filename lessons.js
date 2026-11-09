@@ -1292,20 +1292,23 @@ LT.letter.run = () => {
 /* ---------- Spelling Sort ---------- */
 /* The word he just spelled becomes a yellow bubble: he drags it onto a column of #sortChart (or taps the bubble, then a column).
    A wrong column shakes and the bubble goes back. Resolves the headings he tried, in order. */
-function L_placeBubble(word, heads, right, hint) {
+function L_placeBubble(word, heads, right, hint) { return L_dragTo(word, '#sortChart .c', right, hint, { names: heads }); }
+/* Generic: a yellow bubble with `word` he drags onto one of the elements matching `sel` (each has data-h = its index; SVG shapes work too),
+   or taps the bubble, then a target. Right = the data-h that's right. Needs #io on the screen. Resolves the names he tried, in order. */
+function L_dragTo(word, sel, right, hint, { names = null, prompt = null, sayIt = true, html = null } = {}) {
   return new Promise(res => {
-    const picks = [], io = $('io');
-    io.innerHTML = `<div class="message" id="msg">Now put <b>${L_esc(word)}</b> in its column. Drag the bubble (or tap it, then tap a column).</div><div class="ls-bub-home"><span class="ls-bubble" id="bub">${L_esc(word)}</span></div>`;
-    say(`Now put ${word} in its column.`, 0.95);
-    const bub = $('bub'), chartEl = () => $('sortChart'), colAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest('#sortChart .c'); };
-    let sel = false, drag = null, over = null, live = true;
+    const picks = [], io = $('io'), nm = h => names ? names[h] : String(h);
+    io.innerHTML = `<div class="message" id="msg">${prompt || `Now put “${L_esc(word)}” where it goes. Drag the bubble, or tap it and then tap where it goes.`}</div><div class="ls-bub-home"><span class="ls-bubble" id="bub">${html || L_esc(word)}</span></div>`;
+    if (sayIt) say(`Now put ${word} where it goes.`, 0.95);
+    const bub = $('bub'), targetAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest(sel); };
+    let sel2 = false, drag = null, over = null, live = true;
     const setOver = c => { if (over) over.classList.remove('over'); over = c; if (c) c.classList.add('over'); };
-    const back = () => { bub.classList.remove('drag', 'sel'); bub.style.left = bub.style.top = ''; sel = false; setOver(null); };
+    const back = () => { bub.classList.remove('drag', 'sel'); bub.style.left = bub.style.top = ''; sel2 = false; setOver(null); };
     const drop = c => {
       if (!live || !c) return back();
-      const hi = +c.dataset.h; picks.push(heads[hi]); back();
-      if (hi === right) { live = false; c.classList.add('good'); bub.remove(); setMsg(picks.length === 1 ? 'Yes! It goes there!' : 'You got it!', 'good'); say('Yes!', 1); return setTimeout(() => res(picks), 500); }
-      shakeEl(c); setMsg(`Not that one. ${hint}`, 'try'); say('Not that one. Look at how it ends.', 0.95);
+      const hi = +c.dataset.h; picks.push(nm(hi)); back();
+      if (hi === right) { live = false; c.classList.add('good'); bub.remove(); document.removeEventListener('click', onT, true); setMsg(picks.length === 1 ? 'Yes! It goes there!' : 'You got it!', 'good'); say('Yes!', 1); return setTimeout(() => res(picks), 500); }
+      shakeEl(c); setMsg(`Not that one. ${hint}`, 'try'); say('Not that one.', 0.95);
     };
     bub.onpointerdown = e => {
       if (!live) return; e.preventDefault(); const r = bub.getBoundingClientRect();
@@ -1316,15 +1319,15 @@ function L_placeBubble(word, heads, right, hint) {
       if (!drag || e.pointerId !== drag.id) return;
       if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 8) return;
       drag.moved = true; bub.classList.add('drag'); bub.style.left = (e.clientX - drag.dx) + 'px'; bub.style.top = (e.clientY - drag.dy) + 'px';
-      setOver(colAt(e.clientX, e.clientY));
+      setOver(targetAt(e.clientX, e.clientY));
     };
     bub.onpointerup = bub.onpointercancel = e => {
       if (!drag || e.pointerId !== drag.id) return; const d = drag; drag = null;
-      if (d.moved) return drop(colAt(e.clientX, e.clientY));
-      sel = !sel; bub.classList.toggle('sel', sel); if (sel) setMsg('Now tap the column it goes in.');
+      if (d.moved) return drop(targetAt(e.clientX, e.clientY));
+      sel2 = !sel2; bub.classList.toggle('sel', sel2); if (sel2) setMsg('Now tap where it goes.');
     };
-    const onCol = e => { if (!sel || !live) return; const c = e.target.closest('#sortChart .c'); if (c) drop(c); };
-    chartEl().addEventListener('click', onCol);
+    const onT = e => { if (!sel2 || !live) return; const c = e.target.closest && e.target.closest(sel); if (c) { e.stopPropagation(); drop(c); } };
+    document.addEventListener('click', onT, true);
   });
 }
 LT.sort.run = () => {
