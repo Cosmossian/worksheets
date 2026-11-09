@@ -401,6 +401,15 @@ body.sheeton { overflow: hidden; }
 @keyframes nextfill { to { width: 100%; } }
 body.advancing main button, body.advancing main .key { pointer-events: none; }
 .skip-part { position: fixed; left: 14px; bottom: 14px; z-index: 70; display: none; font: 600 15px Fredoka, sans-serif; background: #33270C; color: #FBBF24; border: 2px solid #FBBF24; border-radius: 999px; padding: 8px 16px; cursor: pointer; } body.testday.playing .skip-part:not([hidden]), body.testday.dailyon .skip-part:not([hidden]) { display: block; }
+/* Get ready → Speak now → Done */
+.talk { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 8px auto; min-height: 150px; justify-content: center; }
+.talk-lbl { font: 700 22px Fredoka, sans-serif; color: var(--muted); }
+.talk-count { font: 700 72px/1 Fredoka, sans-serif; color: var(--try); }
+.talk-count.pop { animation: talkpop .7s ease-out; } @keyframes talkpop { 0% { transform: scale(1.5); opacity: .3; } 30% { transform: scale(1); opacity: 1; } }
+.talk-now { font: 700 32px Fredoka, sans-serif; color: #fff; background: #B91C1C; border-radius: 999px; padding: 8px 26px; animation: talkglow 1.2s ease-in-out infinite; }
+@keyframes talkglow { 50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, .25); } }
+.talk-done { min-width: 200px; }
+.talk-note { min-height: 1.3em; font-weight: 700; } .talk-note.good { color: var(--good); } .talk-note.try { color: var(--try); }
 </style>
 </head>
 <body class="authwait">
@@ -454,6 +463,9 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
     <h2>⚙️ Parent Settings</h2>
     <p class="help" style="margin:0 0 6px">Settings for the whole Study (not one activity). They’re shared with his device.</p>
     <label class="check-row"><input type="checkbox" id="dailyEmail"> Also email me his results (they’re always in Parent Review)</label>
+    <div style="margin-top:8px"><b>🎤 When he reads or says something out loud</b>
+      <div class="seg" id="talkSeg" role="group" aria-label="When he reads out loud" style="margin-top:6px"><button data-talk="button">Get ready → Speak now → Done</button><button data-talk="auto">The microphone listens by itself</button></div>
+      <small class="note" style="margin:4px 0 0">Get ready: a 3-2-1 countdown, then 🎤 Speak now while it records, and he taps Done when he’s finished. Done unlocks once the microphone hears his voice (or after 10 seconds, so he’s never stuck). His recordings are in Parent Review either way. Used in Look &amp; Listen, Look &amp; Say and the lesson worksheets.</small></div>
     <div class="pin-set" style="margin-top:8px" id="pinSet"><b>🔒 Grown-up PIN</b> <span id="pinState"></span><div class="row" style="align-items:center;margin-top:6px"><input id="pinIn" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"><button class="btn" id="pinSave">Save PIN</button><button class="btn" id="pinOff" hidden>Remove PIN</button></div><small>On his device, every grown-up button (Parent Help, Grown-up screen, Parent Review, Test day, Switch user, stop) asks for it after the hold.</small></div>
   </div>
   <div class="card" id="dailyCard">
@@ -646,6 +658,7 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
     <div class="look-word" id="lookWord"></div>
     <div class="meter" id="meter" hidden><i id="meterFill"></i><b title="loud enough"></b></div>
     <p class="mic-hint" id="micHint" hidden>🎤 I’m listening…</p>
+    <div id="lookTalk"></div>
     <div class="row" style="justify-content:center">
       <div class="look-find" id="lookFind" hidden></div>
       <button class="btn big primary" id="saidIt" hidden>🗣 I said it!</button>
@@ -1778,6 +1791,55 @@ function listenForVoice(onLevel, onNudge, keep) {
     }, 40);
   });
 }
+/* "Get ready → Speak now → Done" (Parent Settings: When he reads out loud; default since Nov 9, 2026, Dylan: he rushes and gets
+   frustrated when the microphone decides). A 3-2-1 countdown (the room is measured while he waits, so starting early can't spoil it),
+   then 🎤 Speak now records until he taps Done. Done unlocks once the microphone has heard his voice (and minMs has passed), or after
+   10 s anyway so a quiet voice never leaves him stuck (then heard = false). Stops by itself at maxMs. Resolves { heard, clip, ms },
+   or null if cancelled (listenToken changed, e.g. he tapped Hear the word). */
+const talkMode = () => ((store('spell-settings') || {}).talk === 'auto' ? 'auto' : 'button');
+function speakNow(box, { minMs = 700, maxMs = 15000, what = 'Speak now!' } = {}) {
+  const my = ++listenToken;
+  return new Promise(async res => {
+    if (!mic || !box) return res(null);
+    if (mic.ctx.state === 'suspended') { try { await mic.ctx.resume(); } catch (e) { } }
+    box.innerHTML = '<div class="talk"><div class="talk-lbl">Get ready…</div><div class="talk-count" id="talkN">3</div></div>';
+    const samples = [];
+    for (const k of [3, 2, 1]) {
+      const el = box.querySelector('#talkN'); if (el) { el.textContent = k; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+      const t = performance.now(); while (performance.now() - t < 700) { samples.push(micLevel()); await wait(25); if (my !== listenToken) return res(null); }
+    }
+    samples.sort((a, b) => a - b);
+    const th = Math.max(sens().min, (samples[Math.floor(samples.length * 0.3)] || 0) * sens().x);
+    box.innerHTML = `<div class="talk on"><div class="talk-now">🎤 ${what}</div><div class="meter"><i></i></div><button class="btn big primary talk-done" disabled>Done ✓</button><div class="talk-note"></div></div>`;
+    const fill = box.querySelector('.meter i'), done = box.querySelector('.talk-done'), note = box.querySelector('.talk-note');
+    let mr = null, chunks = [];
+    if (window.MediaRecorder) { try { mr = new MediaRecorder(mic.stream, { audioBitsPerSecond: 24000 }); mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); }; mr.start(); } catch (e) { mr = null; } }
+    const start = performance.now(); let last = start, voiced = 0, gap = 0, heard = false, nudged = false, over = false;
+    const finish = (cancel) => {
+      if (over) return; over = true; clearInterval(timer);
+      const ms = Math.round(performance.now() - start);
+      if (cancel) { try { mr && mr.state !== 'inactive' && mr.stop(); } catch (e) { } return res(null); }
+      done.disabled = true; done.textContent = '✓';
+      if (!mr) return res({ heard, clip: null, ms });
+      setTimeout(() => {   // a moment more, so the end of the word isn't cut off
+        mr.onstop = () => { const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' }); if (!blob.size) return res({ heard, clip: null, ms }); const fr = new FileReader(); fr.onload = () => res({ heard, clip: fr.result, ms }); fr.onerror = () => res({ heard, clip: null, ms }); fr.readAsDataURL(blob); };
+        try { mr.stop(); } catch (e) { res({ heard, clip: null, ms }); }
+      }, 300);
+    };
+    done.onclick = () => finish(false);
+    const timer = setInterval(() => {
+      if (my !== listenToken) return finish(true);
+      const now = performance.now(), dt = now - last; last = now;
+      const lvl = micLevel(); if (fill) { fill.style.width = Math.round(Math.min(1, lvl / (th * 2.5)) * 100) + '%'; fill.style.background = lvl > th ? 'var(--good)' : 'var(--try)'; }
+      if (lvl > th) { voiced += dt; gap = 0; } else { gap += dt; if (!heard && gap > 450) voiced = 0; }
+      if (!heard && voiced >= sens().ms) { heard = true; note.textContent = 'I hear you! Tap Done when you finish.'; note.className = 'talk-note good'; }
+      const el = now - start;
+      if (done.disabled && ((heard && el >= minMs) || el >= 10000)) done.disabled = false;
+      if (!heard && !nudged && el > 5000) { nudged = true; note.textContent = 'I can’t hear you yet. Say it nice and loud!'; note.className = 'talk-note try'; }
+      if (el >= maxMs) finish(false);
+    }, 40);
+  });
+}
 /* Look & Listen log (localStorage "spell-look-log"): last 7 sessions, each { session, t, words, heard, total, micOk, clips: [{word, round, url}] } */
 function lookLog() {
   let log = store('spell-look-log') || [];
@@ -1842,9 +1904,9 @@ async function lookWord() {
   $('lookWord').textContent = w;
   $('saidIt').hidden = true; $('lookAgain').hidden = true; $('lookNext').hidden = true; $('lookFind').hidden = true; $('lookWord').hidden = false;
   daily.shownAt = Date.now();
-  $('meterFill').style.width = '0';
-  const useMic = daily.micOk && mic;
-  $('meter').hidden = !useMic; $('micHint').hidden = !useMic;
+  $('meterFill').style.width = '0'; $('lookTalk').innerHTML = '';
+  const useMic = daily.micOk && mic, btnMode = useMic && talkMode() === 'button';
+  $('meter').hidden = !useMic || btnMode; $('micHint').hidden = !useMic || btnMode;
   $('micHint').textContent = '🎤 I’m listening…';
   $('lookPrompt').textContent = useMic ? 'Read it out loud! 🎤' : 'Read it out loud!';
   if (daily.round === 1 && daily.i === 0) say(useMic ? 'Look at the word. Read it out loud, so I can hear you.' : 'Look at the word. Read it out loud.', 0.95);
@@ -1853,6 +1915,14 @@ async function lookWord() {
   const my = listenToken;
   await quietNow();                                     // don't let the computer's own voice count
   if (my !== listenToken || $('look').hidden) return;
+  if (btnMode) {   // Get ready → Speak now → Done
+    const r = await speakNow($('lookTalk'), { minMs: 500, maxMs: 8000, what: 'Read it now!' });
+    if (!r || $('look').hidden) return;
+    $('lookTalk').innerHTML = '';
+    if (r.heard) daily.heard++;
+    if (daily.keepVoice && r.clip) saveClip(w, daily.round, r.clip);
+    return heardIt();
+  }
   const r = await listenForVoice(
     (lvl, over) => { $('meterFill').style.width = Math.round(lvl * 100) + '%'; $('meter').classList.toggle('over', over); },
     () => { $('lookPrompt').textContent = 'I can’t hear you. Say it nice and loud!'; $('micHint').textContent = '🎤 Still listening…'; },
@@ -2192,6 +2262,9 @@ async function sendOutbox() {
     }
   } finally { sending = false; renderLastCheck(); }
 }
+function renderTalk() { document.querySelectorAll('#talkSeg [data-talk]').forEach(b => b.setAttribute('aria-pressed', b.dataset.talk === (settings.talk === 'auto' ? 'auto' : 'button'))); }
+$('talkSeg').addEventListener('click', e => { const b = e.target.closest('[data-talk]'); if (!b) return; settings.talk = b.dataset.talk; store('spell-settings', settings); renderTalk(); });
+renderTalk();
 function renderSens() { document.querySelectorAll('#sensSeg [data-sens]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.sens === settings.sens)); }
 $('sensSeg').addEventListener('click', e => { const b = e.target.closest('[data-sens]'); if (!b) return; settings.sens = +b.dataset.sens; store('spell-settings', settings); renderSens(); if (testing) { stopMicTest(); startMicTest(); } });
 var testing = false;
@@ -2614,7 +2687,7 @@ function trimOldClips() {
   if (kept.length !== log.length) saveLookLog(kept);
 }
 function renderAll(fromCloud) { try { renderPin(); } catch (e) { }
-  renderRecent(); renderSetup(); renderDailySetup(fromCloud); renderNeed(); renderWin(); renderSens(); renderAccount();
+  renderRecent(); renderSetup(); renderDailySetup(fromCloud); renderNeed(); renderWin(); renderSens(); renderTalk(); renderAccount();
   if (!$('kidhome').hidden || (!$('setup').hidden && cloud.role === 'kid' && !grownMode)) show('setup');
 }
 

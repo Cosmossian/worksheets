@@ -299,6 +299,15 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 .pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 10px; } .pin-pad button { height: 64px; border-radius: 16px; border: 2px solid #334155; background: #1E293B; color: #fff; font: 700 26px Fredoka, sans-serif; cursor: pointer; } .pin-pad .pin-sm { font-size: 16px; }
 .pin-box.shake { animation: pinshake .3s; } @keyframes pinshake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 .skip-part { position: fixed; left: 14px; bottom: 14px; z-index: 70; display: none; font: 600 15px Fredoka, sans-serif; background: #33270C; color: #FBBF24; border: 2px solid #FBBF24; border-radius: 999px; padding: 8px 16px; cursor: pointer; } body.inpart .skip-part { display: block; }
+/* Get ready → Speak now → Done */
+.talk { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 8px auto; min-height: 150px; justify-content: center; }
+.talk-lbl { font: 700 22px Fredoka, sans-serif; color: var(--muted); }
+.talk-count { font: 700 72px/1 Fredoka, sans-serif; color: var(--try); }
+.talk-count.pop { animation: talkpop .7s ease-out; } @keyframes talkpop { 0% { transform: scale(1.5); opacity: .3; } 30% { transform: scale(1); opacity: 1; } }
+.talk-now { font: 700 32px Fredoka, sans-serif; color: #fff; background: #B91C1C; border-radius: 999px; padding: 8px 26px; animation: talkglow 1.2s ease-in-out infinite; }
+@keyframes talkglow { 50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, .25); } }
+.talk-done { min-width: 200px; }
+.talk-note { min-height: 1.3em; font-weight: 700; } .talk-note.good { color: var(--good); } .talk-note.try { color: var(--try); }
 </style>
 </head>
 <body>
@@ -566,7 +575,8 @@ function shuffle(arr, seed) {
 const seedOf = words => words.join('').split('').reduce((a, c) => a + c.charCodeAt(0), 7);
 const COLORS = ['#3C7DD9', '#0F9F8F', '#8B5CF6', '#EA580C', '#DB2777', '#16A34A', '#6366F1', '#D97706'];
 </script>
-<script src="lessons.js?v=1"></script>
+<script src="handcheck.js?v=1"></script>
+<script src="lessons.js?v=2"></script>
 <script>
 /* ============ Talking, keys, little helpers (same as the Fix-Up page) ============ */
 const canTalk = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
@@ -716,10 +726,70 @@ function listenForVoice(onLevel, onNudge) {   // resolves { clip } once he has s
     }, 40);
   });
 }
-/* His recordings go to the Study database (same as Look & Listen clips: kept 7 days). Trying it out: nothing is saved. */
+/* "Get ready → Speak now → Done" (Parent Settings: When he reads out loud; default since Nov 9, 2026, Dylan: he rushes and gets
+   frustrated when the microphone decides). A 3-2-1 countdown (the room is measured while he waits, so starting early can't spoil it),
+   then 🎤 Speak now records until he taps Done. Done unlocks once the microphone has heard his voice (and minMs has passed), or after
+   10 s anyway so a quiet voice never leaves him stuck (then heard = false). Stops by itself at maxMs. Resolves { heard, clip, ms },
+   or null if cancelled (listenToken changed, e.g. he tapped Hear the word). */
+const talkMode = () => ((store('spell-settings') || {}).talk === 'auto' ? 'auto' : 'button');
+function speakNow(box, { minMs = 700, maxMs = 15000, what = 'Speak now!' } = {}) {
+  const my = ++listenToken;
+  return new Promise(async res => {
+    if (!mic || !box) return res(null);
+    if (mic.ctx.state === 'suspended') { try { await mic.ctx.resume(); } catch (e) { } }
+    box.innerHTML = '<div class="talk"><div class="talk-lbl">Get ready…</div><div class="talk-count" id="talkN">3</div></div>';
+    const samples = [];
+    for (const k of [3, 2, 1]) {
+      const el = box.querySelector('#talkN'); if (el) { el.textContent = k; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+      const t = performance.now(); while (performance.now() - t < 700) { samples.push(micLevel()); await wait(25); if (my !== listenToken) return res(null); }
+    }
+    samples.sort((a, b) => a - b);
+    const th = Math.max(sens().min, (samples[Math.floor(samples.length * 0.3)] || 0) * sens().x);
+    box.innerHTML = `<div class="talk on"><div class="talk-now">🎤 ${what}</div><div class="meter"><i></i></div><button class="btn big primary talk-done" disabled>Done ✓</button><div class="talk-note"></div></div>`;
+    const fill = box.querySelector('.meter i'), done = box.querySelector('.talk-done'), note = box.querySelector('.talk-note');
+    let mr = null, chunks = [];
+    if (window.MediaRecorder) { try { mr = new MediaRecorder(mic.stream, { audioBitsPerSecond: 24000 }); mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); }; mr.start(); } catch (e) { mr = null; } }
+    const start = performance.now(); let last = start, voiced = 0, gap = 0, heard = false, nudged = false, over = false;
+    const finish = (cancel) => {
+      if (over) return; over = true; clearInterval(timer);
+      const ms = Math.round(performance.now() - start);
+      if (cancel) { try { mr && mr.state !== 'inactive' && mr.stop(); } catch (e) { } return res(null); }
+      done.disabled = true; done.textContent = '✓';
+      if (!mr) return res({ heard, clip: null, ms });
+      setTimeout(() => {   // a moment more, so the end of the word isn't cut off
+        mr.onstop = () => { const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' }); if (!blob.size) return res({ heard, clip: null, ms }); const fr = new FileReader(); fr.onload = () => res({ heard, clip: fr.result, ms }); fr.onerror = () => res({ heard, clip: null, ms }); fr.readAsDataURL(blob); };
+        try { mr.stop(); } catch (e) { res({ heard, clip: null, ms }); }
+      }, 300);
+    };
+    done.onclick = () => finish(false);
+    const timer = setInterval(() => {
+      if (my !== listenToken) return finish(true);
+      const now = performance.now(), dt = now - last; last = now;
+      const lvl = micLevel(); if (fill) { fill.style.width = Math.round(Math.min(1, lvl / (th * 2.5)) * 100) + '%'; fill.style.background = lvl > th ? 'var(--good)' : 'var(--try)'; }
+      if (lvl > th) { voiced += dt; gap = 0; } else { gap += dt; if (!heard && gap > 450) voiced = 0; }
+      if (!heard && voiced >= sens().ms) { heard = true; note.textContent = 'I hear you! Tap Done when you finish.'; note.className = 'talk-note good'; }
+      const el = now - start;
+      if (done.disabled && ((heard && el >= minMs) || el >= 10000)) done.disabled = false;
+      if (!heard && !nudged && el > 5000) { nudged = true; note.textContent = 'I can’t hear you yet. Say it nice and loud!'; note.className = 'talk-note try'; }
+      if (el >= maxMs) finish(false);
+    }, 40);
+  });
+}
+/* His recordings go to the Study database (same as Look & Listen clips: kept 7 days). Trying it out: nothing is saved.
+   The database's session column is a number, so the worksheets' text run ids (Date.now().toString(36)) are turned back into numbers;
+   sending the text made every save fail quietly (fixed Nov 9, 2026). A failed save is tried again a few times. */
 async function saveClip(key, data, session) {
   if (TRY) return;
-  try { const sb = sbClient(); if (!sb) return; const { data: s } = await sb.auth.getSession(); if (!s.session) return; await sb.from('study_audio').upsert({ key, kind: 'clip', session, data }); } catch (e) { }
+  const num = typeof session === 'number' ? session : (parseInt(session, 36) || Date.now());
+  for (let t = 0; t < 4; t++) {
+    try {
+      const sb = sbClient(); if (!sb) return; const { data: s } = await sb.auth.getSession(); if (!s.session) return;
+      const { error } = await sb.from('study_audio').upsert({ key, kind: 'clip', session: num, data });
+      if (!error) return;
+      console.warn('saveClip', key, error.message);
+    } catch (e) { console.warn('saveClip', key, e); }
+    await wait(3000 * (t + 1));
+  }
 }
 
 /* "Are you sure?" for test answers: resolves true (final) or false (let me look again) */
@@ -763,7 +833,7 @@ function freeType({ answer, test = false, reveal = true, match = (a, b) => norm(
       } else {
         tries++; typed = ''; draw(); shakeEl($('ans'));
         if (tries >= 2) { setMsg(`It’s spelled: ${[...answer].join(' ')}. Now you type it.`, 'try'); say(`It's spelled ${[...answer.replace(/[^a-z]/gi, '')].map(letterName).join(', ')}.`, 0.75); }
-        else setMsg(hint, 'try');
+        else { const h = typeof hint === 'function' ? hint(t) : hint; setMsg(h, 'try'); if (typeof hint === 'function' && h) say(h, 0.95); }
       }
     };
   });
@@ -878,7 +948,7 @@ function sightSheet() {
         + `<div class="big-word">${hl(x)}</div>${x.tip ? `<div class="tipline">Tricky part: ${esc(x.tip)}</div>` : ''}
         <button class="btn" id="hear">${SPK}Hear the word</button>
         <div class="dots">${[1, 2, 3].map(k => `<span class="dot" data-d="${k}">${k}</span>`).join('')}</div>
-        ${m ? '<div class="meter" id="meter"><i id="mfill"></i></div>' : '<button class="btn big primary" id="saidBtn" disabled>I said it! 🗣️</button>'}<div class="message" id="msg"></div>`;
+        ${m ? `<div id="talkBox">${talkMode() === 'button' ? '' : '<div class="meter" id="meter"><i id="mfill"></i></div>'}</div>` : '<button class="btn big primary" id="saidBtn" disabled>I said it! 🗣️</button>'}<div class="message" id="msg"></div>`;
       const dot = () => { const d = app.querySelector(`.dot[data-d="${n + 1}"]`); if (d) d.classList.add('on'); n++; };
       const finish = () => { alive = false; listenToken++; mark('Look & Say', x.dw, n >= 3, '', '', null, { text: m ? `He saw “${x.dw}” and said it out loud 3 times (the microphone heard each one).` : `He saw “${x.dw}” and tapped “I said it” 3 times (no microphone).`, clips }, [m ? `said it ${n} times` : `tapped ${n} times`]); items.at(-1).free = true; heard += n >= 3 ? 1 : 0; setMsg('Great saying!', 'good'); nextUp(1100).then(done); };
       const listenLoop = async () => {
@@ -886,9 +956,9 @@ function sightSheet() {
           await quiet();
           if (!alive) return;
           setMsg(n === 0 ? 'Now say it out loud!' : n === 1 ? 'Say it again!' : 'One more time!');
-          const r = await listenForVoice((lvl, over) => { const f = $('mfill'); if (f) { f.style.width = Math.round(lvl * 100) + '%'; f.style.background = over ? 'var(--good)' : 'var(--try)'; } }, () => { setMsg('I’m listening… say it out loud!', 'try'); say('Say it out loud!', 1); });
+          const r = talkMode() === 'button' ? await speakNow($('talkBox'), { minMs: 500, maxMs: 8000, what: 'Say it now!' }) : await listenForVoice((lvl, over) => { const f = $('mfill'); if (f) { f.style.width = Math.round(lvl * 100) + '%'; f.style.background = over ? 'var(--good)' : 'var(--try)'; } }, () => { setMsg('I’m listening… say it out loud!', 'try'); say('Say it out loud!', 1); });
           if (!r || !alive) continue;   // cancelled (he tapped Hear the word): listen again after it plays
-          dot(); setMsg('I heard you!', 'good');
+          dot(); setMsg(r.heard === false ? 'Okay! Next time say it nice and loud.' : 'I heard you!', 'good');
           if (r.clip) { const key = `clip:say:${run}:${i}:${n}`; clips.push(key); saveClip(key, r.clip, run); }
           await wait(500);
         }
@@ -913,7 +983,7 @@ function sightSheet() {
       const x = W[i], word = x.dw;
       app.innerHTML = head('Trace the word with your finger. Say each letter as you trace it.') + count(i, W.length)
         + `<button class="btn" id="hear">${SPK}Hear the word</button><div class="tracebox"><canvas id="tc"></canvas></div><div class="message" id="msg"></div>
-        <div class="row acts"><button class="btn big" id="clearBtn">↺ Start over</button><button class="btn big primary" id="doneBtn">Done ✓</button></div>`;
+        <div class="row acts"><button class="btn big" id="undoBtn">↶ Undo</button><button class="btn big" id="clearBtn">↺ Start over</button><button class="btn big primary" id="doneBtn">Done ✓</button></div>`;
       $('hear').onclick = () => playWord(x.w); playWord(x.w);
       const cv = $('tc'), dpr = window.devicePixelRatio || 1, Wd = Math.min(900, window.innerWidth - 40), Ht = 240;
       cv.width = Wd * dpr; cv.height = Ht * dpr; cv.style.width = Wd + 'px'; cv.style.height = Ht + 'px';
@@ -944,6 +1014,7 @@ function sightSheet() {
       cv.onpointermove = e => { if (!cur || e.pointerId !== penId) return; const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : []; (evs.length ? evs : [e]).forEach(ev => cur.push(pt(ev))); draw(); };
       cv.onpointerup = cv.onpointercancel = e => { if (e.pointerId === penId) { cur = null; penId = null; } };
       $('clearBtn').onclick = () => { strokes = []; orange.clear(); setMsg(''); draw(); };
+      $('undoBtn').onclick = () => { if (cur) return; strokes.pop(); setMsg(''); draw(); };
       $('doneBtn').onclick = () => {
         if (!strokes.length) return setMsg('Use your finger to trace the gray letters.', 'try');
         ig.clearRect(0, 0, Wd, Ht);
@@ -958,7 +1029,7 @@ function sightSheet() {
         const missedL = spans.filter((s, k) => per[k][1] && per[k][0] / per[k][1] < 0.45);
         const outside = inkAll ? inkOut / inkAll : 1;
         orange = new Set(missedL);
-        if (outside > 0.4) { redo++; redoHere++; draw(); setMsg('Stay on the gray letters. Tap Start over and trace them carefully.', 'try'); say('Stay on the gray letters.', 0.95); return; }
+        if (outside > 0.4) { redo++; redoHere++; draw(); setMsg('Stay on the gray letters. Tap ↶ Undo or Start over and trace them carefully.', 'try'); say('Stay on the gray letters.', 0.95); return; }
         if (missedL.length) { redo++; redoHere++; draw(); setMsg(`Trace the orange letter${missedL.length > 1 ? 's' : ''} too: ${missedL.map(s => s.ch).join(', ')}.`, 'try'); say(`Trace the orange letter${missedL.length > 1 ? 's' : ''} too.`, 0.95); return; }
         try { const sm = document.createElement('canvas'); sm.width = 360; sm.height = Math.round(360 * Ht / Wd); sm.getContext('2d').drawImage(cv, 0, 0, sm.width, sm.height); (extra.traces = extra.traces || []).push({ word, img: sm.toDataURL('image/png'), redo: redoHere }); } catch (er) { }   // a small picture of his tracing for Parent Review
         setMsg('Beautiful tracing!', 'good'); say(word, 0.85); nextUp(1300).then(done);

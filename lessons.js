@@ -363,6 +363,10 @@ if (L_IN_DO) {
     .ls-choices button { font:700 26px Fredoka,sans-serif; border:3px solid var(--line); background:var(--surface-2); color:var(--ink); border-radius:18px; padding:16px 18px; cursor:pointer; touch-action:manipulation; }
     .ls-choices button.wrong { border-color:var(--bad); background:var(--bad-bg); color:#FCA5A5; } .ls-choices button.right { border-color:var(--good); background:var(--good-bg); color:var(--good); }
     .ls-grid { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+    .ls-help-box .ls-choices { width:100%; } .ls-help-box .ls-choices.row2 button { flex:1 1 120px; }
+    .ls-help-box { background:var(--surface-2); border:2px solid var(--try); border-radius:16px; padding:10px 14px; margin:8px auto; max-width:620px; text-align:center; display:flex; flex-direction:column; gap:8px; align-items:center; }
+    .ls-teamwords { display:flex; flex-wrap:wrap; gap:10px 22px; justify-content:center; max-width:760px; margin:8px auto; font:700 40px Andika,sans-serif; }
+    .ls-teamwords mark.ls-team { background:#FACC15; color:#17201A; border-radius:8px; padding:0 3px; }
     .ls-grid .c { background:var(--surface-2); border:2px solid var(--line); border-radius:14px; overflow:hidden; min-width:96px; }
     .ls-grid .c b { display:block; color:#fff; font:700 20px Fredoka,sans-serif; padding:4px 10px; text-align:center; }
     .ls-grid .c span { display:block; font:400 20px Andika,sans-serif; padding:2px 10px; text-align:center; border-top:1px solid var(--line); min-height:30px; }
@@ -402,6 +406,14 @@ const L_exactTag = () => SD && SD.exact ? '<div class="ls-exact">📄 School cop
    that only works after minMs. Needs a <div id="lsSay"> on the screen. Resolves { heard, clip }. */
 async function L_read({ minMs = 800, label = 'I read it! 🗣️', nudge = 'I’m listening… read it out loud!' } = {}) {
   const g = partGen, t0 = Date.now(), box = $('lsSay'); let clip = null;
+  if (mic && box && talkMode() === 'button') {   // Get ready → Speak now → Done
+    for (;;) {
+      await quiet(); if (g !== partGen) return stale(g); if (!mic) break;
+      const r = await speakNow(box, { minMs, maxMs: Math.max(12000, minMs + 9000), what: /read/i.test(label) ? 'Read it now!' : 'Say it now!' });
+      if (g !== partGen) return stale(g);
+      if (r) { box.innerHTML = ''; return { heard: r.heard, clip: r.clip }; }
+    }
+  }
   if (mic && box) {
     box.innerHTML = '<div class="meter"><i id="mfill"></i></div>';
     for (;;) {
@@ -479,70 +491,110 @@ const L_ask = qs => async () => {
    guide: gray letters to trace (checked letter by letter, like Sight Word Practice). No guide: free writing (checked that he wrote across the line).
    Renders into #lsPad. Resolves { img, redo }. */
 let L_usedPen = false;
-async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, label = '' }) {
+async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, label = '', check = true, rows: rows0 = 0 }) {
   try { await document.fonts.load(`700 ${fsMax}px Andika`); } catch (e) { }
+  // Free writing of a sentence (Nov 9, 2026, Dylan: "make sure he is writing in his grids… Need more space"): big rows like a
+  // single word's, starting with 2, and ➕ Need more space adds another (up to 5). Every pad has ↶ Undo (the last line he drew).
+  const multi = !guide && /\s/.test(text.trim());
+  if (multi) { fsMax = Math.max(fsMax, 110); H = Math.max(H, 200); }
+  let nRows = guide ? 1 : rows0 || (multi ? 2 : 1); const maxRows = guide ? 1 : multi ? 5 : 2;
   return new Promise(done => {
     $('lsPad').innerHTML = `<div class="tracebox"><canvas id="lsCv"></canvas></div><div class="message" id="msg"></div>
-      <div class="row acts"><button class="btn big" id="lsClear">↺ Start over</button><button class="btn big primary" id="lsDone">Done ✓</button></div>`;
-    const cv = $('lsCv'), dpr = window.devicePixelRatio || 1, Wd = Math.min(960, window.innerWidth - 40), Ht = H;
-    cv.width = Wd * dpr; cv.height = Ht * dpr; cv.style.width = Wd + 'px'; cv.style.height = Ht + 'px';
-    const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+      <div class="row acts"><button class="btn big" id="lsUndo">↶ Undo</button><button class="btn big" id="lsClear">↺ Start over</button>${guide ? '' : '<button class="btn big" id="lsMore">➕ Need more space</button>'}<button class="btn big primary" id="lsDone">Done ✓</button></div>`;
+    const cv = $('lsCv'), dpr = window.devicePixelRatio || 1, Wd = Math.min(960, window.innerWidth - 40), rowH = H;
+    let Ht = rowH * nRows, ctx = cv.getContext('2d');
+    const size = () => { Ht = rowH * nRows; cv.width = Wd * dpr; cv.height = Ht * dpr; cv.style.width = Wd + 'px'; cv.style.height = Ht + 'px'; ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    size();
     const font = s => `700 ${s}px Andika, sans-serif`;
-    let fs = fsMax; ctx.font = font(fs); while (ctx.measureText(text).width > Wd * 0.9 && fs > 34) { fs -= 4; ctx.font = font(fs); }
-    if (!guide) { fs = Math.min(fs, Ht * 0.55); ctx.font = font(fs); }
-    const tw = ctx.measureText(text).width, x0 = guide ? (Wd - tw) / 2 : 24, base = Ht * 0.68, top = base - fs * 0.74, midl = base - fs * 0.5;
+    let fs = fsMax; ctx.font = font(fs); while (guide && ctx.measureText(text).width > Wd * 0.9 && fs > 34) { fs -= 4; ctx.font = font(fs); }
+    if (!guide) { fs = Math.min(fs, rowH * 0.55); ctx.font = font(fs); }
+    const tw = ctx.measureText(text).width, x0 = guide ? (Wd - tw) / 2 : 24;
+    const geo = r => { const base = r * rowH + rowH * 0.68; return { top: base - fs * 0.74, mid: base - fs * 0.5, base }; };
+    const { top, mid: midl, base } = geo(0);
     const spans = [...text].map((ch, k) => ({ ch, a: x0 + ctx.measureText(text.slice(0, k)).width, b: x0 + ctx.measureText(text.slice(0, k + 1)).width })).filter(s => /[a-z]/i.test(s.ch));
-    const make = () => { const c = document.createElement('canvas'); c.width = Wd; c.height = Ht; const g = c.getContext('2d'); g.font = font(fs); return [c, g]; };
+    const make = (h = rowH) => { const c = document.createElement('canvas'); c.width = Wd; c.height = h; const g = c.getContext('2d'); g.font = font(fs); return [c, g]; };
     const [core, cg] = make(); cg.fillText(text, x0, base);
     const [near, ng] = make(); ng.lineWidth = Math.max(16, fs * 0.16); ng.lineJoin = 'round'; ng.strokeText(text, x0, base); ng.fillText(text, x0, base);
-    const [ink, ig] = make(); ig.lineCap = ig.lineJoin = 'round'; ig.lineWidth = Math.max(12, fs * 0.12);
-    const coreD = cg.getImageData(0, 0, Wd, Ht).data, nearD = ng.getImageData(0, 0, Wd, Ht).data;
-    let strokes = [], cur = null, orange = new Set(), redo = 0;
-    window.__lsPad = { text, x0, base, fs, Wd, Ht, guide };   // for automated tests
+    const coreD = cg.getImageData(0, 0, Wd, rowH).data, nearD = ng.getImageData(0, 0, Wd, rowH).data;
+    let strokes = [], cur = null, orange = new Set(), redo = 0, flagged = null, offLines = new Set(), caseAsked = '';
+    window.__lsPad = { text, x0, base, fs, Wd, Ht, guide, rowH, geo, rows: () => nRows, strokes: () => strokes };   // for automated tests
     const lines = () => {
-      ctx.lineWidth = 2; ctx.strokeStyle = '#1E3A5F'; ctx.setLineDash([]);
-      [top, base].forEach(y => { ctx.beginPath(); ctx.moveTo(8, y); ctx.lineTo(Wd - 8, y); ctx.stroke(); });
-      ctx.strokeStyle = '#94A3B8'; ctx.setLineDash([10, 8]); ctx.beginPath(); ctx.moveTo(8, midl); ctx.lineTo(Wd - 8, midl); ctx.stroke(); ctx.setLineDash([]);
+      for (let r = 0; r < nRows; r++) {
+        const g = geo(r);
+        ctx.lineWidth = 2; ctx.strokeStyle = '#1E3A5F'; ctx.setLineDash([]);
+        [g.top, g.base].forEach(y => { ctx.beginPath(); ctx.moveTo(8, y); ctx.lineTo(Wd - 8, y); ctx.stroke(); });
+        ctx.strokeStyle = '#94A3B8'; ctx.setLineDash([10, 8]); ctx.beginPath(); ctx.moveTo(8, g.mid); ctx.lineTo(Wd - 8, g.mid); ctx.stroke(); ctx.setLineDash([]);
+        if (nRows > 1) { ctx.fillStyle = '#94A3B8'; ctx.font = '700 16px Fredoka, sans-serif'; ctx.fillText(String(r + 1), 10, g.top - 8); }
+      }
     };
     const draw = () => {
-      ctx.clearRect(0, 0, Wd, Ht); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, Wd, Ht); lines();
+      ctx.clearRect(0, 0, Wd, Ht); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, Wd, Ht);
+      if (flagged) { ctx.fillStyle = 'rgba(251,146,60,.28)'; flagged.forEach(f => { const g = geo(f.row); ctx.fillRect(f.x0 - 6, g.top - 10, f.x1 - f.x0 + 12, g.base - g.top + 20); }); }
+      lines();
       if (guide) { ctx.font = font(fs); [...text].forEach((ch, k) => { const xa = x0 + ctx.measureText(text.slice(0, k)).width, s = spans.find(z => Math.abs(z.a - xa) < 0.01); ctx.fillStyle = s && orange.has(s) ? '#FDBA74' : '#CBD5E1'; ctx.fillText(ch, xa, base); }); }
-      ctx.strokeStyle = '#2563EB'; ctx.lineCap = ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(7, fs * 0.07);
-      strokes.forEach(st => { ctx.beginPath(); st.forEach(([px, py], k) => k ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); if (st.length === 1) ctx.lineTo(st[0][0] + 0.1, st[0][1]); ctx.stroke(); });
+      ctx.lineCap = ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(7, fs * 0.07);
+      strokes.forEach(st => { ctx.strokeStyle = offLines.has(st) ? '#F97316' : '#2563EB'; ctx.beginPath(); st.forEach(([px, py], k) => k ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); if (st.length === 1) ctx.lineTo(st[0][0] + 0.1, st[0][1]); ctx.stroke(); });
     };
     draw();
     const pt = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * Wd / r.width, (e.clientY - r.top) * Ht / r.height]; };
+    const changed = () => { flagged = null; caseAsked = ''; offLines.clear(); };
     let penId = null;
-    cv.onpointerdown = e => { e.preventDefault(); if (e.pointerType === 'pen') L_usedPen = true; if ((L_usedPen && e.pointerType === 'touch') || (cur && penId !== e.pointerId)) return; penId = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch (er) { } cur = [pt(e)]; strokes.push(cur); draw(); };
+    cv.onpointerdown = e => { e.preventDefault(); if (e.pointerType === 'pen') L_usedPen = true; if ((L_usedPen && e.pointerType === 'touch') || (cur && penId !== e.pointerId)) return; penId = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch (er) { } cur = [pt(e)]; strokes.push(cur); changed(); draw(); };
     cv.onpointermove = e => { if (!cur || e.pointerId !== penId) return; const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : []; (evs.length ? evs : [e]).forEach(ev => cur.push(pt(ev))); draw(); };
     cv.onpointerup = cv.onpointercancel = e => { if (e.pointerId === penId) { cur = null; penId = null; } };
-    $('lsClear').onclick = () => { strokes = []; orange.clear(); setMsg(''); draw(); };
+    $('lsClear').onclick = () => { strokes = []; orange.clear(); changed(); setMsg(''); draw(); };
+    $('lsUndo').onclick = () => { if (cur) return; strokes.pop(); changed(); setMsg(''); draw(); };
+    if ($('lsMore')) {
+      const moreBtn = $('lsMore'), syncMore = () => { moreBtn.disabled = nRows >= maxRows; moreBtn.textContent = nRows >= maxRows ? 'No more space' : '➕ Need more space'; };
+      moreBtn.onclick = () => { if (nRows >= maxRows) return; nRows++; size(); changed(); draw(); syncMore(); setMsg('Here’s another line. Keep going!', 'good'); cv.scrollIntoView({ block: 'end', behavior: 'smooth' }); };
+      syncMore();
+    }
     const snap = () => { try { const sm = document.createElement('canvas'); sm.width = 420; sm.height = Math.round(420 * Ht / Wd); sm.getContext('2d').drawImage(cv, 0, 0, sm.width, sm.height); return sm.toDataURL('image/png'); } catch (er) { return ''; } };
+    const finishPad = extra => {
+      setMsg(guide ? 'Beautiful tracing!' : 'Nice writing!', 'good'); say(guide ? 'Beautiful!' : 'Nice writing!', 0.95);
+      flagged = null; draw();
+      const img = snap(); ['lsDone', 'lsClear', 'lsUndo', 'lsMore'].forEach(id => { if ($(id)) $(id).disabled = true; });
+      nextUp(1100).then(() => done({ img, redo, ...extra }));
+    };
     $('lsDone').onclick = () => {
       if (!strokes.length) return setMsg(guide ? 'Use your finger to trace the gray letters.' : 'Write it on the lines with your finger or pencil.', 'try');
-      ig.clearRect(0, 0, Wd, Ht);
-      strokes.forEach(st => { ig.beginPath(); st.forEach(([px, py], k) => k ? ig.lineTo(px, py) : ig.moveTo(px, py)); if (st.length === 1) ig.lineTo(st[0][0] + 0.1, st[0][1]); ig.stroke(); });
-      const inkD = ig.getImageData(0, 0, Wd, Ht).data;
       if (guide) {
+        const [ink, ig] = make(); ig.lineCap = ig.lineJoin = 'round'; ig.lineWidth = Math.max(12, fs * 0.12);
+        strokes.forEach(st => { ig.beginPath(); st.forEach(([px, py], k) => k ? ig.lineTo(px, py) : ig.moveTo(px, py)); if (st.length === 1) ig.lineTo(st[0][0] + 0.1, st[0][1]); ig.stroke(); });
+        const inkD = ig.getImageData(0, 0, Wd, rowH).data;
         let all = 0, out = 0; const per = spans.map(() => [0, 0]);
-        for (let py = 0; py < Ht; py += 3) for (let px = 0; px < Wd; px += 3) {
+        for (let py = 0; py < rowH; py += 3) for (let px = 0; px < Wd; px += 3) {
           const o = (py * Wd + px) * 4 + 3, isInk = inkD[o] > 40;
           if (isInk) { all++; if (nearD[o] < 40) out++; }
           if (coreD[o] > 100) { const s = spans.findIndex(z => px >= z.a && px < z.b); if (s >= 0) { per[s][1]++; if (isInk) per[s][0]++; } }
         }
         const missed = spans.filter((s, k) => per[k][1] && per[k][0] / per[k][1] < need);
         orange = new Set(missed);
-        if ((all ? out / all : 1) > 0.4) { redo++; draw(); setMsg('Stay on the gray letters. Tap Start over and trace them carefully.', 'try'); say('Stay on the gray letters.', 0.95); return; }
+        if ((all ? out / all : 1) > 0.4) { redo++; draw(); setMsg('Stay on the gray letters. Tap ↶ Undo or Start over and trace them carefully.', 'try'); say('Stay on the gray letters.', 0.95); return; }
         if (missed.length) { redo++; draw(); setMsg(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 'try'); say(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 0.95); return; }
-      } else {
-        let minX = Wd, maxX = 0, n = 0;
-        for (let py = 0; py < Ht; py += 3) for (let px = 0; px < Wd; px += 3) if (inkD[(py * Wd + px) * 4 + 3] > 40) { n++; if (px < minX) minX = px; if (px > maxX) maxX = px; }
-        const want = Math.min(tw, Wd - 48) * 0.45;
-        if (maxX - minX < want || n < 40) { redo++; setMsg(label ? `Write ${label}. Keep going!` : `Write all of “${text}”. Keep going!`, 'try'); say('Write all of it.', 0.95); return; }
+        return finishPad({});
       }
-      setMsg(guide ? 'Beautiful tracing!' : 'Nice writing!', 'good'); say(guide ? 'Beautiful!' : 'Nice writing!', 0.95);
-      const img = snap(); $('lsDone').disabled = $('lsClear').disabled = true;
-      nextUp(1100).then(() => done({ img, redo }));
+      // free writing: (1) on the lines, (2) all of it, (3) capital or small letters
+      const pts = strokes.flat(), rowOf = y => Math.max(0, Math.min(nRows - 1, Math.floor(y / rowH)));
+      const inBand = ([, y]) => { const g = geo(rowOf(y)), xh = g.base - g.mid; return y >= g.top - xh * 0.45 && y <= g.base + xh * 1.1; };
+      offLines = new Set(strokes.filter(st => st.filter(p => !inBand(p)).length > st.length * 0.5));
+      const outFrac = pts.filter(p => !inBand(p)).length / pts.length;
+      if (outFrac > 0.25) { redo++; draw(); setMsg('Keep your letters on the lines: tall letters touch the top line, and every letter sits on the bottom line. Tap ↶ Undo to fix the orange ones.', 'try'); say('Keep your letters on the lines.', 0.95); return; }
+      offLines.clear();
+      let width = 0, n = pts.length;
+      for (let r = 0; r < nRows; r++) { const xs = pts.filter(p => rowOf(p[1]) === r).map(p => p[0]); if (xs.length > 2) width += Math.max(...xs) - Math.min(...xs); }
+      const want = Math.min(tw, (Wd - 48) * nRows) * (multi ? 0.35 : 0.45);
+      if (width < want || n < 40) { redo++; draw(); setMsg(label ? `Write ${label}. Keep going!` : `Write all of “${text}”. Keep going!${multi && nRows < maxRows ? ' Tap ➕ Need more space if you run out of room.' : ''}`, 'try'); say('Write all of it.', 0.95); return; }
+      if (check && typeof hcCheck === 'function') {
+        const dense = hcDense(strokes), rows = Array.from({ length: nRows }, (_, r) => ({ ...geo(r), pts: dense.filter(p => rowOf(p[1]) === r) }));
+        const flags = hcCheck(rows, text), key = flags.map(f => f.ch + f.row + Math.round(f.x0)).join();
+        if (flags.length && caseAsked !== key) {   // ask once; Done again means "it's right" (the check can be wrong)
+          caseAsked = key; flagged = flags; draw();
+          const m = hcMessage(flags); setMsg(`${m} Fix it with ↶ Undo, or tap Done again if it’s right.`, 'try'); say(m, 0.95); return;
+        }
+        if (flags.length) return finishPad({ caseFlags: flags.map(f => `${f.ch} in “${f.word}” (${f.want === 'small' ? 'looked like a capital' : 'looked small'})`) });
+      }
+      finishPad({});
     };
   });
 }
@@ -552,7 +604,7 @@ function L_drawPad() {
     const PAL = [['#1F2937', 'black'], ['#DC2626', 'red'], ['#EA580C', 'orange'], ['#FACC15', 'yellow'], ['#16A34A', 'green'], ['#2563EB', 'blue'], ['#7C3AED', 'purple'], ['#92400E', 'brown'], ['#F9A8D4', 'pink'], ['#FFFFFF', 'eraser']];
     $('lsPad').innerHTML = `<div class="ls-palette" id="lsPal">${PAL.map(([c, n], i) => `<button data-c="${c}" aria-label="${n}" class="${i ? '' : 'on'}" style="background:${c}">${n === 'eraser' ? '🧽' : ''}</button>`).join('')}</div>
       <div class="tracebox"><canvas id="lsCv"></canvas></div><div class="message" id="msg"></div>
-      <div class="row acts"><button class="btn big" id="lsClear">↺ Start over</button><button class="btn big primary" id="lsDone">Done ✓</button></div>`;
+      <div class="row acts"><button class="btn big" id="lsUndo">↶ Undo</button><button class="btn big" id="lsClear">↺ Start over</button><button class="btn big primary" id="lsDone">Done ✓</button></div>`;
     const cv = $('lsCv'), dpr = window.devicePixelRatio || 1, Wd = Math.min(960, window.innerWidth - 40), Ht = Math.round(Math.max(240, Math.min(520, window.innerHeight - 390, Wd * 0.62)));
     cv.width = Wd * dpr; cv.height = Ht * dpr; cv.style.width = Wd + 'px'; cv.style.height = Ht + 'px';
     const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr); ctx.lineCap = ctx.lineJoin = 'round';
@@ -565,7 +617,10 @@ function L_drawPad() {
     cv.onpointerdown = e => { e.preventDefault(); if (e.pointerType === 'pen') L_usedPen = true; if ((L_usedPen && e.pointerType === 'touch') || penId !== null) return; penId = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch (er) { } last = pt(e); seg(last, last); };
     cv.onpointermove = e => { if (e.pointerId !== penId) return; const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : []; (evs.length ? evs : [e]).forEach(ev => { const p = pt(ev); seg(last, p); last = p; }); };
     cv.onpointerup = cv.onpointercancel = e => { if (e.pointerId === penId) penId = null; };
-    $('lsClear').onclick = () => { clear(); inked = 0; };
+    $('lsClear').onclick = () => { clear(); inked = 0; hist.length = 0; };
+    const hist = [];   // ↶ Undo: the picture before each line he drew (last 15)
+    cv.addEventListener('pointerdown', e => { if (penId !== null || (L_usedPen && e.pointerType === 'touch')) return; try { hist.push([ctx.getImageData(0, 0, cv.width, cv.height), inked]); if (hist.length > 15) hist.shift(); } catch (er) { } }, true);
+    $('lsUndo').onclick = () => { const h = hist.pop(); if (!h) return; ctx.putImageData(h[0], 0, 0); inked = h[1]; };
     $('lsDone').onclick = () => {
       if (inked < 300) return setMsg('Draw a little more of the story first.', 'try');
       let img = ''; try { const sm = document.createElement('canvas'); sm.width = 480; sm.height = Math.round(480 * Ht / Wd); sm.getContext('2d').drawImage(cv, 0, 0, sm.width, sm.height); img = sm.toDataURL('image/jpeg', 0.8); } catch (er) { }
@@ -674,7 +729,39 @@ LT.sound.run = () => {
   for (let k = 0; k < n; k++) cols.forEach((c, ci) => { if (c.words[k]) across.push([ci, k]); });
   PARTS = [{ name: 'Read Down', run: reading(down, 'Read Down', 'Read each word out loud, going down each column.') }];
   if (d.across) PARTS.push({ name: 'Read Across', run: reading(across, 'Read Across', 'Now read each word again, going across each row.') });
-  if (d.questions.length) PARTS.push({ name: 'Questions', run: async () => { L_ask.extra = () => grid(null, null, true); await L_ask(d.questions)(); L_ask.extra = null; } });
+  // Questions. "Where do you see ay in words?" comes in two steps (Nov 9, 2026: the ay column was in the middle of the grid, so he
+  // answered "middle"): first find the ay column, then look at just its words with ay lit up, and say where ay is IN THE WORD.
+  const norm = t => String(t || '').toLowerCase().replace(/[–—-]/g, '_').trim();
+  const where = q => { const m = q.q.match(/where do you see\s+(\S+)\s+in/i); if (!m) return null; const ci = cols.findIndex(c => norm(c.label) === norm(m[1])); return ci < 0 || /_/.test(norm(m[1])) ? null : { ci, team: norm(m[1]) }; };
+  const inWord = c => /^(middle|end|beginning|start)$/i.test(c) ? (/end/i.test(c) ? 'at the end of the word' : `${/beg|start/i.test(c) ? 'at the' : 'in the'} ${c.toLowerCase()} of the word`) : c;
+  const lit = (w, team) => { const k = w.toLowerCase().lastIndexOf(team); return k < 0 ? L_esc(w) : L_esc(w.slice(0, k)) + `<mark class="ls-team">${L_esc(w.slice(k, k + team.length))}</mark>` + L_esc(w.slice(k + team.length)); };
+  if (d.questions.length) PARTS.push({ name: 'Questions', run: async () => {
+    const steps = d.questions.flatMap((q, qi) => { const wq = where(q); return wq ? [{ q, qi, wq, col: true }, { q, qi, wq }] : [{ q, qi }]; });
+    await each(steps.length, i => new Promise(async done => {
+      const { q, qi, wq, col } = steps[i], cnt = L_count(qi, d.questions.length, 'Question');
+      if (wq && col) {
+        const lab = cols[wq.ci].label, sq = () => say(`Find the ${wq.team.split('').join(' ')} column. Tap its name.`, 0.9);
+        app.innerHTML = head(`First, find the <b>${L_esc(lab)}</b> column. Tap its name.`) + cnt + `<button class="btn" id="hearQ">${SPK}Hear it</button>` + grid(null, null, true) + '<div id="io"></div>';
+        $('hearQ').onclick = sq; sq();
+        const r = await L_choose(cols.map(c => c.label), lab, { row: true, hint: 'Look at the colored names at the top of each column.' });
+        mark('Questions', `Find the ${lab} column`, r.ok, r.typed, lab, null, { text: `Find the ${lab} column.`, choices: cols.map(c => c.label) }, r.picks); return done();
+      }
+      if (wq) {
+        const team = wq.team, words = cols[wq.ci].words, disp = q.choices.map(inWord), qq = `Look at the ${team} in each word. Where is ${team}: ${disp.join(', or ')}?`;
+        const sq = () => say(`Look at the ${team.split('').join(' ')} in each word. Is it ${disp.join(', or ')}?`, 0.9);
+        app.innerHTML = head(L_esc(qq)) + cnt + `<button class="btn" id="hearQ">${SPK}Hear the question</button><div class="ls-teamwords">${words.map(w => `<span>${lit(w, team)}</span>`).join('')}</div><div id="io"></div>`;
+        $('hearQ').onclick = sq; sq();
+        const r = await L_choose(disp, inWord(q.answer), { row: true, hint: `Look where the yellow ${team} is inside each word. Is it at the very end?` });
+        const back = v => q.choices[disp.indexOf(v)] || v;
+        mark('Questions', q.q, r.ok, back(r.typed), q.answer, null, { text: qq, choices: q.choices }, r.picks.map(back)); return done();
+      }
+      app.innerHTML = head(L_esc(q.q)) + cnt + `<button class="btn" id="hearQ">${SPK}Hear the question</button>` + grid(null, null, true) + '<div id="io"></div>';
+      const sq = () => say(q.q + ' ' + q.choices.join(', or '), 0.9); $('hearQ').onclick = sq; sq();
+      const r = await L_choose(q.choices, q.answer, { row: q.choices.length <= 3 });
+      mark('Questions', q.q, r.ok, r.typed, q.answer, null, { text: q.q, choices: q.choices }, r.picks); done();
+    }));
+    partDone(firstTry('Questions') + '.');
+  } });
   if (d.sort && cols.length >= 2) PARTS.push({ name: 'Sort the Words', run: async () => {
     const pool = L_shuf(cols.flatMap((c, ci) => c.words.map(w => [w, ci]))).slice(0, 12);
     await each(pool.length, i => new Promise(async done => {
@@ -759,7 +846,66 @@ function L_change(a, b) {
   for (let i = 0; i < a.length; i++) if (a.slice(0, i) + a.slice(i + 1) === b) return { text: `Take away the ${a[i]}.`, speak: `Take away the ${letterName(a[i])}.`, at: [] };
   return { text: `Change ${a} to ${b}.`, speak: `Change ${a} to ${b}.`, at: [...b].map((c, i) => c !== a[i] ? i : -1).filter(i => i >= 0) };
 }
+/* Letters that can make the same sound (Word Chains help, Nov 9, 2026: "lake to cake… but there is already a k").
+   [letter, also, sound name] */
+const L_SAME = [['c', 'k', 'the /k/ sound'], ['k', 'c', 'the /k/ sound'], ['ck', 'k', 'the /k/ sound'], ['s', 'c', 'the /s/ sound'], ['c', 's', 'the /s/ sound'], ['j', 'g', 'the /j/ sound'], ['g', 'j', 'the /j/ sound'], ['f', 'ph', 'the /f/ sound'], ['z', 's', 'the /z/ sound'], ['s', 'z', 'the /z/ sound']];
+const L_sameAs = (want, got) => L_SAME.find(([a, b]) => a === want && b === got);
+// the sound a letter makes at position i of word (c and g are soft before e, i, y), and the other letters for that sound
+function L_alike(word, i) {
+  const ch = word[i], soft = /[eiy]/.test(word[i + 1] || '');
+  const sound = ch === 'c' ? (soft ? 'the /s/ sound' : 'the /k/ sound') : ch === 'g' ? (soft ? 'the /j/ sound' : '') : ch === 's' ? 'the /s/ sound' : (L_SAME.find(x => x[0] === ch) || [])[2] || '';
+  return { sound, alts: sound ? L_SAME.filter(([a, , snd]) => a === ch && snd === sound).map(x => x[1]) : [] };
+}
+// he typed a word that sounds right but uses a sound-alike letter (kake for cake): say so
+function L_soundAlike(typed, answer) {
+  const t = String(typed).toLowerCase().trim(), a = answer.toLowerCase();
+  if (t.length !== a.length) return null;
+  const diff = [...a].map((c, i) => c !== t[i] ? i : -1).filter(i => i >= 0);
+  if (!diff.length || diff.length > 1) return null;
+  const al = L_alike(a, diff[0]); if (!al.alts.includes(t[diff[0]])) return null;
+  return { want: a[diff[0]], got: t[diff[0]], sound: al.sound };
+}
 const L_tiles = (w, at = []) => `<div class="ls-tiles">${[...w].map((c, i) => `<span class="t${at.includes(i) ? ' ch' : ''}">${L_esc(c)}</span>`).join('')}</div>`;
+/* Word Chains "🆘 Help me" (Nov 9, 2026): 1) hear both words slowly and pick which sound changed (first / middle / last),
+   2) pick the letter for the new sound out of 3 (a sound-alike letter gets "that makes the sound too, but…"), 3) the letter to change lights up.
+   Uses #chHelp, #chBox, #prevT. Returns { used() } = the help steps he opened, for Parent Review. */
+function L_chainHelp(prev, w) {
+  const c = L_change(prev, w), used = []; let step = 0;
+  const same = prev.length === w.length && c.at.length === 1, i = same ? c.at[0] : -1;
+  const place = i === 0 ? 'first' : i === prev.length - 1 ? 'last' : 'middle';
+  const btn = $('chHelp'), box = $('chBox');
+  if (!btn || !box) return { used: () => used };
+  if (!same) { btn.onclick = () => { used.push('showed the change'); box.innerHTML = `<div class="message try">${L_esc(c.text)}</div>`; say(c.speak, 0.9); }; return { used: () => used }; }
+  const light = () => { const t = $('prevT'); if (t) t.innerHTML = L_tiles(prev, [i]); };
+  btn.onclick = () => {
+    step++;
+    if (step === 1) {
+      used.push('which sound changed');
+      box.innerHTML = `<div class="ls-help-box"><b>Say both words slowly. Which sound is different?</b><div class="ls-choices row2" id="chPl">${['first', 'middle', 'last'].map(p => `<button data-p="${p}">${p} sound</button>`).join('')}</div><button class="btn" id="chAgain">${SPK}Hear both again</button></div>`;
+      const both = () => say(`${prev}. ${w}. Which sound is different?`, 0.7); $('chAgain').onclick = both; both();
+      $('chPl').onclick = e => { const b = e.target.closest('[data-p]'); if (!b || b.disabled) return;
+        if (b.dataset.p === place) { b.classList.add('right'); $('chPl').querySelectorAll('button').forEach(x => x.disabled = true); light(); say(`Yes! The ${place} sound changes.`, 0.95); btn.textContent = '🆘 More help'; }
+        else { b.classList.add('wrong'); b.disabled = true; say('Listen again.', 0.95); both(); } };
+    } else if (step === 2) {
+      used.push('which letter');
+      light();
+      const want = w[i], al = L_alike(w, i), alike = al.alts.filter(x => x.length === 1);
+      const pool = [want, ...alike, ...'bdmnprt'.split('').filter(x => x !== want && x !== prev[i] && !alike.includes(x))].slice(0, 3);
+      const opts = L_shuf(pool);
+      box.innerHTML = `<div class="ls-help-box"><b>Which letter makes the new ${place} sound in “${L_esc(w)}”?</b><div class="ls-choices row2" id="chLt">${opts.map(x => `<button data-l="${x}">${x}</button>`).join('')}</div><div class="message" id="chMsg"></div></div>`;
+      say(`Which letter makes the new ${place} sound in ${w}?`, 0.9);
+      $('chLt').onclick = e => { const b = e.target.closest('[data-l]'); if (!b || b.disabled) return; const l = b.dataset.l, m = alike.includes(l) ? [want, l, al.sound] : null;
+        say(l, 1);
+        if (l === want) { b.classList.add('right'); $('chLt').querySelectorAll('button').forEach(x => x.disabled = true); const tip = alike.length ? ` ${al.sound[0].toUpperCase() + al.sound.slice(1)} can be spelled ${[want, ...alike].join(' or ')}. In ${w}, it’s ${want}.` : ''; $('chMsg').className = 'message good'; $('chMsg').textContent = `Yes! Change the ${prev[i]} to ${want}.${tip}`; say(`Yes! Change the ${letterName(prev[i])} to ${letterName(want)}.`, 0.9); btn.textContent = '🆘 Show me'; }
+        else if (m) { b.classList.add('wrong'); b.disabled = true; $('chMsg').className = 'message try'; $('chMsg').textContent = `${l} makes that sound too! But ${w} is spelled with ${want}. ${m[2][0].toUpperCase() + m[2].slice(1)} can be spelled ${want} or ${l}.`; say(`${l} makes that sound too! But ${w} is spelled with ${letterName(want)}.`, 0.9); }
+        else { b.classList.add('wrong'); b.disabled = true; $('chMsg').className = 'message try'; $('chMsg').textContent = 'Say the sound and listen. Try another letter.'; } };
+    } else {
+      used.push('showed the letter');
+      light(); box.innerHTML = `<div class="message try">Change the <b>${L_esc(prev[i])}</b> to <b>${L_esc(w[i])}</b>.</div>`; say(`Change the ${letterName(prev[i])} to ${letterName(w[i])}.`, 0.9); btn.disabled = true;
+    }
+  };
+  return { used: () => used };
+}
 LT.chains.run = () => {
   const d = SD, pat = L_pattern(d.concept), run = Date.now().toString(36);
   const sample = async () => {
@@ -792,10 +938,13 @@ LT.chains.run = () => {
       const s = steps[i], label = `Chain ${s.ci + 1}: ${s.ch.join(' → ')}`;
       if (s.k === 0 || s.k % 2 === 0) {   // spelling
         const sub = s.k === 0 ? `Make the word you hear.` : `Change ${L_esc(s.prev)} to the word you hear.`;
-        app.innerHTML = L_exactTag() + head(sub) + `<div class="count">${L_esc(label.split(':')[0])} · step ${s.k + 1} of ${s.ch.length}</div>` + (s.prev ? L_tiles(s.prev) : '') + `<button class="btn" id="hearW">${SPK}Hear the word</button><div id="io"></div>`;
+        app.innerHTML = L_exactTag() + head(sub) + `<div class="count">${L_esc(label.split(':')[0])} · step ${s.k + 1} of ${s.ch.length}</div>` + (s.prev ? `<div id="prevT">${L_tiles(s.prev)}</div>` : '') + `<div class="row" style="justify-content:center"><button class="btn" id="hearW">${SPK}Hear the word</button>${s.prev ? '<button class="btn" id="chHelp">🆘 Help me</button>' : ''}</div><div id="chBox"></div><div id="io"></div>`;
         const sp = () => say(s.k === 0 ? `Make the word ${s.w}.` : `Change ${s.prev} to ${s.w}.`, 0.85); $('hearW').onclick = sp; sp();
-        const r = await freeType({ answer: s.w, hint: 'Not quite. Say it slowly and listen for each sound.' });
-        mark('Word Chains', `Spell “${s.w}”${s.prev ? ` (from ${s.prev})` : ''}`, r.ok, r.typed, s.w, s.w, { text: s.k === 0 ? `He heard “${s.w}” and spelled it.` : `He saw “${s.prev}”, heard “${s.w}”, and spelled it.` }, r.attempts);
+        const helps = s.prev ? L_chainHelp(s.prev, s.w) : null;
+        const hint = t => { const m = L_soundAlike(t, s.w); return m ? `Good listening, ${t} sounds right! But ${s.w} is spelled with ${m.want}, not ${m.got}. ${m.sound[0].toUpperCase() + m.sound.slice(1)} can be spelled ${m.want} or ${m.got}.` : 'Not quite. Say it slowly and listen for each sound.'; };
+        const r = await freeType({ answer: s.w, hint });
+        const used = helps ? helps.used() : [];
+        mark('Word Chains', `Spell “${s.w}”${s.prev ? ` (from ${s.prev})` : ''}`, r.ok && !used.length, r.typed, s.w, s.w, { text: (s.k === 0 ? `He heard “${s.w}” and spelled it.` : `He saw “${s.prev}”, heard “${s.w}”, and spelled it.`) + (used.length ? ` Help he used: ${used.join('; ')}.` : '') }, r.attempts);
       } else {   // reading
         const c = L_change(s.prev, s.w), same = [...new Set([...s.ch, ...d.chains.flat()])].filter(x => x !== s.w && x !== s.prev && Math.abs(x.length - s.w.length) <= 1), others = [s.prev, ...L_shuf(same)].slice(0, 2);
         const choices = L_shuf([s.w, ...others]);
@@ -898,7 +1047,7 @@ LT.heart.run = () => {
     const r = await L_read({ minMs: 1500, label: 'I said my sentence 🗣️', nudge: 'I’m listening… say your sentence!' });
     stopMic();
     app.innerHTML = L_exactTag() + head(`Now write your sentence with <b>${L_esc(w)}</b>.`) + '<div id="lsPad"></div>';
-    const p = await L_pad({ text: `${w} ${w} ${w} ${w}`, guide: false, fsMax: 70, H: 200, label: 'your whole sentence' });
+    const p = await L_pad({ text: `${w} ${w} ${w} ${w}`, guide: false, fsMax: 70, H: 200, label: 'your whole sentence', check: false });
     mark('Write a Sentence', `A sentence with ${w}`, true, '', '', null, { img: p.img, text: `He said a sentence with “${w}” out loud, then wrote it.`, clips: L_keepClip('heart', run, 0, r.clip) }, [r.heard ? 'said it out loud, then wrote it' : 'wrote it']); L_free();
     partDone('Great sentence!');
   };
@@ -927,7 +1076,7 @@ LT.letter.run = () => {
     for (let i = 0; i < n; i++) {
       app.innerHTML = L_exactTag() + head(sub) + (n > 1 ? L_count(i, n, 'Time') : '') + extraTop + '<div id="lsPad"></div>';
       const r = await L_pad({ text, guide, fsMax: text.length <= 1 ? 190 : 150, H: text.length <= 1 ? 250 : 230 });
-      mark(part, `${text}${n > 1 ? ` (${i + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `${guide ? 'Tracing' : 'Writing'} “${text}”${r.redo ? `; he had to ${guide ? 'trace' : 'write'} more ${r.redo} time${r.redo > 1 ? 's' : ''}` : ''}.` }, []); L_free();
+      mark(part, `${text}${n > 1 ? ` (${i + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `${guide ? 'Tracing' : 'Writing'} “${text}”${r.redo ? `; he had to ${guide ? 'trace' : 'write'} more ${r.redo} time${r.redo > 1 ? 's' : ''}` : ''}${r.caseFlags ? `; the capital-letter check asked about ${r.caseFlags.join(', ')}, and he kept it` : ''}.` }, []); L_free();
     }
   };
   const P = [

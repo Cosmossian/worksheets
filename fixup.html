@@ -185,6 +185,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="handcheck.js?v=1"></script>
 <script>
 /* ============ Shared word logic: copied from the printed Spelling Fix-Up (worksheets/index.html) so screen and paper match ============ */
 const SENTENCES = {
@@ -660,9 +661,9 @@ function partRainbow() {
       $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join('');
       const PAL = [['#F87171', 'red'], ['#FB923C', 'orange'], ['#FBBF24', 'yellow'], ['#34D399', 'green'], ['#38BDF8', 'light blue'], ['#7FB0F0', 'blue'], ['#C4B5FD', 'purple'], ['#F9A8D4', 'pink']];
       $('pal').innerHTML = `<div class="count">Line 4: pick a color, then write “${esc(dw)}” with your pencil or finger</div><div class="palette">${PAL.map(([c, name]) => `<button class="swatch" data-c4="${c}" style="background:${c}" aria-label="${name}"></button>`).join('')}</div>
-        <div class="wl-wrap" id="wlWrap" hidden><canvas id="wl" class="wl"></canvas><div class="row acts"><button class="btn big" id="wlClear">Start over</button><button class="btn big primary" id="wlDone">Done ✓</button></div></div>`;
+        <div class="wl-wrap" id="wlWrap" hidden><canvas id="wl" class="wl"></canvas><div class="row acts"><button class="btn big" id="wlUndo">↶ Undo</button><button class="btn big" id="wlClear">↺ Start over</button><button class="btn big primary" id="wlDone">Done ✓</button></div></div>`;
       setMsg('Last line: write it yourself, no dotted letters this time!', 'good'); say('Last line! Write the word yourself with your pencil.', 0.95);
-      let col = null, usedPen = false, penId = null, cur = null, strokes = [];
+      let col = null, usedPen = false, penId = null, cur = null, strokes = [], caseAsked = '', flagged = null, caseFlags = null;
       $('pal').onclick = e => { const b = e.target.closest('[data-c4]'); if (!b) return; col = b.dataset.c4; $('wlWrap').hidden = false; setup(); };
       const setup = () => {
         const cv = $('wl'), r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1; cv.width = r.width * dpr; cv.height = r.height * dpr;
@@ -670,19 +671,27 @@ function partRainbow() {
         const drawAll = () => {
           g.clearRect(0, 0, r.width, r.height); g.fillStyle = '#fff'; g.fillRect(0, 0, r.width, r.height);
           const top = r.height * 0.18, mid = r.height * 0.5, base = r.height * 0.82;
+          if (flagged) { g.fillStyle = 'rgba(251,146,60,.3)'; flagged.forEach(f => g.fillRect(f.x0 - 6, top - 8, f.x1 - f.x0 + 12, base - top + 16)); }
           g.strokeStyle = '#93C5FD'; g.lineWidth = 2; g.setLineDash([]); [top, base].forEach(y => { g.beginPath(); g.moveTo(10, y); g.lineTo(r.width - 10, y); g.stroke(); });
           g.setLineDash([10, 8]); g.beginPath(); g.moveTo(10, mid); g.lineTo(r.width - 10, mid); g.stroke(); g.setLineDash([]);
           g.strokeStyle = col; g.lineWidth = 7; g.lineCap = g.lineJoin = 'round';
           strokes.forEach(s => { g.beginPath(); s.forEach((p, k) => k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); if (s.length === 1) g.lineTo(s[0][0] + 0.1, s[0][1]); g.stroke(); });
         };
         const pt = ev => [ev.clientX - r.left, ev.clientY - r.top];
-        cv.onpointerdown = e => { e.preventDefault(); if (e.pointerType === 'pen') usedPen = true; if ((usedPen && e.pointerType === 'touch') || (cur && penId !== e.pointerId)) return; penId = e.pointerId; cur = [pt(e)]; strokes.push(cur); try { cv.setPointerCapture(e.pointerId); } catch (er) { } drawAll(); };
+        cv.onpointerdown = e => { e.preventDefault(); if (e.pointerType === 'pen') usedPen = true; if ((usedPen && e.pointerType === 'touch') || (cur && penId !== e.pointerId)) return; penId = e.pointerId; cur = [pt(e)]; strokes.push(cur); caseAsked = ''; flagged = null; try { cv.setPointerCapture(e.pointerId); } catch (er) { } drawAll(); };
         cv.onpointermove = e => { if (!cur || e.pointerId !== penId) return; const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : []; (evs.length ? evs : [e]).forEach(ev => cur.push(pt(ev))); drawAll(); };
         cv.onpointerup = cv.onpointercancel = e => { if (e.pointerId === penId) { cur = null; penId = null; } };
-        $('wlClear').onclick = () => { strokes = []; drawAll(); };
+        $('wlClear').onclick = () => { strokes = []; caseAsked = ''; flagged = null; drawAll(); };
+        $('wlUndo').onclick = () => { if (cur) return; strokes.pop(); caseAsked = ''; flagged = null; setMsg(''); drawAll(); };
         $('wlDone').onclick = () => {
           const xs = strokes.flat().map(p => p[0]), span = xs.length ? Math.max(...xs) - Math.min(...xs) : 0, ink = strokes.reduce((a, s) => a + s.length, 0);
           if (strokes.length < Math.min(letters.length, 3) || ink < 20 * letters.length || span < r.width * 0.25) { setMsg('Write the whole word, every letter. Take your time!', 'try'); say('Write the whole word. Take your time.', 0.95); return; }
+          if (typeof hcCheck === 'function') {   // capital or small letters (Done again = "it's right")
+            const flags = hcCheck([{ top: r.height * 0.18, mid: r.height * 0.5, base: r.height * 0.82, pts: hcDense(strokes) }], dw), key = flags.map(f => f.ch + Math.round(f.x0)).join();
+            if (flags.length && caseAsked !== key) { caseAsked = key; flagged = flags; drawAll(); const m = hcMessage(flags); setMsg(`${m} Fix it with ↶ Undo, or tap Done again if it’s right.`, 'try'); say(m, 0.95); return; }
+            caseFlags = flags.length ? flags.map(f => `${f.ch} (${f.want === 'small' ? 'looked like a capital' : 'looked small'})`) : null;
+            flagged = null; drawAll();
+          }
           let img = ''; try { const sm = document.createElement('canvas'); sm.width = 360; sm.height = Math.round(360 * cv.height / cv.width); sm.getContext('2d').drawImage(cv, 0, 0, sm.width, sm.height); img = sm.toDataURL('image/png'); } catch (er) { }
           $('pal').innerHTML = img ? `<img class="wl-done" src="${img}" alt="What he wrote">` : ''; $('keys').hidden = false;
           finishAll(img);
@@ -691,7 +700,7 @@ function partRainbow() {
       };
     };
     const finishAll = img => {
-      note('Rainbow Write', w, lineKeys[0].length === letters.length && lineKeys[1].length === letters.length && memTries.length === 1, w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory (he typed the whole word, then double-checked it), line 4 written by hand.', img: img || undefined }, [`line 1: ${lineKeys[0].join(' ')}`, `line 2: ${lineKeys[1].join(' ')}`, ...memTries.map((s, k) => `line 3${memTries.length > 1 ? `, try ${k + 1}` : ''}: ${s}`)]);
+      note('Rainbow Write', w, lineKeys[0].length === letters.length && lineKeys[1].length === letters.length && memTries.length === 1, w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory (he typed the whole word, then double-checked it), line 4 written by hand.' + (caseFlags ? ` The capital-letter check asked about ${caseFlags.join(', ')} on line 4, and he kept it.` : ''), img: img || undefined }, [`line 1: ${lineKeys[0].join(' ')}`, `line 2: ${lineKeys[1].join(' ')}`, ...memTries.map((s, k) => `line 3${memTries.length > 1 ? `, try ${k + 1}` : ''}: ${s}`)]);
       onKey = null; $('memActs').hidden = true; $('wordShow').innerHTML = `<div class="big-word">${esc(dw)}</div>`;
       $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join('');
       setMsg('Rainbow done!', 'good'); say(dw, 0.85); nextUp(1500).then(() => { i++; i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); });
