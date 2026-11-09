@@ -1333,8 +1333,17 @@ function dayStatus(ds, agendas) {
   let items = (agendas[ds] || {}).items;
   if (!items && ds === ymd(Date.now())) { const d = store('spell-daily') || {}, w = d.on === false ? [] : dailyWords(), sq = store('spell-queue'); items = [...(w.length ? [{ id: 'check', tool: 'check' }] : []), ...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq' }] : []), ...sheetsFor(ds)]; }
   const any = C.some(x => on(x.t)) || L.some(x => on(x.t));
-  if (!items || !items.length) return any ? { cls: 'done', title: 'He did some work' } : { cls: 'none', title: 'Nothing assigned' };
   const done = it => it.tool === 'check' ? C.some(x => on(x.t)) : L.some(x => x.aid === it.id && (['steps', 'weather'].includes(it.tool) ? on(x.t) : upTo(x.t)));
+  // Nov 9, 2026 (Sunday showed red with nothing assigned): his device used to save every assigned worksheet on the day it saw it, so a
+  // worksheet for Monday landed on Sunday's list. A worksheet now only counts on its own day (or later). On weekends the everyday things
+  // (sight words, spelling practice, Daily Steps, Weather Watch) only count if he did them; a worksheet meant for that day still counts.
+  const list = (store('study-sheets') || {}).list || [], wkend = [0, 6].includes(new Date(ds + 'T12:00:00').getDay());
+  if (items) items = items.filter(it => {
+    const a = list.find(x => x.id === it.id);
+    if (it.tool === 'check' || it.tool === 'spellq' || RECUR.includes(it.tool)) return !wkend || done(it);
+    return !a || sheetDay(a) <= ds;
+  });
+  if (!items || !items.length) return any ? { cls: 'done', title: 'He did some work' } : { cls: 'none', title: 'Nothing assigned' };
   const n = items.filter(done).length;
   return n === items.length ? { cls: 'done', title: `All ${n} done` } : { cls: 'miss', title: `${n} of ${items.length} done` };
 }
