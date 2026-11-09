@@ -55,6 +55,7 @@ main { max-width: 980px; margin: 0 auto; padding: 12px 16px 24px; display: flex;
 
 .big-word { font: 700 clamp(40px, 7vw, 60px) Andika, sans-serif; letter-spacing: 4px; background: #fff; color: #1F2937; border-radius: 18px; padding: 2px 24px; }
 .big-word .t { text-decoration: underline; text-decoration-thickness: 5px; text-underline-offset: 8px; }
+#eraseBtn.on { background: #FDE68A; color: #17201A; border-color: #F59E0B; } canvas.erasing { cursor: cell; }
 .hidden-word { font: 700 28px Fredoka, sans-serif; padding: 10px 24px !important; color: var(--muted); border: 3px dashed var(--field-line); border-radius: 20px; padding: 16px 30px; }
 
 .lbox { width: 58px; height: 72px; border-radius: 13px; border: 3px dashed var(--field-line); background: var(--field); display: grid; place-items: center; font: 700 46px Andika, sans-serif; position: relative; }
@@ -575,8 +576,8 @@ function shuffle(arr, seed) {
 const seedOf = words => words.join('').split('').reduce((a, c) => a + c.charCodeAt(0), 7);
 const COLORS = ['#3C7DD9', '#0F9F8F', '#8B5CF6', '#EA580C', '#DB2777', '#16A34A', '#6366F1', '#D97706'];
 </script>
-<script src="handcheck.js?v=1"></script>
-<script src="lessons.js?v=4"></script>
+<script src="handcheck.js?v=2"></script>
+<script src="lessons.js?v=5"></script>
 <script>
 /* ============ Talking, keys, little helpers (same as the Fix-Up page) ============ */
 const canTalk = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
@@ -983,7 +984,7 @@ function sightSheet() {
       const x = W[i], word = x.dw;
       app.innerHTML = head('Trace the word with your finger. Say each letter as you trace it.') + count(i, W.length)
         + `<button class="btn" id="hear">${SPK}Hear the word</button><div class="tracebox"><canvas id="tc"></canvas></div><div class="message" id="msg"></div>
-        <div class="row acts"><button class="btn big" id="undoBtn">↶ Undo</button><button class="btn big" id="clearBtn">↺ Start over</button><button class="btn big primary" id="doneBtn">Done ✓</button></div>`;
+        <div class="row acts"><button class="btn big" id="undoBtn">↶ Undo</button><button class="btn big" id="eraseBtn" aria-pressed="false">🧽 Eraser</button><button class="btn big" id="clearBtn">↺ Start over</button><button class="btn big primary" id="doneBtn">Done ✓</button></div>`;
       $('hear').onclick = () => playWord(x.w); playWord(x.w);
       const cv = $('tc'), dpr = window.devicePixelRatio || 1, Wd = Math.min(900, window.innerWidth - 40), Ht = 240;
       cv.width = Wd * dpr; cv.height = Ht * dpr; cv.style.width = Wd + 'px'; cv.style.height = Ht + 'px';
@@ -1015,6 +1016,7 @@ function sightSheet() {
       cv.onpointerup = cv.onpointercancel = e => { if (e.pointerId === penId) { cur = null; penId = null; } };
       $('clearBtn').onclick = () => { strokes = []; orange.clear(); setMsg(''); draw(); };
       $('undoBtn').onclick = () => { if (cur) return; strokes.pop(); setMsg(''); draw(); };
+      if (typeof padTools === 'function') padTools({ cv, get: () => strokes, set: v => { strokes = v; }, pt, redraw: () => draw(), radius: 16, eraseBtn: $('eraseBtn'), undoBtn: $('undoBtn'), clearBtn: $('clearBtn'), changed: () => setMsg('') });
       $('doneBtn').onclick = () => {
         if (!strokes.length) return setMsg('Use your finger to trace the gray letters.', 'try');
         ig.clearRect(0, 0, Wd, Ht);

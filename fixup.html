@@ -163,6 +163,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 .pin-box.shake { animation: pinshake .3s; } @keyframes pinshake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 .skip-part { position: fixed; left: 14px; bottom: 14px; z-index: 70; display: none; font: 600 15px Fredoka, sans-serif; background: #33270C; color: #FBBF24; border: 2px solid #FBBF24; border-radius: 999px; padding: 8px 16px; cursor: pointer; } body.inpart .skip-part { display: block; }
 .wl-wrap { width: 100%; max-width: 760px; margin: 8px auto 0; } .wl { width: 100%; height: 190px; border-radius: 16px; background: #fff; touch-action: none; display: block; } .wl-done { width: 360px; max-width: 100%; border-radius: 12px; background: #fff; display: block; margin: 8px auto; }
+#wlErase.on { background: #FDE68A; color: #17201A; border-color: #F59E0B; } canvas.erasing { cursor: cell; }
 </style>
 </head>
 <body>
@@ -185,7 +186,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="handcheck.js?v=1"></script>
+<script src="handcheck.js?v=2"></script>
 <script>
 /* ============ Shared word logic: copied from the printed Spelling Fix-Up (worksheets/index.html) so screen and paper match ============ */
 const SENTENCES = {
@@ -661,7 +662,7 @@ function partRainbow() {
       $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join('');
       const PAL = [['#F87171', 'red'], ['#FB923C', 'orange'], ['#FBBF24', 'yellow'], ['#34D399', 'green'], ['#38BDF8', 'light blue'], ['#7FB0F0', 'blue'], ['#C4B5FD', 'purple'], ['#F9A8D4', 'pink']];
       $('pal').innerHTML = `<div class="count">Line 4: pick a color, then write “${esc(dw)}” with your pencil or finger</div><div class="palette">${PAL.map(([c, name]) => `<button class="swatch" data-c4="${c}" style="background:${c}" aria-label="${name}"></button>`).join('')}</div>
-        <div class="wl-wrap" id="wlWrap" hidden><canvas id="wl" class="wl"></canvas><div class="row acts"><button class="btn big" id="wlUndo">↶ Undo</button><button class="btn big" id="wlClear">↺ Start over</button><button class="btn big primary" id="wlDone">Done ✓</button></div></div>`;
+        <div class="wl-wrap" id="wlWrap" hidden><canvas id="wl" class="wl"></canvas><div class="row acts"><button class="btn big" id="wlUndo">↶ Undo</button><button class="btn big" id="wlErase" aria-pressed="false">🧽 Eraser</button><button class="btn big" id="wlClear">↺ Start over</button><button class="btn big primary" id="wlDone">Done ✓</button></div></div>`;
       setMsg('Last line: write it yourself, no dotted letters this time!', 'good'); say('Last line! Write the word yourself with your pencil.', 0.95);
       let col = null, usedPen = false, penId = null, cur = null, strokes = [], caseAsked = '', flagged = null, caseFlags = null;
       $('pal').onclick = e => { const b = e.target.closest('[data-c4]'); if (!b) return; col = b.dataset.c4; $('wlWrap').hidden = false; setup(); };
@@ -683,6 +684,7 @@ function partRainbow() {
         cv.onpointerup = cv.onpointercancel = e => { if (e.pointerId === penId) { cur = null; penId = null; } };
         $('wlClear').onclick = () => { strokes = []; caseAsked = ''; flagged = null; drawAll(); };
         $('wlUndo').onclick = () => { if (cur) return; strokes.pop(); caseAsked = ''; flagged = null; setMsg(''); drawAll(); };
+        if (typeof padTools === 'function') padTools({ cv, get: () => strokes, set: v => { strokes = v; }, pt, redraw: () => drawAll(), radius: 16, eraseBtn: $('wlErase'), undoBtn: $('wlUndo'), clearBtn: $('wlClear'), changed: () => { caseAsked = ''; flagged = null; setMsg(''); } });
         $('wlDone').onclick = () => {
           const xs = strokes.flat().map(p => p[0]), span = xs.length ? Math.max(...xs) - Math.min(...xs) : 0, ink = strokes.reduce((a, s) => a + s.length, 0);
           if (strokes.length < Math.min(letters.length, 3) || ink < 20 * letters.length || span < r.width * 0.25) { setMsg('Write the whole word, every letter. Take your time!', 'try'); say('Write the whole word. Take your time.', 0.95); return; }

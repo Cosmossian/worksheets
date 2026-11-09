@@ -87,3 +87,43 @@ function hcMessage(flags) {
   }
   return `“${cap[0].word}” starts with a capital ${cap[0].ch}. Make it tall, all the way up to the top line.`;
 }
+
+/* ---- Eraser + Undo history for the writing pads (Nov 9, 2026, Dylan: "add an eraser option in addition to the undo button") ----
+   padErase: removes the parts of his lines within r of the eraser's path (a→b), splitting lines that it cuts through.
+   padTools: wires 🧽 Eraser (toggle), ↶ Undo (back one step: a line or an erase) and keeps ↺ Start over undoable.
+   It listens on the canvas's parent in the capture phase, so while erasing the pad's own drawing handlers never see the touch. */
+function padErase(strokes, a, b, r) {
+  const d2 = (p) => { const vx = b[0] - a[0], vy = b[1] - a[1], L = vx * vx + vy * vy; let t = L ? ((p[0] - a[0]) * vx + (p[1] - a[1]) * vy) / L : 0; t = Math.max(0, Math.min(1, t)); const x = a[0] + t * vx - p[0], y = a[1] + t * vy - p[1]; return x * x + y * y; };
+  const out = [], rr = r * r;
+  strokes.forEach(st => {
+    const pts = st.length > 1 ? hcDense([st]) : st;
+    if (!pts.some(p => d2(p) < rr)) return out.push(st);   // untouched: keep the same line
+    let run = [];
+    pts.forEach(p => { if (d2(p) < rr) { if (run.length) out.push(run); run = []; } else run.push(p); });
+    if (run.length) out.push(run);
+  });
+  return out;
+}
+function padTools({ cv, get, set, pt, redraw, radius = 16, eraseBtn, undoBtn, clearBtn, changed = () => { } }) {
+  const hist = []; let erasing = false, eId = null, last = null;
+  const snap = () => { hist.push(get().slice()); if (hist.length > 80) hist.shift(); };
+  const host = cv.parentElement;
+  host.addEventListener('pointerdown', e => {
+    if (e.target !== cv) return;
+    if (!erasing) return snap();   // a new line: remember the picture before it, for Undo
+    e.preventDefault(); e.stopPropagation(); if (eId !== null) return;
+    snap(); eId = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch (er) { }
+    last = pt(e); set(padErase(get(), last, last, radius)); changed(); redraw();
+  }, true);
+  host.addEventListener('pointermove', e => {
+    if (!erasing || e.pointerId !== eId) return; e.stopPropagation();
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : []; (evs.length ? evs : [e]).forEach(ev => { const p = pt(ev); set(padErase(get(), last, p, radius)); last = p; }); redraw();
+  }, true);
+  const end = e => { if (e.pointerId === eId) { eId = null; e.stopPropagation(); } };
+  host.addEventListener('pointerup', end, true); host.addEventListener('pointercancel', end, true);
+  const setMode = on => { erasing = on; if (eraseBtn) { eraseBtn.classList.toggle('on', on); eraseBtn.setAttribute('aria-pressed', on); eraseBtn.textContent = on ? '✏️ Pencil' : '🧽 Eraser'; } cv.classList.toggle('erasing', on); };
+  if (eraseBtn) eraseBtn.onclick = () => setMode(!erasing);
+  if (undoBtn) undoBtn.onclick = () => { if (eId !== null) return; set(hist.length ? hist.pop() : []); changed(); redraw(); };
+  if (clearBtn) { const old = clearBtn.onclick; clearBtn.onclick = e => { if (get().length) snap(); setMode(false); if (old) old(e); }; }
+  return { setMode, history: hist };
+}

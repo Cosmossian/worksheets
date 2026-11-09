@@ -66,6 +66,11 @@ function L_chart(lit = [], { cell = 34, fs = 15, ring = [] } = {}) {
 
 /* ---------------- the six worksheets ---------------- */
 function L_tenRandom(dir) {
+  if (dir === 'both') {
+    const used = new Set(), nums = []; while (nums.length < 10) { const n = L_rand(11, 89); if (!used.has(n)) { used.add(n); nums.push(n); } }
+    const a = L_rand(20, 50), b = L_rand(60, 95), row = (s, k) => [0, 1, 2, 3, 4].map(j => s + j * k).join(', ');
+    return { dir, heading: 'Find 10 More or 10 Less', blocks: '', chart: '', nums: nums.join(', '), patterns: L_shuf([row(a, 10), row(a, -1), row(a, 1)]).join(' | ') + ' || ' + L_shuf([row(b, -1), row(b, 1), row(b, -10)]).join(' | '), aloud: true };
+  }
   const more = dir !== 'less', lo = more ? 10 : 11, hi = more ? 89 : 99, used = new Set(), nums = [];
   while (nums.length < 8) { const n = L_rand(lo, hi); if (!used.has(n)) { used.add(n); nums.push(n); } }
   const s = more ? L_rand(20, 50) : L_rand(55, 90), D = more ? 10 : -10;
@@ -94,30 +99,33 @@ const LT = {
     help: 'Ten sticks, the 100 chart, “what is 10 more than…”, and a 10-more pattern. On screen he taps a ten stick on, finds the number on the 100 chart, and types the answers.',
     schools: {
       '2026-11-09': { note: 'Same numbers as the school sheet “10 More or Less (A): Find 10 More”.', set: () => ({ dir: 'more', heading: 'Find 10 More', blocks: 34, chart: 58, nums: '12, 26, 87, 53, 50, 88, 49, 82', patterns: '46, 47, 48, 49, 50 | 46, 56, 66, 76, 86 | 46, 45, 44, 43, 42', aloud: true }) },
+      '2026-11-12': { note: 'Same questions and numbers as the school sheet “10 More or Less (C): Find 10 More or 10 Less”.', set: () => ({ dir: 'both', heading: 'Find 10 More or 10 Less', blocks: '', chart: '', nums: '34, 27, 60, 57, 25, 85, 41, 72, 81, 17', patterns: '45, 55, 65, 75, 85 | 45, 44, 43, 42, 41 | 45, 46, 47, 48, 49 || 99, 98, 97, 96, 95 | 99, 100, 101, 102, 103 | 99, 89, 79, 69, 59', aloud: true }) },
       '2026-11-10': { note: 'Same numbers as the school sheet “10 More or Less (B): Find 10 Less”.', set: () => ({ dir: 'less', heading: 'Find 10 Less', blocks: 55, chart: 28, nums: '20, 61, 31, 11, 64, 76, 45, 33', patterns: '62, 52, 42, 32, 22 | 62, 61, 60, 59, 58 | 62, 63, 64, 65, 66', aloud: true }) }
     },
     own: () => L_tenRandom('more'),
     fields: () => [
-      { k: 'dir', label: '10 more or 10 less?', type: 'select', options: [['more', '10 more'], ['less', '10 less']] },
+      { k: 'dir', label: '10 more or 10 less?', type: 'select', options: [['more', '10 more'], ['less', '10 less'], ['both', '10 more and 10 less']] },
       { k: 'heading', label: 'Title', type: 'text' },
-      { k: 'blocks', label: 'Ten sticks show this number', type: 'num' },
-      { k: 'chart', label: '100 chart: start at', type: 'num' },
+      { k: 'blocks', label: 'Ten sticks show this number', type: 'num', help: 'Leave empty to skip (10 more and 10 less skips it).' },
+      { k: 'chart', label: '100 chart: start at', type: 'num', help: 'Leave empty to skip.' },
       { k: 'nums', label: 'Write the number 10 more (or less) than…', type: 'area', help: 'Separate the numbers with commas.' },
-      { k: 'patterns', label: 'Find the pattern rows', type: 'area', help: 'Rows separated by | . One of them should go up (or down) by 10.' },
+      { k: 'patterns', label: 'Find the pattern rows', type: 'area', help: 'Rows separated by | . One of them should go up (or down) by 10. For 10 more and 10 less: the 10-more rows, then || , then the 10-less rows.' },
       { k: 'aloud', label: 'Say how he found it out loud (microphone)', type: 'check' }
     ],
     acts: mode => mode === 'own' ? [['shuffle', '🎲 New numbers']] : [],
     act: (a, c) => { if (a === 'shuffle') Object.assign(c, L_tenRandom(c.dir)); },
-    title: c => (c.heading || '').trim() || (c.dir === 'less' ? 'Find 10 Less' : 'Find 10 More'),
+    title: c => (c.heading || '').trim() || (c.dir === 'both' ? 'Find 10 More or 10 Less' : c.dir === 'less' ? 'Find 10 Less' : 'Find 10 More'),
     data: c => {
-      const more = c.dir !== 'less', ok = n => more ? n >= 1 && n <= 90 : n >= 10 && n <= 100;
-      const rows = String(c.patterns || '').split('|').map(L_ints).filter(r => r.length >= 2);
-      return { dir: more ? 'more' : 'less', heading: LT.tenmore.title(c), blocks: +c.blocks || 0, chart: +c.chart || 0, nums: L_ints(c.nums).filter(ok), rows, aloud: !!c.aloud };
+      const both = c.dir === 'both', more = c.dir !== 'less', ok = n => both ? n >= 10 && n <= 90 : more ? n >= 1 && n <= 90 : n >= 10 && n <= 100;
+      const rowsOf = t => String(t || '').split('|').map(L_ints).filter(r => r.length >= 2);
+      const sets = String(c.patterns || '').split('||');
+      return { dir: both ? 'both' : more ? 'more' : 'less', heading: LT.tenmore.title(c), blocks: +c.blocks || 0, chart: +c.chart || 0, nums: L_ints(c.nums).filter(ok), rows: both ? [] : rowsOf(c.patterns), rowsMore: both ? rowsOf(sets[0]) : [], rowsLess: both ? rowsOf(sets[1]) : [], aloud: !!c.aloud };
     },
     check: d => {
+      if (d.dir === 'both') return d.nums.length ? '' : 'Type some numbers (10 to 90).';
       const more = d.dir === 'more';
-      if (more ? !(d.blocks >= 1 && d.blocks <= 90) : !(d.blocks >= 10 && d.blocks <= 100)) return `The ten sticks number has to be ${more ? '1 to 90' : '10 to 100'}.`;
-      if (more ? !(d.chart >= 1 && d.chart <= 90) : !(d.chart >= 11 && d.chart <= 100)) return `The 100 chart number has to be ${more ? '1 to 90' : '11 to 100'}.`;
+      if (d.blocks && (more ? !(d.blocks >= 1 && d.blocks <= 90) : !(d.blocks >= 10 && d.blocks <= 100))) return `The ten sticks number has to be ${more ? '1 to 90' : '10 to 100'}.`;
+      if (d.chart && (more ? !(d.chart >= 1 && d.chart <= 90) : !(d.chart >= 11 && d.chart <= 100))) return `The 100 chart number has to be ${more ? '1 to 90' : '11 to 100'}.`;
       return '';
     }
   },
@@ -185,7 +193,8 @@ const LT = {
     name: 'Heart Word', cls: 'phonics',
     help: 'One heart word (a word with a part you learn by heart): map its sounds into boxes, write it 3 times, write a sentence with it, and find it in a row of words.',
     schools: {
-      '2026-11-09': { note: 'Same word and the same row of words as the school sheet for “their”.', set: () => ({ word: 'their', parts: 'th|eir*', row: 'the their they she say go have their their said I of I' }) }
+      '2026-11-09': { note: 'Same word and the same row of words as the school sheet for “their”.', set: () => ({ word: 'their', parts: 'th|eir*', row: 'the their they she say go have their their said I of I' }) },
+      '2026-11-12': { note: 'Same word and the same row of words as the school sheet for “my” (m is regular, y is the heart part).', set: () => ({ word: 'my', parts: 'm|y*', row: 'my the said look me my and my me too my said me is' }) }
     },
     own: () => ({ word: 'said', parts: 's|ai*|d', row: L_heartRow('said') }),
     fields: () => [
@@ -204,7 +213,8 @@ const LT = {
     help: 'Trace and write a letter, then names, a sentence to trace and a sentence to copy. On screen he writes with his finger or Apple Pencil, and every line is saved as a picture in Parent Review.',
     schools: {
       '2026-11-09': { note: 'Same letter, names and sentences as the school sheet “Uppercase Q”.', set: () => ({ letter: 'Q', words: 'Quinn, Quella, Quentin', trace: 'Quency has a quilt.', copy: 'Quinn the quail quests for food.' }) },
-      '2026-11-10': { note: 'Same letter, words and sentences as the school sheet “Lowercase f”.', set: () => ({ letter: 'f', words: 'fish, fan, fat', trace: 'The fawn is fast.', copy: 'The fox has fuzzy fur.' }) }
+      '2026-11-10': { note: 'Same letter, words and sentences as the school sheet “Lowercase f”.', set: () => ({ letter: 'f', words: 'fish, fan, fat', trace: 'The fawn is fast.', copy: 'The fox has fuzzy fur.' }) },
+      '2026-11-12': { note: 'Same letter, names and sentences as the school sheet “Uppercase F”.', set: () => ({ letter: 'F', words: 'Felicia, Frank, Finn', trace: 'Flora fed the fish.', copy: 'Fred the fly flies fast.' }) }
     },
     own: () => ({ letter: 'R', words: 'Rosa, Ryan, Rudy', trace: 'Rex ran to the rug.', copy: 'Rita reads a red book.' }),
     fields: () => [
@@ -222,6 +232,7 @@ const LT = {
     name: 'Spelling Sort', cls: 'ela',
     help: 'Sort spelling words under headings (like the endings –ff, –ll, –ss, –zz), spell each one when he hears it, then say sentences with 3 of them out loud. Printed, it has word cards to cut out, the chart and the activity.',
     schools: {
+      '2026-11-12': { note: 'Same headings and words as the school sheet “The Poor Man’s Reward” (C): Apply Spelling List 3: the word hunt, then sort and glue the chart. The word hunt paragraph isn’t built in: copy it from the school PDF into the Word hunt box.', set: () => ({ heading: 'Spelling List 3: Word Hunt', heads: '–ff, –ll, –ss, –zz', words: 'miss, off, pass, pull, boss, buzz, fizz, less, small, still, stuff, tell', hunt: '', spell: false, glue: true, say: false }) },
       '2026-11-10': { note: 'Same headings and words as the school sheet “The Poor Man’s Reward” (B): Practice Spelling List 3.', set: () => ({ heading: 'Spelling List 3', heads: '–ff, –ll, –ss, –zz', words: 'miss, off, pass, pull, boss, buzz, fizz, less, small, still, stuff, tell', spell: true, say: true }) }
     },
     own: () => ({ heading: 'My Spelling Sort', heads: '–ck, –ng', words: 'back, sock, duck, kick, ring, song, long, king', spell: true, say: true }),
@@ -229,7 +240,9 @@ const LT = {
       { k: 'heading', label: 'Title', type: 'text' },
       { k: 'heads', label: 'Headings', type: 'text', help: 'Separate with commas. Endings like –ff (or ff) match words that end with those letters; anything else matches words that have them.' },
       { k: 'words', label: 'Spelling words', type: 'area', rows: 3, help: 'Separate with commas.' },
-      { k: 'spell', label: 'Spell each word when he hears it (fills in the chart)', type: 'check' },
+      { k: 'hunt', label: 'Word hunt paragraph (optional)', type: 'area', rows: 4, help: 'He taps every word that ends like a heading. Leave empty to skip.' },
+      { k: 'spell', label: 'Spell each word when he hears it, then drag it into the chart', type: 'check' },
+      { k: 'glue', label: 'Drag each word into the chart (without spelling it first)', type: 'check' },
       { k: 'say', label: 'Say a sentence with 3 of the words out loud (microphone)', type: 'check' }
     ],
     acts: () => [],
@@ -237,7 +250,7 @@ const LT = {
     data: c => {
       const heads = L_list(c.heads).map(h => ({ label: h, end: /^[-–—]/.test(h), k: h.replace(/^[-–—]\s*/, '').toLowerCase() })).filter(h => h.k);
       const of = w => { const x = w.toLowerCase(); let i = heads.findIndex(h => h.end && x.endsWith(h.k)); if (i < 0) i = heads.findIndex(h => !h.end && x.includes(h.k)); return i; };
-      return { heading: LT.sort.title(c), heads: heads.map(h => h.label), words: L_list(c.words).map(w => ({ w: w.toLowerCase(), h: of(w) })), spell: !!c.spell, say: !!c.say };
+      return { heading: LT.sort.title(c), heads: heads.map(h => h.label), words: L_list(c.words).map(w => ({ w: w.toLowerCase(), h: of(w) })), hunt: String(c.hunt || '').trim(), spell: !!c.spell, glue: !!c.glue, say: !!c.say };
     },
     check: d => d.heads.length < 2 ? 'Type at least 2 headings.' : !d.words.length ? 'Type the spelling words.' : (d.words.filter(x => x.h < 0).length ? `These don’t fit a heading: ${d.words.filter(x => x.h < 0).map(x => x.w).join(', ')}.` : '')
   },
@@ -289,6 +302,17 @@ const L_h = (n, c, t) => `<div class="ls-h2"><span class="n" style="background:$
 function L_sheetOf(page, exact, opts) { return sheet(L_tag(exact) + page, opts); }
 
 LT.tenmore.print = (d, exact) => {
+  if (d.dir === 'both') {
+    const pat = (n, w, rows) => rows.length ? L_h(n, '#EA580C', `Which numbers show a pattern of 10 ${w}? Circle it.`) + `<div style="display:flex;flex-direction:column;gap:12px;align-items:center;padding:4px 0 10px">${rows.map(r => `<div style="font:600 28px Fredoka,sans-serif;border:2px dashed #CBD5E1;border-radius:999px;padding:5px 26px">${r.join(', ')}</div>`).join('')}</div>` : '';
+    const p1 = nameDate() + title(d.heading, '10 More or Less', star('#16A34A'), star('#1D4ED8'))
+      + L_h(1, '#16A34A', 'Answer out loud: How do you find 10 more than a number?') + writebox(736, '', 46)
+      + L_h(2, '#0F766E', 'Answer out loud: How do you find 10 less than a number?') + writebox(736, '', 46)
+      + pat(3, 'more', d.rowsMore) + pat(4, 'less', d.rowsLess);
+    const p2 = nameDate() + L_h(5, '#1D4ED8', 'Write the numbers that are 10 less and 10 more than the number shown.')
+      + `<div style="display:flex;flex-direction:column;gap:20px;padding:10px 40px">${d.nums.map((n, i) => `<div style="display:flex;align-items:center;gap:16px;font:700 32px Fredoka,sans-serif"><span style="width:44px;color:#64748B;font-size:22px">${i + 5}.</span><span style="flex:1;border-bottom:3px solid #1F2937;height:38px"></span><span style="width:70px;text-align:center">${n}</span><span style="flex:1;border-bottom:3px solid #1F2937;height:38px"></span></div>`).join('')}</div>`
+      + '<div style="display:flex;justify-content:space-between;padding:0 60px 0 110px;font:600 18px Fredoka,sans-serif;color:#64748B"><span>← 10 less</span><span>10 more →</span></div>';
+    return L_sheetOf(p1, exact, { gap: 12 }) + L_sheetOf(p2, exact, { gap: 14 });
+  }
   const w = d.dir === 'more' ? 'more' : 'less', More = d.dir === 'more' ? 'More' : 'Less';
   const p1 = nameDate() + title(d.heading, `10 ${More} or Less`, star('#16A34A'), star('#1D4ED8'))
     + L_h(1, '#16A34A', `Find 10 ${w} than the number. Say your answer out loud.`)
@@ -353,11 +377,13 @@ LT.sort.print = (d, exact) => {
     + L_h(1, '#0F766E', 'Cut out the headings and the spelling words. Lay the headings out in a row, then sort each word under the heading that matches how it ends.')
     + `<div style="display:grid;grid-template-columns:repeat(${Math.min(4, d.heads.length)},1fr);gap:10px;margin:6px 0 16px">${d.heads.map((h, hi) => card(h, true, L_COL[hi % 8])).join('')}</div>`
     + `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${d.words.map(x => card(x.w)).join('')}</div>`;
-  const p2 = nameDate() + L_h(2, '#1D4ED8', 'Look at your sort. Write each spelling word under its heading.')
+  const p2 = nameDate() + L_h(2, '#1D4ED8', d.glue && !d.spell ? 'Look at your sort. Glue each spelling word under its heading.' : 'Look at your sort. Write each spelling word under its heading.')
     + `<table style="width:100%;border-collapse:collapse;font:700 26px Fredoka,sans-serif;margin-bottom:18px"><tr>${d.heads.map((h, hi) => `<th style="border:2px solid #1F2937;padding:8px;color:${L_COL[hi % 8]}">${L_esc(h)}</th>`).join('')}</tr>${Array.from({ length: rows }, () => `<tr>${d.heads.map(() => '<td style="border:2px solid #1F2937;height:54px"></td>').join('')}</tr>`).join('')}</table>`
     + L_h(3, '#7E22CE', 'Practice your spelling words. Pick one:')
     + `<div style="font-size:21px;line-height:1.5;padding-left:40px"><p><b>🎭 Act it out.</b> Pick three spelling words and act each one out. Can someone guess the word?</p><p><b>🗣️ Say sentences.</b> Pick three spelling words. Make up a sentence with each one and say it out loud to someone.</p></div>`;
-  return L_sheetOf(p1, exact, { gap: 14 }) + L_sheetOf(p2, exact, { gap: 14 });
+  const p0 = d.hunt ? L_sheetOf(nameDate() + title(d.heading, 'Word Hunt', star('#0F766E'), star('#DB2777')) + L_h(1, '#0F766E', `Word hunt! Circle the words that end with ${L_esc(d.heads.join(', '))}.`)
+    + `<div style="font:400 30px/2 Andika,sans-serif;padding:10px 30px">${L_esc(d.hunt)}</div>`, exact, { gap: 14 }) : '';
+  return p0 + L_sheetOf(p1, exact, { gap: 14 }) + L_sheetOf(p2, exact, { gap: 14 });
 };
 LT.readaloud.print = (d, exact) => L_sheetOf(nameDate() + title(d.heading || 'My Story', 'Read it out loud', star('#F59E0B'), star('#1D4ED8'))
   + `<div style="font:400 30px/1.9 Andika,sans-serif;padding:10px 24px">${L_esc(d.text)}</div>`, exact, { gap: 14 });
@@ -455,6 +481,9 @@ if (L_IN_DO) {
     .ls-bubble.sel { outline:4px solid #fff; outline-offset:3px; } .ls-bubble.drag { position:fixed; z-index:60; pointer-events:none; cursor:grabbing; box-shadow:0 10px 24px rgba(0,0,0,.45); }
     #sortChart .c { min-width:120px; transition:outline-color .1s; } #sortChart .c.over { outline:4px solid #FACC15; outline-offset:2px; } #sortChart .c.good { outline:4px solid var(--good); }
     #sortChart .c span { min-height:28px; }
+    #hunt .w { cursor:pointer; border-radius:8px; padding:0 3px; } #hunt .w.found { background:#BBF7D0; color:#14532D; } #hunt .w.nope { background:#FECACA; } #hunt .w.missed { background:#FDE68A; outline:2px dashed #B45309; }
+    .ls-ten .q { color:var(--try); }
+    #lsErase.on, #undoBtn + #eraseBtn.on, #wlErase.on { background:#FDE68A; color:#17201A; border-color:#F59E0B; } canvas.erasing { cursor:cell; }
     .ls-help-box .ls-choices { width:100%; } .ls-help-box .ls-choices.row2 button { flex:1 1 120px; }
     .ls-help-box { background:var(--surface-2); border:2px solid var(--try); border-radius:16px; padding:10px 14px; margin:8px auto; max-width:620px; text-align:center; display:flex; flex-direction:column; gap:8px; align-items:center; }
     .ls-teamwords { display:flex; flex-wrap:wrap; gap:10px 22px; justify-content:center; max-width:760px; margin:8px auto; font:700 40px Andika,sans-serif; }
@@ -596,7 +625,7 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
   const gSizes = [fsMax, Math.round(fsMax * 1.25), Math.round(fsMax * 1.5)]; let gStep = 0;
   return new Promise(done => {
     $('lsPad').innerHTML = `<div class="tracebox"><canvas id="lsCv"></canvas></div><div class="message" id="msg"></div>
-      <div class="row acts"><button class="btn big" id="lsUndo">↶ Undo</button><button class="btn big" id="lsClear">↺ Start over</button>${!guide || gMulti ? '<button class="btn big" id="lsMore">➕ Need more space</button>' : ''}<button class="btn big primary" id="lsDone">Done ✓</button></div>`;
+      <div class="row acts"><button class="btn big" id="lsUndo">↶ Undo</button><button class="btn big" id="lsErase" aria-pressed="false">🧽 Eraser</button><button class="btn big" id="lsClear">↺ Start over</button>${!guide || gMulti ? '<button class="btn big" id="lsMore">➕ Need more space</button>' : ''}<button class="btn big primary" id="lsDone">Done ✓</button></div>`;
     const cv = $('lsCv'), dpr = window.devicePixelRatio || 1, Wd = Math.min(960, window.innerWidth - 40); let rowH = H;
     let Ht = rowH * nRows, ctx = cv.getContext('2d');
     const size = () => { Ht = rowH * nRows; cv.width = Wd * dpr; cv.height = Ht * dpr; cv.style.width = Wd + 'px'; cv.style.height = Ht + 'px'; ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
@@ -650,6 +679,7 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
     cv.onpointerup = cv.onpointercancel = e => { if (e.pointerId === penId) { cur = null; penId = null; } };
     $('lsClear').onclick = () => { strokes = []; orange.clear(); changed(); setMsg(''); draw(); };
     $('lsUndo').onclick = () => { if (cur) return; strokes.pop(); changed(); setMsg(''); draw(); };
+    const tools = padTools({ cv, get: () => strokes, set: v => { strokes = v; }, pt, redraw: () => draw(), radius: Math.max(14, fs * 0.13), eraseBtn: $('lsErase'), undoBtn: $('lsUndo'), clearBtn: $('lsClear'), changed: () => { if (!cur) { changed(); setMsg(''); } } });
     if ($('lsMore')) {
       const moreBtn = $('lsMore'), syncMore = () => { moreBtn.disabled = nRows >= maxRows; moreBtn.textContent = nRows >= maxRows ? 'No more space' : '➕ Need more space'; };
       if (guide) {   // tracing: bigger letters on more rows (the tracing starts over)
@@ -665,7 +695,8 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
     const finishPad = extra => {
       setMsg(guide ? 'Beautiful tracing!' : 'Nice writing!', 'good'); say(guide ? 'Beautiful!' : 'Nice writing!', 0.95);
       flagged = null; draw();
-      const img = snap(); ['lsDone', 'lsClear', 'lsUndo', 'lsMore'].forEach(id => { if ($(id)) $(id).disabled = true; });
+      tools.setMode(false); flagged = null; draw();
+      const img = snap(); ['lsDone', 'lsClear', 'lsUndo', 'lsMore', 'lsErase'].forEach(id => { if ($(id)) $(id).disabled = true; });
       nextUp(1100).then(() => done({ img, redo, ...extra }));
     };
     $('lsDone').onclick = () => {
@@ -812,10 +843,63 @@ LT.tenmore.run = () => {
     mark('Find the Pattern', `Pattern of 10 ${word}`, r.ok, r.typed, good ? good.join(', ') : '', null, { text: `Which numbers show a pattern of 10 ${word}?`, choices: rows }, r.picks);
     partDone(r.ok ? 'Right the first time!' : 'Found it!');
   };
-  PARTS = [{ name: 'Ten Sticks', run: sticks }, { name: '100 Chart', run: chart }];
+  if (d.dir === 'both') return LT.tenmore.runBoth(run);
+  PARTS = [];
+  if (d.blocks) PARTS.push({ name: 'Ten Sticks', run: sticks });
+  if (d.chart) PARTS.push({ name: '100 Chart', run: chart });
   if (d.nums.length) PARTS.push({ name: `10 ${More}`, run: write });
   if (d.rows.length >= 2) PARTS.push({ name: 'Find the Pattern', run: pattern });
   return { intro: `Find the number that is 10 ${word}!` };
+};
+
+/* 10 more AND 10 less (the (C) sheet, Nov 9, 2026): say how you find each one, pick each pattern, then 10 less and 10 more of each number */
+LT.tenmore.runBoth = run => {
+  const d = SD;
+  const sayIt = async () => {
+    await L_mic();
+    const qs = [['more', 'How do you find 10 more than a number?'], ['less', 'How do you find 10 less than a number?']];
+    await each(qs.length, i => new Promise(async done => {
+      const [w, q] = qs[i];
+      app.innerHTML = L_exactTag() + head('Answer the question out loud.') + L_count(i, qs.length, 'Question') + `<div class="ls-model" style="font-size:clamp(26px,4vw,40px)">${L_esc(q)}</div><div class="message" id="msg"></div><div id="lsSay"></div>`;
+      say(q, 0.92);
+      const r = await L_read({ minMs: 1800, label: 'I said it! 🗣️', nudge: 'I’m listening… say how you do it!' });
+      mark('Say It', q, true, '', '', null, { text: `He answered out loud: ${q}`, clips: L_keepClip('ten', run, i, r.clip) }, [r.heard ? 'said it (microphone heard him)' : 'tapped “I said it”']); L_free();
+      setMsg('Great explaining!', 'good'); await wait(500); done();
+    }));
+    stopMic(); partDone('Both answered out loud!');
+  };
+  const patterns = async () => {
+    const sets = [['more', d.rowsMore, 10], ['less', d.rowsLess, -10]].filter(x => x[1].length >= 2);
+    await each(sets.length, i => new Promise(async done => {
+      const [w, rows, D] = sets[i], txt = rows.map(r => r.join(', ')), good = rows.find(r => r.every((x, k) => !k || x - r[k - 1] === D));
+      app.innerHTML = L_exactTag() + head(`Which numbers show a pattern of 10 ${w}? Tap it.`) + L_count(i, sets.length, 'Question') + '<div id="io"></div>';
+      say(`Which numbers show a pattern of 10 ${w}?`, 0.95);
+      const r = await L_choose(txt, good ? good.join(', ') : txt[0], { hint: `Look at the tens. In a 10 ${w} pattern, the tens go ${D > 0 ? 'up' : 'down'} by one each time.` });
+      mark('Find the Pattern', `Pattern of 10 ${w}`, r.ok, r.typed, good ? good.join(', ') : '', null, { text: `Which numbers show a pattern of 10 ${w}?`, choices: txt }, r.picks); done();
+    }));
+    partDone(firstTry('Find the Pattern') + '.');
+  };
+  const both = async () => {
+    await each(d.nums.length, i => new Promise(async done => {
+      const n = d.nums[i]; let helped = false;
+      for (const [w, D] of [['less', -10], ['more', 10]]) {
+        const ans = n + D, row = w === 'less' ? `<b class="q">?</b><i>←</i>${n}<i>→</i><span style="opacity:.35">?</span>` : `${n - 10}<i>←</i>${n}<i>→</i><b class="q">?</b>`;
+        app.innerHTML = L_exactTag() + head(`What number is 10 ${w} than ${n}?`) + L_count(i, d.nums.length) + `<div class="ls-ten">${row}</div>
+          <button class="btn ls-help" id="showChart">🔢 Show me the 100 chart</button><div id="chartBox"></div><div id="io"></div>`;
+        say(`What number is 10 ${w} than ${n}?`, 0.95);
+        $('showChart').onclick = () => { helped = true; $('showChart').remove(); $('chartBox').innerHTML = `<div class="ls-chart view">${Array.from({ length: 100 }, (_, k) => `<button tabindex="-1" class="${k + 1 === n ? 'lit' : ''}">${k + 1}</button>`).join('')}</div>`; };
+        const r = await L_numpad(ans);
+        mark('10 More and 10 Less', `10 ${w} than ${n}`, r.ok, r.typed, String(ans), null, { text: `What number is 10 ${w} than ${n}?${helped ? ' (He opened the 100 chart to help.)' : ''}` }, r.attempts);
+      }
+      done();
+    }));
+    partDone(firstTry('10 More and 10 Less') + '.');
+  };
+  PARTS = [];
+  if (d.aloud) PARTS.push({ name: 'Say It', run: sayIt });
+  if (d.rowsMore.length >= 2 || d.rowsLess.length >= 2) PARTS.push({ name: 'Find the Pattern', run: patterns });
+  if (d.nums.length) PARTS.push({ name: '10 More and 10 Less', run: both });
+  return { intro: 'Find 10 more and 10 less!' };
 };
 
 /* ---------- Sound Investigator ---------- */
@@ -1262,18 +1346,44 @@ LT.sort.run = () => {
     const pool = L_shuf(d.words), filled = new Set();
     await each(pool.length, i => new Promise(async done => {
       const x = pool[i];
-      app.innerHTML = L_exactTag() + head('Listen to the word, then spell it. It goes in the chart!') + L_count(i, pool.length, 'Word') + `<div class="hidden-word">Listen 👂</div><button class="btn" id="hearW">${SPK}Hear the word</button><div id="io"></div>` + chart(filled);
+      app.innerHTML = L_exactTag() + head(d.spell ? 'Listen to the word, then spell it. It goes in the chart!' : 'Put each spelling word in the chart, under the right heading.') + L_count(i, pool.length, 'Word') + (d.spell ? `<div class="hidden-word">Listen 👂</div>` : '') + `<button class="btn" id="hearW">${SPK}Hear the word</button><div id="io"></div>` + chart(filled);
       $('hearW').onclick = () => playWord(x.w); playWord(x.w);
-      const r = await freeType({ answer: x.w, hint: t => { const m = L_soundAlike(t, x.w); return m ? `Good listening, ${t} sounds right! But it’s spelled with ${m.want}.` : 'Not quite. Say it slowly and listen to the end of the word. Try again.'; } });
-      mark('Write the Chart', `Spell “${x.w}”`, r.ok, r.typed, x.w, x.w, { text: `He heard “${x.w}” and spelled it.` }, r.attempts);
+      if (d.spell) {
+        const r = await freeType({ answer: x.w, hint: t => { const m = L_soundAlike(t, x.w); return m ? `Good listening, ${t} sounds right! But it’s spelled with ${m.want}.` : 'Not quite. Say it slowly and listen to the end of the word. Try again.'; } });
+        mark(PN, `Spell “${x.w}”`, r.ok, r.typed, x.w, x.w, { text: `He heard “${x.w}” and spelled it.` }, r.attempts);
+      }
       const picks = await L_placeBubble(x.w, H, x.h, `Look at how ${x.w} ends: ${ending(x)}.`);
       filled.add(x.w); app.querySelector('#sortChart').outerHTML = chart(filled);
-      mark('Write the Chart', `Put “${x.w}” in its column`, picks.length === 1, picks[0], H[x.h], null, { text: `He spelled “${x.w}”, then put it under a heading.`, choices: H }, picks);
+      mark(PN, `Put “${x.w}” in its column`, picks.length === 1, picks[0], H[x.h], null, { text: d.spell ? `He spelled “${x.w}”, then put it under a heading.` : `He put “${x.w}” under a heading.`, choices: H }, picks);
       await wait(700); done();
     }));
     app.innerHTML = L_exactTag() + head('Your chart is done!') + chart(new Set(d.words.map(x => x.w)));
     await wait(1500);
-    partDone(firstTry('Write the Chart') + '.');
+    partDone(firstTry(PN) + '.');
+  };
+  const PN = d.spell ? 'Write the Chart' : 'Glue the Chart';
+  // Word Hunt (the (C) sheet): tap every word in the paragraph that ends like one of the headings
+  const huntP = async () => {
+    const toks = d.hunt.split(/\s+/).filter(Boolean), ends = H.map(h => h.replace(/^[-–—]\s*/, '').toLowerCase());
+    const hit = t => { const w = L_letters(t); return ends.some(e => w.length > e.length && w.endsWith(e)); };
+    const targets = toks.map((t, k) => hit(t) ? k : -1).filter(k => k >= 0);
+    const found = new Set(), wrong = []; let checks = 0;
+    app.innerHTML = L_exactTag() + head(`Word hunt! Tap every word that ends with ${H.join(', ')}.`) + `<div class="ls-story" id="hunt" style="text-align:left">${toks.map((t, k) => `<span class="w" data-k="${k}">${L_esc(t)}</span>`).join(' ')}</div><div class="message" id="msg"></div><div class="row acts"><button class="btn big primary" id="huntDone">I found them all ✓</button></div>`;
+    say(`Word hunt! Tap every word that ends with ${ends.map(e => e.split('').join(' ')).join(', or ')}.`, 0.92);
+    await new Promise(res => {
+      $('hunt').onclick = e => { const el = e.target.closest('[data-k]'); if (!el) return; const k = +el.dataset.k;
+        if (targets.includes(k)) { if (found.has(k)) return; found.add(k); el.classList.add('found'); say(L_letters(toks[k]), 1); }
+        else { if (!wrong.includes(toks[k])) wrong.push(L_letters(toks[k])); el.classList.add('nope'); shakeEl(el); setTimeout(() => el.classList.remove('nope'), 700); setMsg(`${L_letters(toks[k])} doesn’t end with ${H.join(', ')}. Look at the last letters.`, 'try'); } };
+      $('huntDone').onclick = () => {
+        const left = targets.filter(k => !found.has(k)); checks++;
+        if (!left.length) { setMsg('You found them all!', 'good'); say('You found them all!', 1); return nextUp(1200).then(res); }
+        if (checks < 2) { setMsg(`${left.length} more to find! Read each word to the very end.`, 'try'); say(`${left.length} more to find!`, 1); return; }
+        left.forEach(k => app.querySelector(`[data-k="${k}"]`).classList.add('missed')); setMsg(`These were hiding: ${left.map(k => L_letters(toks[k])).join(', ')}.`, 'try'); $('huntDone').textContent = 'Next →'; $('huntDone').onclick = res;
+      };
+    });
+    const missed = targets.filter(k => !found.has(k)).map(k => L_letters(toks[k]));
+    mark('Word Hunt', `Words that end with ${H.join(', ')}`, !missed.length && !wrong.length, `${found.size} of ${targets.length}`, targets.map(k => L_letters(toks[k])).join(', '), null, { text: `He found ${found.size} of ${targets.length}.${missed.length ? ` Missed: ${missed.join(', ')}.` : ''}${wrong.length ? ` Wrong taps: ${wrong.join(', ')}.` : ''}` }, [...[...found].map(k => L_letters(toks[k])), ...wrong.map(w => '✗ ' + w)]);
+    partDone(missed.length ? `Found ${found.size} of ${targets.length}.` : `Found all ${targets.length}!`);
   };
   const sayP = async () => {
     const picked = await new Promise(res => {
@@ -1295,8 +1405,10 @@ LT.sort.run = () => {
     stopMic();
     partDone('Three great sentences!');
   };
-  PARTS = [{ name: 'Sort the Words', run: sortP }];
-  if (d.spell) PARTS.push({ name: 'Write the Chart', run: spellP });   // spell it, then drag it into its column (Nov 9: "put the word into a little draggable bubble")
+  PARTS = [];
+  if (d.hunt) PARTS.push({ name: 'Word Hunt', run: huntP });
+  PARTS.push({ name: 'Sort the Words', run: sortP });
+  if (d.spell || d.glue) PARTS.push({ name: PN, run: spellP });   // spell it, then drag it into its column (Nov 9: "put the word into a little draggable bubble")
   if (d.say) PARTS.push({ name: 'Say Sentences', run: sayP });
   return { intro: 'Sort your spelling words!' };
 };
