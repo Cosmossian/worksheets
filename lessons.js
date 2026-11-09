@@ -1,10 +1,9 @@
 /* The Study: lesson worksheets.
    10 More or Less (Math), Sound Investigator, Story Time, Word Chains, Heart Word (Phonics), Handwriting (ELA).
    One file, loaded by index.html (settings + the printed page) and by do.html (the on-screen version).
-   Each worksheet has two sets of settings: "school" (📄 School copy: the same questions as the sheet from school)
-   and "own" (✏️ My own: change it for next time). The school copy's title starts with "📄 School copy ·" so you can tell them apart. */
+   Each worksheet has dated official school sheets (📄 Load MM/DD/YY Official School Worksheet: the same questions as that day's
+   sheet from school) and "own" (✏️ My own: change it for next time). A school sheet's title starts with "📄 School MM/DD/YY ·". */
 
-const L_SCHOOL_TAG = '📄 School copy · ';
 const L_IN_DO = !!document.getElementById('app') && !document.getElementById('panel');   // do.html has #app; the Worksheets page has #panel
 
 /* ---------------- shared helpers ---------------- */
@@ -93,8 +92,10 @@ const LT = {
   tenmore: {
     name: '10 More or Less', cls: 'math',
     help: 'Ten sticks, the 100 chart, “what is 10 more than…”, and a 10-more pattern. On screen he taps a ten stick on, finds the number on the 100 chart, and types the answers.',
-    schoolNote: 'Same numbers as the school sheet “10 More or Less (A): Find 10 More”.',
-    school: () => ({ dir: 'more', heading: 'Find 10 More', blocks: 34, chart: 58, nums: '12, 26, 87, 53, 50, 88, 49, 82', patterns: '46, 47, 48, 49, 50 | 46, 56, 66, 76, 86 | 46, 45, 44, 43, 42', aloud: true }),
+    schools: {
+      '2026-11-09': { note: 'Same numbers as the school sheet “10 More or Less (A): Find 10 More”.', set: () => ({ dir: 'more', heading: 'Find 10 More', blocks: 34, chart: 58, nums: '12, 26, 87, 53, 50, 88, 49, 82', patterns: '46, 47, 48, 49, 50 | 46, 56, 66, 76, 86 | 46, 45, 44, 43, 42', aloud: true }) },
+      '2026-11-10': { note: 'Same numbers as the school sheet “10 More or Less (B): Find 10 Less”.', set: () => ({ dir: 'less', heading: 'Find 10 Less', blocks: 55, chart: 28, nums: '20, 61, 31, 11, 64, 76, 45, 33', patterns: '62, 52, 42, 32, 22 | 62, 61, 60, 59, 58 | 62, 63, 64, 65, 66', aloud: true }) }
+    },
     own: () => L_tenRandom('more'),
     fields: () => [
       { k: 'dir', label: '10 more or 10 less?', type: 'select', options: [['more', '10 more'], ['less', '10 less']] },
@@ -123,8 +124,9 @@ const LT = {
   sound: {
     name: 'Sound Investigator', cls: 'phonics',
     help: 'Columns of words, one column per spelling of a sound. He reads down each column, then across each row, and answers the questions. On screen the microphone listens as he reads each word.',
-    schoolNote: 'Same words and questions as the school sheet “Spellings for Sound /ā/ (A): Investigator”.',
-    school: () => ({ heading: 'Spellings for Sound /ā/', sound: '/ā/', cols: L_SOUNDS.a.cols.replace('a_e:', 'a–e:'), across: true, questions: L_SOUNDS.a.questions, sort: false }),
+    schools: {
+      '2026-11-09': { note: 'Same words and questions as the school sheet “Spellings for Sound /ā/ (A): Investigator”.', set: () => ({ heading: 'Spellings for Sound /ā/', sound: '/ā/', cols: L_SOUNDS.a.cols.replace('a_e:', 'a–e:'), across: true, questions: L_SOUNDS.a.questions, sort: false }) }
+    },
     own: () => ({ heading: 'Spellings for Sound /ā/', sound: '/ā/', cols: L_SOUNDS.a.cols, across: true, questions: L_SOUNDS.a.questions, sort: true }),
     fields: () => [
       { k: 'heading', label: 'Title', type: 'text' },
@@ -142,8 +144,9 @@ const LT = {
   story: {
     name: 'Story Time', cls: 'phonics',
     help: 'A short decodable story. He reads it a sentence at a time (the microphone listens, and his reading is saved for Parent Review), finds the words with the lesson’s spelling, and draws the story.',
-    schoolNote: 'The UFLI story isn’t built in, so type it in the Story box from the sheet. The title and lesson are already filled in.',
-    school: () => ({ label: 'Lesson 54: a_e /ā/', heading: 'Cave in the Maze', pattern: 'a_e', text: '', questions: '', draw: true }),
+    schools: {
+      '2026-11-09': { note: 'The UFLI story isn’t built in, so type it in the Story box from the sheet. The title and lesson are already filled in.', set: () => ({ label: 'Lesson 54: a_e /ā/', heading: 'Cave in the Maze', pattern: 'a_e', text: '', questions: '', draw: true }) }
+    },
     own: () => ({ label: 'Long a: a_e', heading: 'The Snake at the Lake', pattern: 'a_e', text: 'Kate and Gabe went to the lake. They made up a game. Gabe had to name each shape in the sand. Kate got a cane to dig with. Then they saw a snake by the gate! “Let’s not wake it,” said Kate. The snake did not wake up. Gabe and Kate came home late. It was a fun day at the lake!', questions: 'Where did Kate and Gabe go? | the lake | the store | the lake\nWhat was by the gate? | a snake | a cake | a snake\nDid the snake wake up? | yes | no | no', draw: true }),
     fields: mode => [
       { k: 'label', label: 'Lesson', type: 'text' },
@@ -161,8 +164,9 @@ const LT = {
   chains: {
     name: 'Word Chains', cls: 'phonics',
     help: 'A home-practice lesson: the new words, a heart word, word chains (change one letter to make a new word) and two sentences. On screen the chains go spell, read, spell, read, like the lesson script.',
-    schoolNote: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 54”.',
-    school: () => ({ lesson: 'Lesson 54', concept: 'a_e', words: 'make, cape, fade, plate, skate, shade', heart: 'wh*|o*', chains: 'make, lake, cake, bake\nname, same, came, game', sentences: 'Who will be at the lake?\nBlake was late to the game.' }),
+    schools: {
+      '2026-11-09': { note: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 54”.', set: () => ({ lesson: 'Lesson 54', concept: 'a_e', words: 'make, cape, fade, plate, skate, shade', heart: 'wh*|o*', chains: 'make, lake, cake, bake\nname, same, came, game', sentences: 'Who will be at the lake?\nBlake was late to the game.' }) }
+    },
     own: () => ({ lesson: 'Long a: ai', concept: 'ai', words: 'rain, tail, paint, snail, wait, chain', heart: 's|ai*|d', chains: 'rain, pain, main, mail\nsail, tail, nail, snail', sentences: 'The snail is on the trail.\nWait for the rain to stop.' }),
     fields: () => [
       { k: 'lesson', label: 'Lesson', type: 'text' },
@@ -180,8 +184,9 @@ const LT = {
   heart: {
     name: 'Heart Word', cls: 'phonics',
     help: 'One heart word (a word with a part you learn by heart): map its sounds into boxes, write it 3 times, write a sentence with it, and find it in a row of words.',
-    schoolNote: 'Same word and the same row of words as the school sheet for “their”.',
-    school: () => ({ word: 'their', parts: 'th|eir*', row: 'the their they she say go have their their said I of I' }),
+    schools: {
+      '2026-11-09': { note: 'Same word and the same row of words as the school sheet for “their”.', set: () => ({ word: 'their', parts: 'th|eir*', row: 'the their they she say go have their their said I of I' }) }
+    },
     own: () => ({ word: 'said', parts: 's|ai*|d', row: L_heartRow('said') }),
     fields: () => [
       { k: 'word', label: 'Word', type: 'text' },
@@ -197,8 +202,10 @@ const LT = {
   letter: {
     name: 'Handwriting', cls: 'ela',
     help: 'Trace and write a letter, then names, a sentence to trace and a sentence to copy. On screen he writes with his finger or Apple Pencil, and every line is saved as a picture in Parent Review.',
-    schoolNote: 'Same letter, names and sentences as the school sheet “Uppercase Q”.',
-    school: () => ({ letter: 'Q', words: 'Quinn, Quella, Quentin', trace: 'Quency has a quilt.', copy: 'Quinn the quail quests for food.' }),
+    schools: {
+      '2026-11-09': { note: 'Same letter, names and sentences as the school sheet “Uppercase Q”.', set: () => ({ letter: 'Q', words: 'Quinn, Quella, Quentin', trace: 'Quency has a quilt.', copy: 'Quinn the quail quests for food.' }) },
+      '2026-11-10': { note: 'Same letter, words and sentences as the school sheet “Lowercase f”.', set: () => ({ letter: 'f', words: 'fish, fan, fat', trace: 'The fawn is fast.', copy: 'The fox has fuzzy fur.' }) }
+    },
     own: () => ({ letter: 'R', words: 'Rosa, Ryan, Rudy', trace: 'Rex ran to the rug.', copy: 'Rita reads a red book.' }),
     fields: () => [
       { k: 'letter', label: 'Letter', type: 'text', help: 'A capital (Q) or a small letter (q).' },
@@ -210,17 +217,60 @@ const LT = {
     title: c => { const l = (String(c.letter || '').trim()[0] || 'A'); return `${l === l.toUpperCase() ? 'Uppercase' : 'Lowercase'} ${l}`; },
     data: c => ({ letter: String(c.letter || '').trim()[0] || 'A', words: L_list(c.words).slice(0, 4), trace: (c.trace || '').trim(), copy: (c.copy || '').trim() }),
     check: d => /[a-z]/i.test(d.letter) ? '' : 'Type a letter.'
+  },
+  sort: {
+    name: 'Spelling Sort', cls: 'ela',
+    help: 'Sort spelling words under headings (like the endings –ff, –ll, –ss, –zz), spell each one when he hears it, then say sentences with 3 of them out loud. Printed, it has word cards to cut out, the chart and the activity.',
+    schools: {
+      '2026-11-10': { note: 'Same headings and words as the school sheet “The Poor Man’s Reward” (B): Practice Spelling List 3.', set: () => ({ heading: 'Spelling List 3', heads: '–ff, –ll, –ss, –zz', words: 'miss, off, pass, pull, boss, buzz, fizz, less, small, still, stuff, tell', spell: true, say: true }) }
+    },
+    own: () => ({ heading: 'My Spelling Sort', heads: '–ck, –ng', words: 'back, sock, duck, kick, ring, song, long, king', spell: true, say: true }),
+    fields: () => [
+      { k: 'heading', label: 'Title', type: 'text' },
+      { k: 'heads', label: 'Headings', type: 'text', help: 'Separate with commas. Endings like –ff (or ff) match words that end with those letters; anything else matches words that have them.' },
+      { k: 'words', label: 'Spelling words', type: 'area', rows: 3, help: 'Separate with commas.' },
+      { k: 'spell', label: 'Spell each word when he hears it (fills in the chart)', type: 'check' },
+      { k: 'say', label: 'Say a sentence with 3 of the words out loud (microphone)', type: 'check' }
+    ],
+    acts: () => [],
+    title: c => (c.heading || '').trim() || 'Spelling Sort',
+    data: c => {
+      const heads = L_list(c.heads).map(h => ({ label: h, end: /^[-–—]/.test(h), k: h.replace(/^[-–—]\s*/, '').toLowerCase() })).filter(h => h.k);
+      const of = w => { const x = w.toLowerCase(); let i = heads.findIndex(h => h.end && x.endsWith(h.k)); if (i < 0) i = heads.findIndex(h => !h.end && x.includes(h.k)); return i; };
+      return { heading: LT.sort.title(c), heads: heads.map(h => h.label), words: L_list(c.words).map(w => ({ w: w.toLowerCase(), h: of(w) })), spell: !!c.spell, say: !!c.say };
+    },
+    check: d => d.heads.length < 2 ? 'Type at least 2 headings.' : !d.words.length ? 'Type the spelling words.' : (d.words.filter(x => x.h < 0).length ? `These don’t fit a heading: ${d.words.filter(x => x.h < 0).map(x => x.w).join(', ')}.` : '')
+  },
+  readaloud: {
+    name: 'Read Story for Class Recording', cls: 'phonics',
+    help: 'Just the story, big and easy to read, so he can read it out loud while his school website records him. This page doesn’t talk and doesn’t record. It can show the picture he drew of the story in Story Time.',
+    schools: {
+      '2026-11-10': { note: 'Read aloud of “Cave in the Maze” (UFLI Lesson 54). The story isn’t built in: it’s copied from what you typed in Story Time’s 11/09/26 sheet (or type it here).', set: () => ({ heading: 'Cave in the Maze', text: '', pic: true, follow: false }) }
+    },
+    own: () => ({ heading: '', text: '', pic: true, follow: false }),
+    prefill: c => { if (c.text || typeof state === 'undefined' || !state.story) return; const st = state.story, all = [...Object.values(st.schools || {}), st.school, st.own].filter(Boolean); const m = all.find(x => (x.heading || '').trim().toLowerCase() === (c.heading || '').trim().toLowerCase() && (x.text || '').trim()); if (m) c.text = m.text; },
+    fields: () => [
+      { k: 'heading', label: 'Story title', type: 'text' },
+      { k: 'text', label: 'Story', type: 'area', rows: 8, help: 'Copied from Story Time when the title matches. You can also paste or type it.' },
+      { k: 'pic', label: 'Show the picture he drew of this story (from Story Time)', type: 'check' },
+      { k: 'follow', label: 'Light up one sentence at a time (he taps Next to move on)', type: 'check' }
+    ],
+    acts: () => [['fromStory', '📋 Use the story from Story Time']],
+    act: (a, c) => { if (a === 'fromStory') { const keep = c.text; c.text = ''; LT.readaloud.prefill(c); if (!c.text) { c.text = keep; alert('Story Time doesn’t have a story with this title yet. Type the title exactly as it is there, or paste the story.'); } } },
+    title: c => `Read for class: ${(c.heading || '').trim() || 'my story'}`,
+    data: c => ({ heading: (c.heading || '').trim(), text: String(c.text || '').trim(), pic: !!c.pic, follow: !!c.follow }),
+    check: d => d.text ? '' : 'Type or paste the story (or tap 📋 Use the story from Story Time).'
   }
 };
 const L_IDS = Object.keys(LT);
-const L_CLASS_OF = { tenmore: 'math', sound: 'phonics', story: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela' };
+const L_CLASS_OF = { tenmore: 'math', sound: 'phonics', story: 'phonics', readaloud: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela', sort: 'ela' };
 
 /* =====================================================================
    Worksheets page (index.html): the settings panel and the printed page
    ===================================================================== */
 if (!L_IN_DO) {
   (() => { const st = document.createElement('style'); st.textContent = `
-    .ls-mode { display:flex; gap:6px; margin-bottom:12px; } .ls-mode button { flex:1; font:600 15px Fredoka,sans-serif; border:2px solid var(--line); background:var(--surface-2); color:var(--ink); border-radius:12px; padding:10px 8px; cursor:pointer; }
+    .ls-mode { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; } .ls-mode button { flex:1 1 180px; font:600 15px Fredoka,sans-serif; border:2px solid var(--line); background:var(--surface-2); color:var(--ink); border-radius:12px; padding:10px 8px; cursor:pointer; }
     .ls-mode button[aria-pressed="true"].school { background:#3A2E0C; border-color:#F59E0B; color:#FDE68A; } .ls-mode button[aria-pressed="true"].own { background:#1B2D47; border-color:var(--study); }
     .ls-school { background:#3A2E0C; border:1px solid #B7791F; color:#FDE68A; border-radius:10px; padding:8px 10px; font-size:14px; margin-bottom:12px; line-height:1.35; }
     .ls-acts { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
@@ -296,10 +346,40 @@ LT.letter.print = (d, exact) => {
   return L_sheetOf(p1, exact, { gap: 16 }) + L_sheetOf(p2, exact, { gap: 18 });
 };
 
-/* settings panel */
-function L_cur(t) { const s = state[t]; return s[s.mode] || s.school; }
+LT.sort.print = (d, exact) => {
+  const card = (t, bold, c) => `<div style="border:2px dashed #475569;border-radius:8px;padding:10px 6px;text-align:center;font:${bold ? '700 30px Fredoka' : '700 28px Andika'},sans-serif;${c ? `color:${c}` : ''}">${L_esc(t)}</div>`;
+  const per = d.heads.map((_, hi) => d.words.filter(x => x.h === hi).length), rows = Math.max(3, ...per) + 1;
+  const p1 = nameDate() + title(d.heading, 'Spelling Sort', star('#0F766E'), star('#DB2777'))
+    + L_h(1, '#0F766E', 'Cut out the headings and the spelling words. Lay the headings out in a row, then sort each word under the heading that matches how it ends.')
+    + `<div style="display:grid;grid-template-columns:repeat(${Math.min(4, d.heads.length)},1fr);gap:10px;margin:6px 0 16px">${d.heads.map((h, hi) => card(h, true, L_COL[hi % 8])).join('')}</div>`
+    + `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${d.words.map(x => card(x.w)).join('')}</div>`;
+  const p2 = nameDate() + L_h(2, '#1D4ED8', 'Look at your sort. Write each spelling word under its heading.')
+    + `<table style="width:100%;border-collapse:collapse;font:700 26px Fredoka,sans-serif;margin-bottom:18px"><tr>${d.heads.map((h, hi) => `<th style="border:2px solid #1F2937;padding:8px;color:${L_COL[hi % 8]}">${L_esc(h)}</th>`).join('')}</tr>${Array.from({ length: rows }, () => `<tr>${d.heads.map(() => '<td style="border:2px solid #1F2937;height:54px"></td>').join('')}</tr>`).join('')}</table>`
+    + L_h(3, '#7E22CE', 'Practice your spelling words. Pick one:')
+    + `<div style="font-size:21px;line-height:1.5;padding-left:40px"><p><b>🎭 Act it out.</b> Pick three spelling words and act each one out. Can someone guess the word?</p><p><b>🗣️ Say sentences.</b> Pick three spelling words. Make up a sentence with each one and say it out loud to someone.</p></div>`;
+  return L_sheetOf(p1, exact, { gap: 14 }) + L_sheetOf(p2, exact, { gap: 14 });
+};
+LT.readaloud.print = (d, exact) => L_sheetOf(nameDate() + title(d.heading || 'My Story', 'Read it out loud', star('#F59E0B'), star('#1D4ED8'))
+  + `<div style="font:400 30px/1.9 Andika,sans-serif;padding:10px 24px">${L_esc(d.text)}</div>`, exact, { gap: 14 });
+
+/* settings panel. Each worksheet can have several official school sheets, one per school day (Nov 9, 2026, Dylan: "Load 11/10/26
+   Official School Worksheets so I know it's for the next day's assignments"). state[t] = { mode: 'school'|'own', day: 'YYYY-MM-DD',
+   schools: { day: settings }, own }. The first version had one "school" set; it was the 11/09/26 sheet, so it moves there. */
+const L_dayLabel = d => { const [y, m, dd] = String(d).split('-'); return `${m}/${dd}/${String(y).slice(2)}`; };
+const L_days = t => Object.keys(LT[t].schools || {}).sort();
+const L_schoolTag = day => `📄 School ${L_dayLabel(day)} · `;
+function L_st(t) {
+  const s = state[t] || (state[t] = { mode: 'school' });
+  if (!s.schools) { s.schools = {}; if (s.school) s.schools[L_days(t)[0]] = s.school; delete s.school; }
+  if (!s.day || !LT[t].schools[s.day]) s.day = L_days(t).at(-1);
+  if (!s.schools[s.day]) { s.schools[s.day] = LT[t].schools[s.day].set(); if (LT[t].prefill) LT[t].prefill(s.schools[s.day]); }
+  if (!s.own) s.own = LT[t].own();
+  if (s.mode !== 'own') s.mode = 'school';
+  return s;
+}
+function L_cur(t) { const s = L_st(t); return s.mode === 'own' ? s.own : s.schools[s.day]; }
 function L_panel(t) {
-  const L = LT[t], s = state[t], mode = s.mode, c = L_cur(t);
+  const L = LT[t], s = L_st(t), mode = s.mode, c = L_cur(t);
   const f = L.fields(mode).map(x => {
     const id = `lk_${x.k}`, v = c[x.k];
     const inp = x.type === 'area' ? `<textarea id="${id}" data-lk="${x.k}" rows="${x.rows || 2}">${L_esc(v)}</textarea>`
@@ -309,22 +389,22 @@ function L_panel(t) {
     return `<div class="field"><label for="${id}">${L_esc(x.label)}</label>${inp}${x.help ? `<small>${L_esc(x.help)}</small>` : ''}</div>`;
   }).join('');
   const acts = (L.acts(mode) || []);
-  const d = L.data(c), problem = L.check(d);
+  const d = L.data(c), problem = L.check(d), sc = L.schools[s.day];
   return `<h2>${L_esc(L.name)}</h2><p class="help">${L_esc(L.help)}</p>
-    <div class="ls-mode" role="group" aria-label="Which version"><button class="school" data-lmode="school" aria-pressed="${mode === 'school'}">📄 School copy</button><button class="own" data-lmode="own" aria-pressed="${mode === 'own'}">✏️ My own</button></div>
-    ${mode === 'school' ? `<div class="ls-school"><b>📄 School copy:</b> ${L_esc(L.schoolNote)} On his device it’s called “${L_esc(L_SCHOOL_TAG + L.title(c))}”.</div>` : '<p class="help" style="margin-top:-4px">Your own version: change anything, and use it again any time. The school copy stays as it is.</p>'}
+    <div class="ls-mode" role="group" aria-label="Which version">${L_days(t).map(day => `<button class="school" data-lday="${day}" aria-pressed="${mode === 'school' && s.day === day}">📄 Load ${L_dayLabel(day)} Official School Worksheet</button>`).join('')}<button class="own" data-lmode="own" aria-pressed="${mode === 'own'}">✏️ My own</button></div>
+    ${mode === 'school' ? `<div class="ls-school"><b>📄 ${L_dayLabel(s.day)} official school worksheet:</b> ${L_esc(sc.note)} On his device it’s called “${L_esc(L_schoolTag(s.day) + L.title(c))}”.</div>` : '<p class="help" style="margin-top:-4px">Your own version: change anything, and use it again any time. The school worksheets stay as they are.</p>'}
     ${acts.length ? `<div class="ls-acts">${acts.map(([k, lab]) => `<button class="btn btn-small" data-lact="${k}">${L_esc(lab)}</button>`).join('')}</div>` : ''}
     ${f}
-    ${mode === 'school' ? '<button class="btn btn-small" data-lact="__reset" style="margin-bottom:12px">↺ Back to the school sheet</button>' : ''}
+    ${mode === 'school' ? `<button class="btn btn-small" data-lact="__reset" style="margin-bottom:12px">↺ Back to the ${L_dayLabel(s.day)} school sheet</button>` : ''}
     ${problem ? `<div class="warn" id="lsWarn">${L_esc(problem)}</div>` : '<div class="warn" id="lsWarn" hidden></div>'}
-    ${printBlock(['tenmore', 'letter'].includes(t))}`;
+    ${printBlock(['tenmore', 'letter', 'sort'].includes(t))}`;
 }
 function L_snapshot(t) {
-  const L = LT[t], s = state[t], c = L_cur(t), d = L.data(c), need = L.check(d);
-  return { title: (s.mode === 'school' ? L_SCHOOL_TAG : '') + L.title(c), data: { ...d, exact: s.mode === 'school' }, ok: !need, need };
+  const L = LT[t], s = L_st(t), c = L_cur(t), d = L.data(c), need = L.check(d), school = s.mode === 'school';
+  return { title: (school ? L_schoolTag(s.day) : '') + L.title(c), data: { ...d, exact: school, schoolDay: school ? s.day : '' }, ok: !need, need };
 }
-function L_build(t) { const L = LT[t], s = state[t], d = L.data(L_cur(t)); return L.print(d, s.mode === 'school'); }
-function L_defaults() { return Object.fromEntries(L_IDS.map(k => [k, { mode: 'school', school: LT[k].school(), own: LT[k].own() }])); }
+function L_build(t) { const L = LT[t], s = L_st(t), d = L.data(L_cur(t)); return L.print(d, s.mode === 'school'); }
+function L_defaults() { return Object.fromEntries(L_IDS.map(k => [k, { mode: 'school', day: L_days(k).at(-1), schools: {}, own: LT[k].own() }])); }
 /* panel events (called from index.html's input/click handlers) */
 function L_input(el) {
   const t = state.tool; if (!LT[t] || !el.dataset.lk) return false;
@@ -335,8 +415,9 @@ function L_input(el) {
 }
 function L_click(el) {
   const t = state.tool; if (!LT[t]) return false;
-  if (el.dataset.lmode) { state[t].mode = el.dataset.lmode; return 'panel'; }
-  if (el.dataset.lact === '__reset') { if (!confirm('Put the school copy back the way the school sheet has it?')) return true; state[t].school = LT[t].school(); return 'panel'; }
+  if (el.dataset.lday) { const s = L_st(t); s.mode = 'school'; s.day = el.dataset.lday; L_st(t); return 'panel'; }
+  if (el.dataset.lmode) { L_st(t).mode = el.dataset.lmode; return 'panel'; }
+  if (el.dataset.lact === '__reset') { const s = L_st(t); if (!confirm(`Put the ${L_dayLabel(s.day)} school sheet back the way the school has it?`)) return true; s.schools[s.day] = LT[t].schools[s.day].set(); if (LT[t].prefill) LT[t].prefill(s.schools[s.day]); return 'panel'; }
   if (el.dataset.lact) { LT[t].act(el.dataset.lact, L_cur(t)); return 'panel'; }
   return false;
 }
@@ -363,6 +444,12 @@ if (L_IN_DO) {
     .ls-choices button { font:700 26px Fredoka,sans-serif; border:3px solid var(--line); background:var(--surface-2); color:var(--ink); border-radius:18px; padding:16px 18px; cursor:pointer; touch-action:manipulation; }
     .ls-choices button.wrong { border-color:var(--bad); background:var(--bad-bg); color:#FCA5A5; } .ls-choices button.right { border-color:var(--good); background:var(--good-bg); color:var(--good); }
     .ls-grid { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+    .ls-pick { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; max-width:720px; margin:10px auto; } .ls-pick button { font:700 28px Andika,sans-serif; padding:10px 20px; border-radius:14px; border:3px solid var(--line); background:var(--surface-2); color:var(--ink); cursor:pointer; } .ls-pick button.on { border-color:var(--good); background:var(--good-bg); }
+    .ra-wrap { display:flex; flex-wrap:wrap; gap:16px; justify-content:center; align-items:flex-start; width:min(1100px,96vw); margin:6px auto; }
+    .ra-pic { width:min(360px,90vw); border-radius:14px; border:3px solid var(--line); background:#fff; }
+    .ra-page { flex:1 1 520px; box-sizing:border-box; max-width:100%; background:#fff; color:#1F2937; border-radius:16px; padding:18px 26px; }
+    .ra-title { font:700 34px Fredoka,sans-serif; text-align:center; color:#1E3A5F; margin-bottom:8px; }
+    .ra-text { font:400 clamp(28px,3.6vw,40px)/1.8 Andika,sans-serif; } .ra-s.now { background:#FEF08A; border-radius:8px; box-shadow:0 0 0 4px #FEF08A; } .ra-s.done { color:#94A3B8; }
     .ls-help-box .ls-choices { width:100%; } .ls-help-box .ls-choices.row2 button { flex:1 1 120px; }
     .ls-help-box { background:var(--surface-2); border:2px solid var(--try); border-radius:16px; padding:10px 14px; margin:8px auto; max-width:620px; text-align:center; display:flex; flex-direction:column; gap:8px; align-items:center; }
     .ls-teamwords { display:flex; flex-wrap:wrap; gap:10px 22px; justify-content:center; max-width:760px; margin:8px auto; font:700 40px Andika,sans-serif; }
@@ -400,7 +487,7 @@ if (L_IN_DO) {
 const L_wantMic = () => (typeof store === 'function' ? (store('spell-daily') || {}).mic !== false : true);
 async function L_mic() { return L_wantMic() ? await getMic() : null; }
 const L_count = (i, n, what = 'Number') => `<div class="count">${what} ${i + 1} of ${n}</div>`;
-const L_exactTag = () => SD && SD.exact ? '<div class="ls-exact">📄 School copy</div>' : '';
+const L_exactTag = () => SD && SD.exact ? `<div class="ls-exact">📄 ${SD.schoolDay ? `School worksheet ${L_dayLabel(SD.schoolDay)}` : 'School copy'}</div>` : '';
 
 /* Wait for him to read something out loud. Microphone: waits until it hears him (and at least minMs). No microphone: an "I read it" button
    that only works after minMs. Needs a <div id="lsSay"> on the screen. Resolves { heard, clip }. */
@@ -1091,4 +1178,93 @@ LT.letter.run = () => {
   if (d.copy) P.push({ name: 'Copy the Sentence', run: async () => { say(d.copy, 0.85); await doPad('Copy the Sentence', 'Copy the sentence.', d.copy, false, 1, `<div class="ls-model" style="font-size:clamp(24px,4vw,40px)">${L_esc(d.copy)}</div>`); partDone('Sentence copied!'); } });
   PARTS = P;
   return { intro: `Handwriting: the ${nm} letter ${Lt}. Use your finger or your pencil.` };
+};
+
+/* ---------- Spelling Sort ---------- */
+LT.sort.run = () => {
+  const d = SD, H = d.heads, run = Date.now().toString(36);
+  const chart = filled => `<div class="ls-grid small" style="margin-top:12px">${H.map((h, hi) => `<div class="c"><b style="background:${L_COL[hi % 8]}">${L_esc(h)}</b>${d.words.filter(x => x.h === hi).map(x => `<span>${filled.has(x.w) ? L_esc(x.w) : '&nbsp;'}</span>`).join('')}</div>`).join('')}</div>`;
+  const ending = x => H[x.h].replace(/^[-–—]\s*/, '');
+  const sortP = async () => {
+    const pool = L_shuf(d.words);
+    await each(pool.length, i => new Promise(async done => {
+      const x = pool[i];
+      app.innerHTML = L_exactTag() + head('Which heading does this word go under? Look at how it ends.') + L_count(i, pool.length, 'Word') + `<div class="big-word">${L_esc(x.w)}</div><button class="btn" id="hearW">${SPK}Hear it</button><div id="io"></div>`;
+      $('hearW').onclick = () => playWord(x.w); playWord(x.w);
+      const r = await L_choose(H, H[x.h], { row: true, hint: 'Look at the last letters of the word. Try again.' });
+      mark('Sort the Words', x.w, r.ok, r.typed, H[x.h], null, { text: `Which heading does “${x.w}” go under?`, choices: H }, r.picks); done();
+    }));
+    partDone(firstTry('Sort the Words') + '.');
+  };
+  const spellP = async () => {
+    const pool = L_shuf(d.words), filled = new Set();
+    await each(pool.length, i => new Promise(async done => {
+      const x = pool[i];
+      app.innerHTML = L_exactTag() + head('Listen to the word, then spell it. It goes in the chart!') + L_count(i, pool.length, 'Word') + `<div class="hidden-word">Listen 👂</div><button class="btn" id="hearW">${SPK}Hear the word</button><div id="io"></div>` + chart(filled);
+      $('hearW').onclick = () => playWord(x.w); playWord(x.w);
+      const r = await freeType({ answer: x.w, hint: t => { const m = L_soundAlike(t, x.w); return m ? `Good listening, ${t} sounds right! But it’s spelled with ${m.want}.` : `Not quite. This word ends with ${ending(x)}. Try again.`; } });
+      filled.add(x.w); mark('Write the Chart', x.w, r.ok, r.typed, x.w, x.w, { text: `He heard “${x.w}” and spelled it.` }, r.attempts); done();
+    }));
+    app.innerHTML = L_exactTag() + head('Your chart is done!') + chart(new Set(d.words.map(x => x.w)));
+    await wait(1500);
+    partDone(firstTry('Write the Chart') + '.');
+  };
+  const sayP = async () => {
+    const picked = await new Promise(res => {
+      const on = new Set();
+      app.innerHTML = L_exactTag() + head('Pick 3 spelling words. You’ll say a sentence with each one.') + `<div class="ls-pick" id="pk">${d.words.map(x => `<button data-w="${L_esc(x.w)}">${L_esc(x.w)}</button>`).join('')}</div><div class="row acts"><button class="btn big primary" id="pkGo" disabled>Start →</button></div>`;
+      say('Pick 3 spelling words.', 0.95);
+      $('pk').onclick = e => { const b = e.target.closest('[data-w]'); if (!b) return; const w = b.dataset.w; if (on.has(w)) on.delete(w); else if (on.size < 3) on.add(w); $('pk').querySelectorAll('[data-w]').forEach(x => x.classList.toggle('on', on.has(x.dataset.w))); $('pkGo').disabled = on.size !== 3; };
+      $('pkGo').onclick = () => res([...on]);
+    });
+    await L_mic();
+    await each(picked.length, i => new Promise(async done => {
+      const w = picked[i];
+      app.innerHTML = L_exactTag() + head(`Think of a sentence with <b>${L_esc(w)}</b>. Say it out loud.`) + L_count(i, picked.length, 'Sentence') + `<div class="ls-model">${L_esc(w)}</div><div class="message" id="msg"></div><div id="lsSay"></div>`;
+      say(`Say a sentence with the word ${w}.`, 0.95);
+      const r = await L_read({ minMs: 1500, label: 'I said my sentence 🗣️', nudge: 'I’m listening… say your sentence!' });
+      mark('Say Sentences', `A sentence with “${w}”`, true, '', '', null, { text: `He said a sentence with “${w}” out loud.`, clips: L_keepClip('sort', run, i, r.clip) }, [r.heard ? 'said it out loud' : 'tapped the button']); L_free();
+      setMsg('Great sentence!', 'good'); await wait(600); done();
+    }));
+    stopMic();
+    partDone('Three great sentences!');
+  };
+  PARTS = [{ name: 'Sort the Words', run: sortP }];
+  if (d.spell) PARTS.push({ name: 'Write the Chart', run: spellP });
+  if (d.say) PARTS.push({ name: 'Say Sentences', run: sayP });
+  return { intro: 'Sort your spelling words!' };
+};
+
+/* ---------- Read Story for Class Recording (Nov 9, 2026) ----------
+   Just the story, big, for reading out loud while his school website records him. The page never talks or records here.
+   It can show his Story Time drawing of the same story (from this device's results, or the Study database). */
+async function L_findDrawing(heading) {
+  const h = String(heading || '').trim().toLowerCase();
+  const pick = recs => { for (const r of recs) { if (!r || r.tool !== 'story') continue; const it = (r.items || []).find(x => x.part === 'Draw the Story' && x.shown && x.shown.img && (!h || String(x.label || '').trim().toLowerCase() === h)); if (it) return it.shown.img; } return null; };
+  let img = pick((store('sheet-log') || []).slice().sort((a, b) => b.t - a.t));
+  if (img) return img;
+  try { const sb = sbClient(); if (!sb) return null; const { data } = await sb.from('study_log').select('data').eq('kind', 'sheet').order('t', { ascending: false }).limit(80); img = pick((data || []).map(r => r.data)); } catch (e) { }
+  return img;
+}
+LT.readaloud.run = () => {
+  const d = SD, sents = (d.text.match(/[^.!?]+[.!?]+["”’']*\s*|[^.!?]+$/g) || [d.text]).map(s => s.trim()).filter(Boolean);
+  const readP = async () => {
+    const pic = d.pic ? await L_findDrawing(d.heading) : null;
+    let i = 0;
+    await new Promise(res => {
+      const draw = () => {
+        app.innerHTML = L_exactTag() + head('Read the story out loud for your class recording. Take your time!')
+          + `<div class="ra-wrap">${pic ? `<img class="ra-pic" src="${pic}" alt="His drawing of the story">` : ''}<div class="ra-page"><div class="ra-title">${L_esc(d.heading)}</div><div class="ra-text">${sents.map((s, k) => `<span class="ra-s${d.follow ? (k === i ? ' now' : k < i ? ' done' : '') : ''}">${L_esc(s)}</span>`).join(' ')}</div></div></div>`
+          + `<div class="row acts">${d.follow ? `<button class="btn big" id="raBack" ${i ? '' : 'disabled'}>← Back</button><button class="btn big primary" id="raNext">${i < sents.length - 1 ? 'Next sentence →' : 'I read it all ✓'}</button>` : '<button class="btn big primary" id="raNext">I read it all ✓</button>'}</div>`;
+        const now = app.querySelector('.ra-s.now'); if (now) now.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        $('raNext').onclick = () => { if (d.follow && i < sents.length - 1) { i++; draw(); } else res(); };
+        if ($('raBack')) $('raBack').onclick = () => { if (i) { i--; draw(); } };
+      };
+      draw();
+    });
+    mark('Read Aloud', d.heading || 'Story', true, '', '', null, { text: `He read “${d.heading}” out loud for his class recording (his school website recorded it).` }, ['read it']); L_free();
+    partDone('Great reading!');
+  };
+  PARTS = [{ name: 'Read Aloud', run: readP }];
+  return { intro: `Get ready to read “${d.heading}” for your class. When you’re ready, start your school recording, then tap Let’s go.` };
 };
