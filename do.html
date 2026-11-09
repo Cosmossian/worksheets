@@ -263,6 +263,7 @@ span.dot { display: grid; place-items: center; cursor: default; }
 .wxgrid .coin svg { background: #fff; border-radius: 14px; padding: 4px; }
 .coin.picked { border-color: #F59E0B; background: var(--try-bg); }
 .coin[disabled] { cursor: default; }
+.coin.wrong { border-color: var(--bad); background: var(--bad-bg); color: #FCA5A5; opacity: .75; }
 .reveal { background: var(--surface); border: 2px solid var(--study); border-radius: 20px; padding: 14px 20px; max-width: 680px; width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; font-size: 21px; line-height: 1.4; }
 .reveal .big { font: 700 30px Fredoka, sans-serif; }
 .reveal .good { color: var(--good); font: 600 22px Fredoka, sans-serif; } .reveal .try { color: var(--try); font: 600 22px Fredoka, sans-serif; }
@@ -1391,8 +1392,8 @@ function weatherSheet() {
   }
   const screen = (sub, inner = '') => { app.innerHTML = head(sub) + inner + '<div id="io"></div><div class="reveal" id="reveal" hidden></div>'; };
   // picture/word choices; resolves the key he tapped
-  const choose = (list, two) => new Promise(res => {
-    $('io').innerHTML = `<div class="wxgrid${two ? ' two' : ''}">${list.map(([k, n, emo]) => `<button class="coin" data-k="${k}">${emo ? `<span class="emo">${emo}</span>` : WX_ICON(k, 84)}${esc(n)}</button>`).join('')}</div>`;
+  const choose = (list, two, tried = []) => new Promise(res => {
+    $('io').innerHTML = `<div class="wxgrid${two ? ' two' : ''}">${list.map(([k, n, emo]) => `<button class="coin${tried.includes(k) ? ' wrong' : ''}" data-k="${k}"${tried.includes(k) ? ' disabled' : ''}>${emo ? `<span class="emo">${emo}</span>` : WX_ICON(k, 84)}${esc(n)}</button>`).join('')}</div>`;
     $('io').firstChild.onclick = e => { const b = e.target.closest('[data-k]'); if (!b || b.disabled) return; $('io').querySelectorAll('.coin').forEach(x => x.disabled = true); b.classList.add('picked'); res(b.dataset.k); };
   });
   const reveal = (html, spoken) => new Promise(res => {
@@ -1425,8 +1426,10 @@ function weatherSheet() {
       draw();
     };
   });
-  const dirPad = () => new Promise(res => {
-    $('io').innerHTML = `<div class="dirs" id="dp"><button data-d="N" style="grid-area:n">N</button><button data-d="W" style="grid-area:w">W</button><span style="grid-area:c" class="learn">Wind comes<br>from…</span><button data-d="E" style="grid-area:e">E</button><button data-d="S" style="grid-area:s">S</button></div><div class="message" id="msg"></div>`;
+  // tried = letters he already picked wrong: they stay red and locked when the pad is drawn again
+  const dirPad = (tried = [], hint = '') => new Promise(res => {
+    const db = (d, a) => `<button data-d="${d}" style="grid-area:${a}"${tried.includes(d) ? ` class="wrong${d === tried[tried.length - 1] ? ' shake' : ''}" disabled` : ''}>${d}</button>`;
+    $('io').innerHTML = `<div class="dirs" id="dp">${db('N', 'n')}${db('W', 'w')}<span style="grid-area:c" class="learn">Wind comes<br>from…</span>${db('E', 'e')}${db('S', 's')}</div><div class="message${hint ? ' try' : ''}" id="msg">${hint}</div>`;
     $('dp').onclick = e => { const b = e.target.closest('[data-d]'); if (b && !b.disabled) res(b); };
   });
   const compass = deg => {   // arrow starts on the side the wind comes from and points the way it blows
@@ -1490,11 +1493,11 @@ function weatherSheet() {
     if (!S.real) return nextPart();
     const d = dirK(S.real.dir);
     screen('Wind is named for where it comes FROM. The arrow starts on the side the wind comes from.', `<div class="wxrow">${compass(S.real.dir)}<div class="learn" style="max-width:240px">Find the round end of the arrow.<br>Which letter is it closest to?</div></div>`);
-    let tries = 0; const taps = [];
+    let tries = 0; const taps = [], wrong = [];
     for (;;) {
-      const b = await dirPad(); taps.push(b.dataset.d);
+      const b = await dirPad(wrong, tries ? 'Not that way. Find the round end of the arrow, where the wind starts.' : ''); taps.push(b.dataset.d);
       if (b.dataset.d === d) { b.classList.add('right'); break; }
-      tries++; b.classList.add('wrong'); b.disabled = true; setMsg('Not that way. Find the round end of the arrow, where the wind starts.', 'try');
+      tries++; wrong.push(b.dataset.d);
     }
     S.obs.from = d; S.skills.push(['Read the compass', tries === 0]);
     mark('Compass', 'Where the wind comes from', tries === 0, '', d, null, { html: compass(S.real.dir), text: `The wind arrow starts on the ${DIRN[d]} side.`, choices: ['N', 'E', 'S', 'W'] }, taps);
@@ -1513,13 +1516,13 @@ function weatherSheet() {
   parts.push({ name: 'The Air', run: async () => {
     if (!S.real) return nextPart();
     screen('Humidity is how much water vapor is in the air. Water vapor is water so tiny you can’t see it!', `<div class="wxrow">${humCup(S.real.hum)}<div class="learn" style="max-width:260px">This cup shows how much water vapor is in the air today. Is the cup more than half full?</div></div>`);
-    let tries = 0, ans; const cups = [];
+    let tries = 0, ans; const cups = [], wrong = [];
     const more = S.real.hum > 50;
     for (;;) {
-      ans = await choose([['more', 'More than half', '💧💧'], ['less', 'Less than half', '💧']], true);
+      ans = await choose([['more', 'More than half', '💧💧'], ['less', 'Less than half', '💧']], true, wrong);
       cups.push(ans === 'more' ? 'more than half' : 'less than half');
       if ((ans === 'more') === more) break;
-      tries++; $('io').insertAdjacentHTML('beforeend', '<div class="message try">Look at the dashed line in the middle. Is the blue above it or below it?</div>'); say('Look at the dashed line in the middle. Is the blue above it or below it?', 0.95); await wait(2600);
+      tries++; wrong.push(ans); $('io').insertAdjacentHTML('beforeend', '<div class="message try">Look at the dashed line in the middle. Is the blue above it or below it?</div>'); say('Look at the dashed line in the middle. Is the blue above it or below it?', 0.95); await wait(2600);
     }
     S.obs.air = more ? 'damp' : 'dry'; S.skills.push(['Read the humidity cup', tries === 0]);
     mark('Humidity cup', `${S.real.hum}% humidity`, tries === 0, cups[0], more ? 'more than half' : 'less than half', null, { html: humCup(S.real.hum), text: `A cup filled to ${S.real.hum}%.`, choices: ['more than half', 'less than half'] }, cups);

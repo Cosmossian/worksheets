@@ -166,7 +166,7 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .rp-opts.four { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 520px; }
 .rp-opt { position: relative; border: 3px solid var(--line); background: var(--surface-2); border-radius: 18px; font: 700 32px Andika, sans-serif; padding: 12px 8px; }
 .rp-opt.right { border-color: var(--good); background: #0F2E25; } .rp-opt.wrong { border-color: #F87171; background: #3A1717; color: #FCA5A5; text-decoration: line-through; }
-.rp-opt i { position: absolute; top: -10px; left: -10px; font: 700 15px Fredoka, sans-serif; font-style: normal; background: var(--try); color: #0E151D; border-radius: 999px; width: 28px; height: 28px; display: grid; place-items: center; text-decoration: none; }
+.rp-opt i { position: absolute; top: -10px; left: -10px; font: 700 15px Fredoka, sans-serif; font-style: normal; background: var(--try); color: #0E151D; border-radius: 999px; min-width: 28px; padding: 0 7px; box-sizing: border-box; white-space: nowrap; height: 28px; display: grid; place-items: center; text-decoration: none; }
 .rp-try { display: flex; align-items: center; gap: 10px; } .rp-try small { font: 600 16px Fredoka, sans-serif; color: var(--muted); width: 54px; text-align: right; }
 .rp-box { width: 50px; height: 62px; border-radius: 12px; border: 3px solid var(--line); background: var(--surface-2); display: inline-grid; place-items: center; font: 700 38px Andika, sans-serif; margin: 0 3px; }
 .rp-box.g { border-color: var(--good); background: #0F2E25; color: #fff; } .rp-box.b { border-color: #F87171; background: #3A1717; color: #FCA5A5; } .rp-box.e { border-style: dashed; }
@@ -2249,7 +2249,7 @@ function answerRows(list) {
   return list.map(r => {
     const picks = r.picks && r.picks.length ? r.picks : r.typed ? [r.typed] : [], ch = r.shown && r.shown.choices;
     const isRight = v => nrm(v) === nrm(r.answer) || nrm(v).replace(/^(a|an|the) /, '') === nrm(r.answer).replace(/^(a|an|the) /, '');
-    const chips = ch ? `<div class="ans-ch">${ch.map(c => { const n = picks.findIndex(p => nrm(p) === nrm(c)); return `<span class="${isRight(c) ? 'r' : n >= 0 ? 'w' : ''}">${n >= 0 ? `<i>${n + 1}</i>` : ''}${esc(c)}</span>`; }).join('')}</div>` : '';
+    const chips = ch ? `<div class="ans-ch">${ch.map(c => { const ns = picks.map((p, q) => nrm(p) === nrm(c) ? q + 1 : 0).filter(Boolean); return `<span class="${isRight(c) ? 'r' : ns.length ? 'w' : ''}">${ns.length ? `<i>${ns.join(' · ')}</i>` : ''}${esc(c)}</span>`; }).join('')}</div>` : '';
     const letterKeys = /^[a-z]( [a-z])*$/.test(picks[0] || '') && picks.length === 1 && nrm(picks[0]).replace(/ /g, '') !== nrm(r.answer).replace(/ /g, '');   // a list of single letters (missing letters, chunks)
     const bank = r.shown && r.shown.bank ? `<div class="ans-ch">Word bank: ${r.shown.bank.map(c => `<span class="${isRight(c) ? 'r' : ''}">${esc(c)}</span>`).join('')}</div>` : '';
     const cg = chunkGroups(r.shown && r.shown.text, picks[0]);
@@ -2329,7 +2329,7 @@ function drawReplay() {
   let pick = '';
   if (sh.choices) {
     const two = sh.choices.length <= 4 && sh.choices.every(c => c.length > 6);
-    pick = `<div class="rp-opts${sh.choices.length === 4 && sh.choices.every(c => c.length <= 3) ? ' four' : sh.choices.length <= 2 || two ? ' two' : ''}">${sh.choices.map(c => { const k = picks.findIndex(p => n(p) === n(c)); const ph = sh.choiceHtml && sh.choiceHtml[c] ? `<div class="rp-optpic">${cleanPic(sh.choiceHtml[c])}</div>` : ''; return `<div class="rp-opt ${st.answer && isRight(c) ? 'right' : k >= 0 ? (st.answer ? 'wrong' : 'chosen') : ''}">${k >= 0 ? `<i>${k + 1}</i>` : ''}${ph}${esc(c)}</div>`; }).join('')}</div>`;
+    pick = `<div class="rp-opts${sh.choices.length === 4 && sh.choices.every(c => c.length <= 3) ? ' four' : sh.choices.length <= 2 || two ? ' two' : ''}">${sh.choices.map(c => { const ks = picks.map((p, q) => n(p) === n(c) ? q + 1 : 0).filter(Boolean), k = ks.length ? ks[0] - 1 : -1; const ph = sh.choiceHtml && sh.choiceHtml[c] ? `<div class="rp-optpic">${cleanPic(sh.choiceHtml[c])}</div>` : ''; return `<div class="rp-opt ${st.answer && isRight(c) ? 'right' : k >= 0 ? (st.answer ? 'wrong' : 'chosen') : ''}">${ks.length ? `<i${ks.length > 1 ? ` title="He tapped this ${ks.length} times"` : ''}>${ks.join(' · ')}</i>` : ''}${ph}${esc(c)}</div>`; }).join('')}</div>`;
   } else if (picks.length && /^[a-z]( [a-z])*$/.test(picks[0]) && picks.length === 1 && n(picks[0]).replace(/ /g, '') !== n(st.answer).replace(/ /g, '')) {
     const cg = chunkGroups(text, picks[0]);
     if (cg) pick = `<div class="rp-saw">What he typed for each part (red = a wrong letter he fixed):</div><div class="rp-chunks">${cg.map(x => `<div class="rp-chunk"><small>${esc(x.part)}</small><div>${x.g.map(l => `<span class="rp-box ${l.ok ? 'g' : 'b'}">${esc(l.c)}</span>`).join('')}</div></div>`).join('<span class="rp-arrow">→</span>')}</div>`;
