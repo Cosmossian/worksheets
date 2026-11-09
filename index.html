@@ -51,7 +51,8 @@ body.framefull { overflow: hidden; }
 .dayitem .body { flex: 1; } .dayitem b { font: 700 18px Fredoka, sans-serif; }
 .dayitem .sub { font-size: 15px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
 .dayitem .st { font: 600 14px Fredoka, sans-serif; white-space: nowrap; color: var(--muted); }
-.dayitem .st.ok { color: #34D399; }
+.dayitem .st.ok { color: #34D399; } .dayitem .st.miss { color: #F87171; }
+.autonote { margin: 0 24px 10px; background: #3A2E0C; border: 1px solid #B7791F; color: #FDE68A; border-radius: 12px; padding: 8px 12px; font-size: 14px; line-height: 1.4; } .autonote button { margin-left: 6px; }
 .dayitem .acts2 { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .dayitem .acts2 a { text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; }
 .tablink[hidden], .tabs button[hidden] { display: none; }
@@ -300,6 +301,7 @@ select::-ms-expand { display: none; }
   <div class="hdr-btns"><button class="hdr-btn day" id="dayBtn">👀 Review Child’s Day</button><a class="hdr-btn" href="spell.html#review">Parent Review</a><a class="hdr-btn" href="spell.html#settings">⚙️ Parent Settings</a><button class="hdr-btn" id="switchUser">↺ Switch user</button></div>
 </header>
 <nav class="classes" id="classes" aria-label="Classes"></nav>
+<div class="autonote" id="autoNote" hidden></div>
 <nav class="tabs" role="tablist" aria-label="Worksheets in this class">
   <button role="tab" data-tool="daily" data-day="daily">📝 Daily Sight Words</button>
   <button role="tab" data-tool="helper" data-day="spellq">✏️ Spelling Helper</button>
@@ -891,8 +893,8 @@ function countEagles() {
 }
 
 </script>
-<script src="lessons.js?v=6"></script>
-<script src="science.js?v=2"></script>
+<script src="lessons.js?v=7"></script>
+<script src="science.js?v=3"></script>
 <script>
 /* First Grade Fun Worksheets — the page you use to make worksheets. */
 
@@ -1229,7 +1231,7 @@ async function openDay(ds) {
       if (!isToday) {
         const pc = L.filter(x => x.kind === 'check' && today(x)).sort((a, b) => b.t - a.t)[0];
         if (future) items.push({ off: d.on === false, title: `📝 Sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : 'coming up', ok: false, acts: '<button class="btn btn-small" data-goto="daily">Change the words</button>' });
-        else if (pc) items.push({ title: `📝 Sight words check`, sub: esc((pc.results || []).map(r => r.word).join(', ')), st: pc.grade ? `✓ ${pc.grade.letter} (${pc.grade.pct}%)` : '✓ done', ok: true });
+        else if (pc) items.push({ title: `📝 Sight words check`, sub: esc((pc.results || []).map(r => r.word).join(', ')), st: pc.grade ? `✓ done: ${pc.grade.letter} (${pc.grade.pct}%)` : '✓ done', ok: true });
       } else
       items.push({ off: d.on === false, title: `📝 Today’s sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : chk && chk.grade ? `✓ done: ${chk.grade.letter} (${chk.grade.pct}%)` : 'not done yet', ok: !!chk, acts: `<button class="btn btn-small" data-goto="daily">Change the words</button>${chk ? '<button class="btn btn-small" data-reset="daily">↺ Reset today, keep the words</button>' : ''}` });
     }
@@ -1239,10 +1241,10 @@ async function openDay(ds) {
       items.push({ title: `✏️ Spelling practice · ${q.words.length}`, sub: `${esc(q.words.join(', '))}<br>each word with the Spelling Helper, on his own`, st: done ? '✓ done' : 'not done yet', ok: !!done, acts: `<button class="btn btn-small" data-goto="helper">Change the words</button>${done ? '<button class="btn btn-small" data-reset="spellq">↺ Do it again, same words</button>' : ''}` });
     }
     ((S.sheets && S.sheets.list) || []).forEach((a, k) => { if (!onList(a, ds, doneDays)) return;
-      const sd = sheetDay(a), carried = sd < ds && !RECUR.includes(a.tool);
-      const mine = L.filter(x => (x.aid || x.cid) === a.id && (RECUR.includes(a.tool) || carried ? today(x) : dayOf(x.t) <= ds)).sort((x, y) => y.t - x.t)[0];
-      const g = mine && mine.grade;
-      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ ${g ? `${g.letter} (${g.pct}%)` : RECUR.includes(a.tool) ? 'done that day' : 'done'}` : future ? 'coming up' : 'not done yet', ok: !!mine,
+      const sd = sheetDay(a), carried = false;
+      const mine = L.filter(x => (x.aid || x.cid) === a.id && (RECUR.includes(a.tool) ? today(x) : dayOf(x.t) <= ds)).sort((x, y) => y.t - x.t)[0];
+      const g = mine && mine.grade, over = ds < td;
+      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}` : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over,
         acts: a.tool === 'fixup' ? '' : `<button class="btn btn-small" data-tryday="${k}">Try it</button>` });
     });
     const ch = S.chores;
@@ -1253,7 +1255,7 @@ async function openDay(ds) {
       const xs = Object.keys(ch.marks || {}).filter(s => s.slice(0, 7) === mk).reduce((n, s) => n + Object.values(ch.marks[s]).filter(m => m && m.s === 'x').length, 0), lim = ch.limit || 8;
       items.push({ title: `🧹 Chores${isToday ? ' today' : ''} · ${daily.length}`, sub: `${esc(daily.map(c => c.name).join(', '))}<br>X’s this month: ${xs} of ${lim}${xs >= lim ? ` (no ${esc(ch.reward)} this month)` : ''}`, st: `${done} ✓${xd ? ` · ${xd} ✗` : ''} · ${daily.length - done - xd} not marked`, ok: done + xd === daily.length, acts: '<button class="btn btn-small" data-goto="chores">Check off chores</button>' });
     }
-    list.innerHTML = items.length ? items.map((it, i) => `<div class="dayitem${it.off ? ' off' : ''}"><span class="n">${i + 1}</span><div class="body"><b>${it.title}</b><div class="sub">${it.sub}</div>${it.acts ? `<div class="acts2">${it.acts}</div>` : ''}</div><span class="st${it.ok ? ' ok' : ''}">${it.st}</span></div>`).join('')
+    list.innerHTML = items.length ? items.map((it, i) => `<div class="dayitem${it.off ? ' off' : ''}"><span class="n">${i + 1}</span><div class="body"><b>${it.title}</b><div class="sub">${it.sub}</div>${it.acts ? `<div class="acts2">${it.acts}</div>` : ''}</div><span class="st${it.ok ? ' ok' : it.miss ? ' miss' : ''}">${it.st}</span></div>`).join('')
       : `<p class="help">${isToday ? 'Nothing on his device yet. Type today’s sight words (Phonics → Daily Sight Words) or assign a worksheet.' : future ? 'Nothing assigned for that day yet. On a worksheet tab, pick this day under “For”, then Assign to his device.' : 'Nothing was on his list that day.'}</p>`;
     list.onclick = async e => {
       const r = e.target.closest('[data-reset]');
@@ -1345,16 +1347,15 @@ async function studySession() {
 const dayOf = t => { const x = new Date(t); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
 /* Which day a worksheet is for (Nov 9, 2026, Dylan: "assign to his next day… something to assign to a day and something to review per day").
    a.day is picked when assigning; older ones use the school worksheet's day, or the day they were assigned. On his list for day ds:
-   its own day; Daily Steps and Weather Watch every day from then on; the Mastered Words Test only on its day; any other worksheet he
-   didn't finish on its day carries over to the next days until he does it. Same rule in spell.html (his start screen). */
+   its own day only (Daily Steps and Weather Watch every day from then on). Nothing carries over: once its day is over, a worksheet he
+   didn't finish shows as ✗ Not completed on that day. Same rule in spell.html (his start screen). */
 const RECUR = ['steps', 'weather'];
 const sheetDay = a => a.day || (a.data && a.data.schoolDay) || (a.data && a.data.exact ? '2026-11-09' : dayOf(a.at));   // the old undated “📄 School copy” ones were all the 11/09/26 sheets
 function onList(a, ds, doneDays) {
   const d = sheetDay(a);
   if (a.tool === 'mtest') return d === ds;
   if (d > ds) return false;
-  if (d === ds || RECUR.includes(a.tool)) return true;
-  return !doneDays(a).some(x => x < ds);
+  return d === ds || RECUR.includes(a.tool);   // Nov 9 (Dylan): no carrying over; a day that's over shows it as Not completed
 }
 const addDays = (ds, n) => { const x = new Date(ds + 'T12:00:00'); x.setDate(x.getDate() + n); return dayOf(x); };
 const dayName = (ds, long) => { const x = new Date(ds + 'T12:00:00'), t = dayOf(Date.now()), rel = ds === t ? 'today' : ds === addDays(t, 1) ? 'tomorrow' : ds === addDays(t, -1) ? 'yesterday' : '';
@@ -1366,6 +1367,39 @@ async function loadSheets(sb) {
   const list = (data && data.data && data.data.list) || [];
   if (list.some(expired)) { const keep = list.filter(a => !expired(a)); try { await saveSheets(sb, keep); } catch (e) { } return keep; }   // tidy up yesterday's test and old work
   return list;
+}
+/* Official school worksheets go on his day by themselves (Nov 9, 2026, Dylan: "assign the activities that are school assigned, if
+   they have the date on it, to that specific date"). For every 📄 school sheet dated tomorrow or later: if it isn't on that day yet,
+   it's added (marked auto); if it's already there by itself and he hasn't started it, it's refreshed with what's typed on the sheet
+   now. A sheet that still needs something from you (like the word hunt paragraph) waits, and the note at the top says what.
+   Removing one keeps it off (state.autoSkip); assigning it again by hand brings it back. */
+let autoBusy = false, autoTimer = null;
+const autoSchoolSoon = () => { clearTimeout(autoTimer); autoTimer = setTimeout(() => autoSchool(), 1500); };
+async function autoSchool() {
+  if (autoBusy) return autoSchoolSoon(); autoBusy = true;
+  try {
+    const sb = await studySession(); if (!sb) return;
+    const today = dayOf(Date.now()), list = await loadSheets(sb), skip = new Set(state.autoSkip || []), waiting = [];
+    let changed = false;
+    const { data: logs } = await sb.from('study_log').select('kind,data').in('kind', ['sheet', 'fixup']).gte('t', new Date(Date.now() - 30 * 864e5).toISOString());
+    const started = id => (logs || []).some(r => (r.data.aid || r.data.cid) === id);
+    L_IDS.forEach(t => Object.keys(LT[t].schools || {}).forEach(day => {
+      if (day <= today || skip.has(`${t}@${day}`)) return;   // upcoming days only: today's are already set (or yours to assign)
+      const snap = L_snapshotDay(t, day); if (!snap) return;
+      const have = list.find(a => a.tool === t && a.data && a.data.exact && sheetDay(a) === day);
+      if (!snap.ok) { if (!have) waiting.push({ t, day, need: snap.need }); return; }
+      if (!have) { list.push({ id: (Date.now() + list.length).toString(36), tool: t, title: snap.title, at: Date.now(), day, data: snap.data, auto: true }); changed = true; return; }
+      if (have.auto && !started(have.id) && (have.title !== snap.title || JSON.stringify(have.data) !== JSON.stringify(snap.data))) { have.title = snap.title; have.data = snap.data; changed = true; }
+    }));
+    if (changed) { await saveSheets(sb, list.slice(-40)); renderAssigned(); refreshOnDay(list); }
+    const el = document.getElementById('autoNote');
+    if (el) {
+      el.hidden = !waiting.length;
+      el.innerHTML = waiting.length ? `📄 Official school worksheets go on his day by themselves. <b>Waiting for you:</b> ${waiting.map((w, i) => `${esc(LT[w.t].name)} for ${esc(dayName(w.day))}: ${esc(w.need)} <button class="btn btn-small" data-autogo="${i}">Open it</button>`).join(' · ')}` : '';
+      el.onclick = e => { const b = e.target.closest('[data-autogo]'); if (!b) return; const w = waiting[+b.dataset.autogo]; const st = L_st(w.t); st.mode = 'school'; st.day = w.day; state.tool = w.t; state.cls = classOf(w.t); save(); history.replaceState(null, '', '#' + w.t); renderPanel(); };
+    }
+  } catch (e) { console.warn('autoSchool', e); }
+  finally { autoBusy = false; }
 }
 async function saveSheets(sb, list) {
   const r = await sb.from('study_state').upsert({ key: 'sheets', data: { list }, updated_at: new Date().toISOString() });
@@ -1386,7 +1420,7 @@ async function renderAssigned() {
     const shown = list.filter(a => sheetDay(a) > td || onList(a, td, doneDays)).sort((x, y) => sheetDay(x).localeCompare(sheetDay(y)));   // today's (and carried-over) work, then what's coming
     if (!document.getElementById('assignedList')) return;
     document.getElementById('assignedList').innerHTML = shown.length ? `<b style="font-size:14px">On his device:</b>` + shown.map(a => {
-      const d = doneFor(a), g = d && d.grade, sd = sheetDay(a), when = sd > td ? `for ${dayName(sd)}` : sd < td && !RECUR.includes(a.tool) ? `from ${dayName(sd)}, not done yet` : RECUR.includes(a.tool) && sd < td ? 'every day' : 'for today';
+      const d = doneFor(a), g = d && d.grade, sd = sheetDay(a), when = (sd > td ? `for ${dayName(sd)}` : RECUR.includes(a.tool) && sd < td ? 'every day' : 'for today') + (a.auto ? ' · put on his day by itself' : '');
       return `<div><span>${esc(a.title)}<br><small style="color:var(--muted)">${esc(when)} · assigned ${esc(checkDate(a.at))}</small></span>${d ? `<span class="ok">✓ ${g ? `${g.letter} ${g.pct}%` : a.tool === 'weather' && d.extra && d.extra.day ? `day ${d.extra.day} today` : a.tool === 'steps' ? 'today' : 'done'}</span>` : ''}<button class="btn btn-small" data-unassign="${esc(a.id)}" aria-label="Remove ${esc(a.title)} from his device">Remove</button></div>`;
     }).join('') : '';
   } catch (e) { el.innerHTML = ''; }
@@ -1423,6 +1457,7 @@ function wireOnScreen() {
       const day = sel.value || today;
       const list = (await loadSheets(sb)).filter(a => !(a.tool === t && a.title === snap.title && sheetDay(a) === day));   // re-assigning replaces the same worksheet on the same day
       list.push({ id: Date.now().toString(36), tool: t, title: snap.title, at: Date.now(), day, data: snap.data });
+      if (snap.data && snap.data.schoolDay) { state.autoSkip = (state.autoSkip || []).filter(k => k !== `${t}@${snap.data.schoolDay}`); save(); }
       await saveSheets(sb, list.slice(-40));
       amsg(day === today ? `Assigned ✓ “${esc(snap.title)}” is on his start screen now.` : `Assigned ✓ “${esc(snap.title)}” for ${esc(dayName(day, true))}. It shows up on his start screen that day.`);
       renderAssigned();
@@ -1439,7 +1474,11 @@ function wireOnScreen() {
     const b = e.target.closest('[data-unassign]'); if (!b) return;
     const sb = await studySession(); if (!sb) return;
     b.disabled = true;
-    try { await saveSheets(sb, (await loadSheets(sb)).filter(a => a.id !== b.dataset.unassign)); amsg('Removed from his device.'); }
+    try {
+      const all = await loadSheets(sb), gone = all.find(a => a.id === b.dataset.unassign);
+      if (gone && gone.data && gone.data.exact && gone.data.schoolDay) { state.autoSkip = [...new Set([...(state.autoSkip || []), `${gone.tool}@${gone.data.schoolDay}`])]; save(); }   // don't put it back by itself
+      await saveSheets(sb, all.filter(a => a.id !== b.dataset.unassign)); amsg('Removed from his device.');
+    }
     catch (er) { amsg(`Couldn’t remove it: ${esc(er.message || er)}`, true); }
     renderAssigned();
   };
@@ -1555,7 +1594,7 @@ renderPanel();
     const { data } = await sb.auth.getSession();
     if (data.session) { const { data: m, error } = await sb.from('study_members').select('role').eq('email', data.session.user.email.toLowerCase()).maybeSingle(); if (error) return open(); role = m ? m.role : null; }
   } catch (e) { return open(); }
-  if (role === 'grownup') return open();
+  if (role === 'grownup') { open(); return autoSchool(); }
   location.replace(role === 'kid' ? 'spell.html' : 'spell.html?next=' + encodeURIComponent('index.html' + location.hash));
 })();
 // Re-draw once the fonts arrive, so long words are measured with the real font.

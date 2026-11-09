@@ -412,6 +412,10 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 @keyframes talkglow { 50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, .25); } }
 .talk-done { min-width: 200px; }
 .talk-note { min-height: 1.3em; font-weight: 700; } .talk-note.good { color: var(--good); } .talk-note.try { color: var(--try); }
+.rv-asg { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; margin-bottom: 12px; }
+.rv-asg h4 { margin: 0 0 6px; font: 700 17px Fredoka, sans-serif; }
+.rv-asg-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 15px; } .rv-asg-row:first-of-type { border-top: 0; }
+.rv-asg-row .ok { color: #34D399; font-weight: 700; white-space: nowrap; } .rv-asg-row .no { color: #F87171; font-weight: 700; white-space: nowrap; } .rv-asg-row .wait { color: var(--muted); white-space: nowrap; }
 </style>
 </head>
 <body class="authwait">
@@ -1284,8 +1288,7 @@ function sheetsFor(ds) {
     const d = sheetDay(a);
     if (a.tool === 'mtest') return d === ds;
     if (d > ds) return false;
-    if (d === ds || RECUR.includes(a.tool)) return true;
-    return !L.some(l => l.aid === a.id && ymd(l.t) < ds);
+    return d === ds || RECUR.includes(a.tool);   // Nov 9: nothing carries over; a missed one shows as Not completed in Parent Review
   }).sort((x, y) => sheetDay(x).localeCompare(sheetDay(y)));
 }
 const isSchool = d => d.getDay() !== 0 && d.getDay() !== 6;
@@ -1338,6 +1341,7 @@ function dayStatus(ds, agendas) {
   // worksheet for Monday landed on Sunday's list. A worksheet now only counts on its own day (or later). On weekends the everyday things
   // (sight words, spelling practice, Daily Steps, Weather Watch) only count if he did them; a worksheet meant for that day still counts.
   const list = (store('study-sheets') || {}).list || [], wkend = [0, 6].includes(new Date(ds + 'T12:00:00').getDay());
+  if (ds <= ymd(Date.now())) { const mine = list.filter(a => !RECUR.includes(a.tool) && a.tool !== 'mtest' && sheetDay(a) === ds); if (mine.length) { items = [...(items || [])]; mine.forEach(a => { if (!items.some(x => x.id === a.id)) items.push({ id: a.id, tool: a.tool, title: a.title }); }); } }
   if (items) items = items.filter(it => {
     const a = list.find(x => x.id === it.id);
     if (it.tool === 'check' || it.tool === 'spellq' || RECUR.includes(it.tool)) return !wkend || done(it);
@@ -2468,9 +2472,18 @@ async function renderReview(noPull) {
   const agendas = store('study-days') || {}, cm = calMonth.review || (calMonth.review = [new Date().getFullYear(), new Date().getMonth()]);
   $('reviewCal').innerHTML = monthCal(cm[0], cm[1], ds => { const s = dayStatus(ds, agendas); return { ...s, cls: s.cls + (ds === calSel ? ' sel' : '') }; }, 'review') + `<div class="cal-key"><span class="done">Done</span><span class="miss">Not done</span><span class="none">Nothing assigned</span><small>Gold ring = today. Tap a day to see what he did that day.</small></div>`;
   $('reviewDay').textContent = new Date(calSel + 'T12:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + (calSel === ymd(Date.now()) ? ' (today)' : '');
-  if (!order.length) { $('reviewList').innerHTML = '<p class="rv-empty">Nothing on this day.</p>'; return; }
+  // Nov 9 (Dylan: "if I look at parent review, it'll show the assignments for that date"): every worksheet assigned for this day,
+  // done (with its grade) or ✗ Not completed once the day is over. From the assigned list, plus the list his device saved that day.
+  const td = ymd(Date.now()), listA = (store('study-sheets') || {}).list || [], ag = (agendas[calSel] || {}).items || [];
+  const asg = [...listA.filter(a => a.tool !== 'mtest' && (sheetDay(a) === calSel || (RECUR.includes(a.tool) && sheetDay(a) <= calSel && calSel <= td))).map(a => ({ id: a.id, tool: a.tool, title: a.title })), ...ag.filter(it => it.tool !== 'check' && it.tool !== 'spellq' && it.title && !listA.some(a => a.id === it.id))];
+  const allLogs = [...sheets, ...fixes.map(f => ({ ...f, aid: f.cid }))];
+  const asgHtml = asg.length ? `<div class="rv-asg"><h4>Assigned for this day</h4>${asg.map(a => {
+      const d = allLogs.filter(l => l.aid === a.id && (RECUR.includes(a.tool) ? ymd(l.t) === calSel : ymd(l.t) <= calSel)).sort((x, y) => y.t - x.t)[0], g = d && d.grade;
+      const st = d ? `<span class="ok">✓ done${g ? `: ${esc(g.letter)} (${g.pct}%)` : ''}</span>` : calSel < td ? '<span class="no">✗ Not completed</span>' : calSel === td ? '<span class="wait">not done yet</span>' : '<span class="wait">coming up</span>';
+      return `<div class="rv-asg-row"><span>${esc(a.title)}</span>${st}</div>`; }).join('')}</div>` : '';
+  if (!order.length) { $('reviewList').innerHTML = asgHtml + (asgHtml ? '' : '<p class="rv-empty">Nothing on this day.</p>'); return; }
   const wordList = rs => rs.map(r => r.ok ? `<span class="ok">✓ ${esc(r.word)}</span>` : `<span class="no">✗ ${esc(r.word)} (wrote “${esc(r.typed)}”)</span>`).join(' · ');
-  $('reviewList').innerHTML = order.map(d => `<div class="rv-day" id="rv-${ymd(d.t)}">`
+  $('reviewList').innerHTML = asgHtml + order.map(d => `<div class="rv-day" id="rv-${ymd(d.t)}">`
     + d.items.sort((a, b) => a.t - b.t).map(it => {
       const x = it.x;
       if (it.kind === 'look') return `<div class="rv-sec"><h4>Look &amp; Listen<span>${esc(timeOf(x.t))}</span></h4>

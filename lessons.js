@@ -232,7 +232,7 @@ const LT = {
     name: 'Spelling Sort', cls: 'ela',
     help: 'Sort spelling words under headings (like the endings –ff, –ll, –ss, –zz), spell each one when he hears it, then say sentences with 3 of them out loud. Printed, it has word cards to cut out, the chart and the activity.',
     schools: {
-      '2026-11-12': { note: 'Same headings and words as the school sheet “The Poor Man’s Reward” (C): Apply Spelling List 3: the word hunt, then sort and glue the chart. The word hunt paragraph isn’t built in: copy it from the school PDF into the Word hunt box.', set: () => ({ heading: 'Spelling List 3: Word Hunt', heads: '–ff, –ll, –ss, –zz', words: 'miss, off, pass, pull, boss, buzz, fizz, less, small, still, stuff, tell', hunt: '', spell: false, glue: true, say: false }) },
+      '2026-11-12': { need: c => String(c.hunt || '').trim() ? '' : 'Paste the word hunt paragraph from the school sheet.', note: 'Same headings and words as the school sheet “The Poor Man’s Reward” (C): Apply Spelling List 3: the word hunt, then sort and glue the chart. The word hunt paragraph isn’t built in: copy it from the school PDF into the Word hunt box.', set: () => ({ heading: 'Spelling List 3: Word Hunt', heads: '–ff, –ll, –ss, –zz', words: 'miss, off, pass, pull, boss, buzz, fizz, less, small, still, stuff, tell', hunt: '', spell: false, glue: true, say: false }) },
       '2026-11-10': { note: 'Same headings and words as the school sheet “The Poor Man’s Reward” (B): Practice Spelling List 3.', set: () => ({ heading: 'Spelling List 3', heads: '–ff, –ll, –ss, –zz', words: 'miss, off, pass, pull, boss, buzz, fizz, less, small, still, stuff, tell', spell: true, say: true }) }
     },
     own: () => ({ heading: 'My Spelling Sort', heads: '–ck, –ng', words: 'back, sock, duck, kick, ring, song, long, king', spell: true, say: true }),
@@ -429,6 +429,15 @@ function L_snapshot(t) {
   const L = LT[t], s = L_st(t), c = L_cur(t), d = L.data(c), need = L.check(d), school = s.mode === 'school';
   return { title: (school ? L_schoolTag(s.day) : '') + L.title(c), data: { ...d, exact: school, schoolDay: school ? s.day : '' }, ok: !need, need };
 }
+/* A school worksheet for one day, ready to assign (used to put every official school worksheet on his day by itself, Nov 9, 2026).
+   Uses what's typed on that day's sheet on this device, if anything. need = what's missing before it can go on his day. */
+function L_snapshotDay(t, day) {
+  const L = LT[t], sc = L.schools && L.schools[day]; if (!sc) return null;
+  const st = state[t] || {}, have = st.schools && st.schools[day];
+  const c = have ? have : (() => { const x = sc.set(); if (L.prefill) L.prefill(x); return x; })();
+  const d = L.data(c), need = L.check(d) || (sc.need ? sc.need(c) : '');
+  return { title: L_schoolTag(day) + L.title(c), data: { ...d, exact: true, schoolDay: day }, ok: !need, need };
+}
 function L_build(t) { const L = LT[t], s = L_st(t), d = L.data(L_cur(t)); return L.print(d, s.mode === 'school'); }
 function L_defaults() { return Object.fromEntries(L_IDS.map(k => [k, { mode: 'school', day: L_days(k).at(-1), schools: {}, own: LT[k].own() }])); }
 /* panel events (called from index.html's input/click handlers) */
@@ -437,13 +446,14 @@ function L_input(el) {
   const c = L_cur(t), k = el.dataset.lk;
   c[k] = el.type === 'checkbox' ? el.checked : el.value;
   const w = document.getElementById('lsWarn'); if (w) { const p = LT[t].check(LT[t].data(c)); w.hidden = !p; w.textContent = p; }
+  if (L_st(t).mode === 'school' && typeof autoSchoolSoon === 'function') autoSchoolSoon();
   return true;
 }
 function L_click(el) {
   const t = state.tool; if (!LT[t]) return false;
   if (el.dataset.lday) { const s = L_st(t); s.mode = 'school'; s.day = el.dataset.lday; L_st(t); return 'panel'; }
   if (el.dataset.lmode) { L_st(t).mode = el.dataset.lmode; return 'panel'; }
-  if (el.dataset.lact === '__reset') { const s = L_st(t); if (!confirm(`Put the ${L_dayLabel(s.day)} school sheet back the way the school has it?`)) return true; s.schools[s.day] = LT[t].schools[s.day].set(); if (LT[t].prefill) LT[t].prefill(s.schools[s.day]); return 'panel'; }
+  if (el.dataset.lact === '__reset') { const s = L_st(t); if (!confirm(`Put the ${L_dayLabel(s.day)} school sheet back the way the school has it?`)) return true; s.schools[s.day] = LT[t].schools[s.day].set(); if (LT[t].prefill) LT[t].prefill(s.schools[s.day]); if (typeof autoSchoolSoon === 'function') autoSchoolSoon(); return 'panel'; }
   if (el.dataset.lact) { LT[t].act(el.dataset.lact, L_cur(t)); return 'panel'; }
   return false;
 }
