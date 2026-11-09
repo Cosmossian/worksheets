@@ -70,7 +70,7 @@ Object.assign(LT, {
     fields: () => [
       { k: 'heading', label: 'Title', type: 'text' },
       { k: 'draw', label: 'Draw himself dressed for each season', type: 'check' },
-      { k: 'spin', label: 'Spin the wheel to each season', type: 'check' }
+      { k: 'spin', label: 'Turn the window to each season', type: 'check' }
     ],
     acts: () => [],
     title: c => (c.heading || '').trim() || 'Seasonal Cycle',
@@ -257,13 +257,16 @@ LT.seacycle.run = () => {
   const spin = async () => {
     let rot = 0;   // degrees the wheel is turned
     const winAt = -135;   // the window: the top-left quarter
-    const showing = () => { const a = ((winAt - rot) % 360 + 540) % 360 - 180; return S_WHEEL.find(k => { const [a0, a1] = Q[k]; return a >= a0 && a < a1; }) || 'winter'; };
-    const tasks = [['summer', 'Turn the wheel to summer!'], ['fall', 'What comes after summer? Turn to it!'], ['winter', 'What comes after fall? Turn to it!'], ['spring', 'What comes after winter? Turn to it!']];
-    const cover = `<path d="M200 200 L200 0 A200 200 0 1 1 0 200Z" fill="#334155" stroke="#0F172A" stroke-width="3"/><path d="M200 200 L200 0 A200 200 0 1 1 0 200Z" fill="url(#plate)" opacity=".5"/><circle cx="200" cy="200" r="58" fill="#fff" stroke="#1F2937" stroke-width="3"/><line x1="200" y1="142" x2="200" y2="258" stroke="#1F2937" stroke-width="2"/><line x1="142" y1="200" x2="258" y2="200" stroke="#1F2937" stroke-width="2"/>${[['Winter', 171, 186], ['Summer', 229, 186], ['Spring', 171, 222], ['Fall', 229, 222]].map(([t, x, y]) => `<text x="${x}" y="${y}" text-anchor="middle" font-family="Fredoka" font-size="13" font-weight="700" fill="#1F2937">${t}</text>`).join('')}<circle cx="200" cy="200" r="6" fill="#B45309"/>`;
-    const svg = () => `<svg class="s-wheel" id="sp" viewBox="0 0 400 400"><defs><radialGradient id="plate"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#94A3B8"/></radialGradient></defs><g id="spinG" transform="rotate(${rot} 200 200)">${wheel(new Set(S_WHEEL), { pics: true }).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</g>${cover}</svg>`;
+    // Nov 9 (Dylan: "Is the wheel supposed to spin or the words?"): the cover with the window turns, like the top paper plate; the
+    // pictures and the names circle stay put, so the window always matches the names and the words stay upright.
+    const showing = () => { const a = ((winAt + rot) % 360 + 540) % 360 - 180; return S_WHEEL.find(k => { const [a0, a1] = Q[k]; return a >= a0 && a < a1; }) || 'winter'; };
+    const tasks = [['summer', 'Turn the window to summer!'], ['fall', 'What comes after summer? Turn to it!'], ['winter', 'What comes after fall? Turn to it!'], ['spring', 'What comes after winter? Turn to it!']];
+    const cover = `<path d="M200 200 L200 0 A200 200 0 1 1 0 200Z" fill="#334155" stroke="#0F172A" stroke-width="3"/><path d="M200 200 L200 0 A200 200 0 1 1 0 200Z" fill="url(#plate)" opacity=".5"/>`;
+    const names = `<circle cx="200" cy="200" r="58" fill="#fff" stroke="#1F2937" stroke-width="3"/><line x1="200" y1="142" x2="200" y2="258" stroke="#1F2937" stroke-width="2"/><line x1="142" y1="200" x2="258" y2="200" stroke="#1F2937" stroke-width="2"/>${[['Winter', 171, 186], ['Summer', 229, 186], ['Spring', 171, 222], ['Fall', 229, 222]].map(([t, x, y]) => `<text x="${x}" y="${y}" text-anchor="middle" font-family="Fredoka" font-size="13" font-weight="700" fill="#1F2937">${t}</text>`).join('')}<circle cx="200" cy="200" r="6" fill="#B45309"/>`;
+    const svg = () => `<svg class="s-wheel" id="sp" viewBox="0 0 400 400"><defs><radialGradient id="plate"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#94A3B8"/></radialGradient></defs>${wheel(new Set(S_WHEEL), { pics: true }).replace(/^<svg[^>]*>|<\/svg>$/g, '')}<g id="spinG" transform="rotate(${rot} 200 200)">${cover}</g>${names}</svg>`;
     await each(tasks.length, i => new Promise(async res => {
       const [k, q] = tasks[i]; let tries = 0; const seen = [];
-      app.innerHTML = L_exactTag() + head(q + ' Turn it with your finger, or tap the arrows.') + L_count(i, tasks.length, 'Turn') + `<div class="s-split"><div id="spWrap">${svg()}</div><div class="s-side"><div class="row" style="justify-content:center"><button class="btn big" id="ccw" aria-label="Turn left">↺</button><button class="btn big" id="cw" aria-label="Turn right">↻</button></div><button class="btn big primary" id="here">It’s ${S_NAME[k]}! ✓</button><div class="message" id="msg"></div></div></div>`;
+      app.innerHTML = L_exactTag() + head(q + ' Turn the window with your finger, or tap the arrows.') + L_count(i, tasks.length, 'Turn') + `<div class="s-split"><div id="spWrap">${svg()}</div><div class="s-side"><div class="row" style="justify-content:center"><button class="btn big" id="ccw" aria-label="Turn left">↺</button><button class="btn big" id="cw" aria-label="Turn right">↻</button></div><button class="btn big primary" id="here">It’s ${S_NAME[k]}! ✓</button><div class="message" id="msg"></div></div></div>`;
       say(q, 0.92);
       const g = () => $('spinG'), set = a => { rot = a; g().setAttribute('transform', `rotate(${rot} 200 200)`); };
       $('cw').onclick = () => set(rot + 90); $('ccw').onclick = () => set(rot - 90);
