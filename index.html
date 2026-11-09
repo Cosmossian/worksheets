@@ -41,6 +41,8 @@ body.framefull { overflow: hidden; }
 .daywrap { position: fixed; inset: 0; background: rgba(5, 9, 14, .78); z-index: 80; display: grid; place-items: start center; padding: 40px 16px; overflow: auto; }
 .daywrap[hidden] { display: none; }
 .daybox { background: var(--surface); border: 2px solid var(--study); border-radius: 22px; padding: 20px 22px; width: 100%; max-width: 640px; }
+.assign-day { display: flex; align-items: center; gap: 8px; font-weight: 700; margin: 0 0 8px; } .assign-day select { flex: 1; }
+.daynav { display: flex; align-items: center; gap: 8px; margin: 2px 0 8px; } .daynav b { flex: 1; text-align: center; font: 700 18px Fredoka, sans-serif; } .daynav button:disabled { opacity: .35; }
 .dayhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
 .dayhead h2 { margin: 0; font: 700 24px Fredoka, sans-serif; color: var(--navy); }
 .dayitem { display: flex; gap: 12px; align-items: flex-start; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
@@ -319,8 +321,9 @@ select::-ms-expand { display: none; }
   <button role="tab" data-tool="sort">Spelling Sort</button>
 </nav>
 <div class="daywrap" id="dayWrap" hidden role="dialog" aria-modal="true" aria-labelledby="dayTitle"><div class="daybox">
-  <div class="dayhead"><h2 id="dayTitle">His day today</h2><button class="hdr-btn" id="dayClose">✕ Close</button></div>
-  <p class="help" style="margin:0 0 10px">This is what his start screen shows right now, in order.</p>
+  <div class="dayhead"><h2 id="dayTitle">His day</h2><button class="hdr-btn" id="dayClose">✕ Close</button></div>
+  <div class="daynav"><button class="btn btn-small" id="dayPrev" aria-label="Day before">‹</button><b id="dayName"></b><button class="btn btn-small" id="dayNext" aria-label="Day after">›</button><button class="btn btn-small" id="dayToday">Today</button></div>
+  <p class="help" style="margin:0 0 10px" id="dayHelp">This is what his start screen shows right now, in order.</p>
   <div id="dayList"></div>
 </div></div>
 <main class="workspace">
@@ -1172,7 +1175,7 @@ async function refreshOnDay(sheetList) {
   try {
     const { data } = await sb.from('study_state').select('key,data').in('key', sheetList ? ['daily', 'spellq', 'sightbank'] : ['daily', 'spellq', 'sheets', 'sightbank']);
     const S = Object.fromEntries((data || []).map(r => [r.key, r.data]));
-    const list = (sheetList || ((S.sheets && S.sheets.list) || [])).filter(a => !expired(a)), d = S.daily || {};
+    const list = (sheetList || ((S.sheets && S.sheets.list) || [])).filter(a => !expired(a) && (RECUR.includes(a.tool) || sheetDay(a) >= dayOf(Date.now()))), d = S.daily || {};
     onDay = { tools: new Set(list.map(a => a.tool === 'mtest' ? 'master' : a.tool)), daily: d.on !== false && (bankWords(S.sightbank) || parseWords(d.words || '')).length > 0, spellq: !!(S.spellq && S.spellq.words && S.spellq.words.length) };
     renderClasses();
   } catch (e) { }
@@ -1192,48 +1195,62 @@ document.getElementById('classes').addEventListener('click', e => {
   save(); history.replaceState(null, '', '#' + (c.tools.length ? state.tool : c.id)); renderPanel();
 });
 /* Review Child's Day: what his start screen shows today, straight from the Study database */
-async function openDay() {
-  const wrap = document.getElementById('dayWrap'), list = document.getElementById('dayList');
+let dayView = null;   // the day Review Child's Day is showing (YYYY-MM-DD)
+async function openDay(ds) {
+  const wrap = document.getElementById('dayWrap'), list = document.getElementById('dayList'), td = dayOf(Date.now());
+  ds = typeof ds === 'string' ? ds : td; dayView = ds;
+  const isToday = ds === td, future = ds > td;
+  document.getElementById('dayName').textContent = dayName(ds, true);
+  document.getElementById('dayPrev').disabled = ds <= addDays(td, -30); document.getElementById('dayNext').disabled = ds >= addDays(td, 14);
+  document.getElementById('dayToday').hidden = isToday;
+  document.getElementById('dayHelp').textContent = isToday ? 'This is what his start screen shows right now, in order.' : future ? 'This is what his start screen will show that day, in order. Sight words: the list that’s on now, unless you change it before then.' : 'This is what was on his list that day, and what he finished.';
   wrap.hidden = false; list.innerHTML = '<p class="help">Loading…</p>';
   const sb = await studySession();
   if (!sb) { list.innerHTML = '<p class="help">Sign in first to see his day.</p>'; return; }
   try {
     const { data: st } = await sb.from('study_state').select('key,data').in('key', ['daily', 'sheets', 'spellq', 'sightbank', 'points', 'profile', 'chores']);
     const S = Object.fromEntries((st || []).map(r => [r.key, r.data]));
-    const start = new Date(); start.setHours(0, 0, 0, 0);
-    const { data: logs } = await sb.from('study_log').select('kind,t,data').gte('t', new Date(Date.now() - 30 * 864e5).toISOString());
+    const { data: logs } = await sb.from('study_log').select('kind,t,data').gte('t', new Date(Date.parse(addDays(ds < td ? ds : td, -31) + 'T00:00:00')).toISOString());
+    if (dayView !== ds) return;   // he moved to another day while this loaded
     const L = (logs || []).map(r => ({ kind: r.kind, ...r.data, t: r.data.t || Date.parse(r.t) }));
-    const today = x => x.t >= start.getTime();
+    const today = x => dayOf(x.t) === ds;
+    const doneDays = a => L.filter(x => (x.kind === 'sheet' || x.kind === 'fixup') && (x.aid || x.cid) === a.id).map(x => dayOf(x.t));
     const items = [];
     const d = S.daily || {}, words = bankWords(S.sightbank) || parseWords(d.words || '');
     const plog = (S.points && S.points.log) || [], ptot = plog.reduce((a, e) => a + (e.pts || 0), 0), ptoday = plog.filter(today).reduce((a, e) => a + (e.pts || 0), 0);
-    if (plog.length) items.push({ title: `⭐ ${esc((S.profile && S.profile.name) || 'His')} points: ${ptot}`, sub: `Today: ${ptoday >= 0 ? '+' : ''}${ptoday}. Every point, day by day, is in Parent Review (Daily Sight Words → Parent Review).`, st: '', ok: true });
+    if (plog.length && !future) items.push({ title: `⭐ ${esc((S.profile && S.profile.name) || 'His')} points: ${ptot}`, sub: `${isToday ? 'Today' : 'That day'}: ${ptoday >= 0 ? '+' : ''}${ptoday}. Every point, day by day, is in Parent Review (Daily Sight Words → Parent Review).`, st: '', ok: true });
     if (words.length) {
       const steps = [d.look !== false ? `Look &amp; Listen (3 rounds${d.mic !== false ? ', with the microphone' : ''})` : '', d.practice !== false ? 'practice each word with the Spelling Helper' : '', 'the check (spoken words, letter grade)'].filter(Boolean).join(' → ');
       const chk = L.filter(x => x.kind === 'check' && today(x) && x.t > (d.resetAt || 0)).sort((a, b) => b.t - a.t)[0];
+      if (!isToday) {
+        const pc = L.filter(x => x.kind === 'check' && today(x)).sort((a, b) => b.t - a.t)[0];
+        if (future) items.push({ off: d.on === false, title: `📝 Sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : 'coming up', ok: false, acts: '<button class="btn btn-small" data-goto="daily">Change the words</button>' });
+        else if (pc) items.push({ title: `📝 Sight words check`, sub: esc((pc.results || []).map(r => r.word).join(', ')), st: pc.grade ? `✓ ${pc.grade.letter} (${pc.grade.pct}%)` : '✓ done', ok: true });
+      } else
       items.push({ off: d.on === false, title: `📝 Today’s sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : chk && chk.grade ? `✓ done: ${chk.grade.letter} (${chk.grade.pct}%)` : 'not done yet', ok: !!chk, acts: `<button class="btn btn-small" data-goto="daily">Change the words</button>${chk ? '<button class="btn btn-small" data-reset="daily">↺ Reset today, keep the words</button>' : ''}` });
     }
     const q = S.spellq;
-    if (q && q.words && q.words.length) {
+    if (q && q.words && q.words.length && !(ds < td)) {
       const done = L.find(x => x.kind === 'sheet' && x.aid === q.id);
       items.push({ title: `✏️ Spelling practice · ${q.words.length}`, sub: `${esc(q.words.join(', '))}<br>each word with the Spelling Helper, on his own`, st: done ? '✓ done' : 'not done yet', ok: !!done, acts: `<button class="btn btn-small" data-goto="helper">Change the words</button>${done ? '<button class="btn btn-small" data-reset="spellq">↺ Do it again, same words</button>' : ''}` });
     }
-    ((S.sheets && S.sheets.list) || []).forEach((a, k) => { if (expired(a)) return;
-      const mine = L.filter(x => (x.aid || x.cid) === a.id && (!['steps', 'weather'].includes(a.tool) || today(x))).sort((x, y) => y.t - x.t)[0];
+    ((S.sheets && S.sheets.list) || []).forEach((a, k) => { if (!onList(a, ds, doneDays)) return;
+      const sd = sheetDay(a), carried = sd < ds && !RECUR.includes(a.tool);
+      const mine = L.filter(x => (x.aid || x.cid) === a.id && (RECUR.includes(a.tool) || carried ? today(x) : dayOf(x.t) <= ds)).sort((x, y) => y.t - x.t)[0];
       const g = mine && mine.grade;
-      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'steps' || a.tool === 'weather' ? 'done today' : 'done'}` : 'not done yet', ok: !!mine,
+      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ ${g ? `${g.letter} (${g.pct}%)` : RECUR.includes(a.tool) ? 'done that day' : 'done'}` : future ? 'coming up' : 'not done yet', ok: !!mine,
         acts: a.tool === 'fixup' ? '' : `<button class="btn btn-small" data-tryday="${k}">Try it</button>` });
     });
     const ch = S.chores;
     if (ch && ch.chores) {   // the chore chart (grown-ups check these off; his device only shows them)
-      const td = dayOf(Date.now()), on = c => (c.from || '') <= td && (!c.to || td <= c.to), mk = td.slice(0, 7);
+      const td = ds, on = c => (c.from || '') <= td && (!c.to || td <= c.to), mk = td.slice(0, 7);
       const daily = ch.chores.filter(c => c.kind === 'daily' && on(c)), mt = (ch.marks || {})[td] || {};
       const done = daily.filter(c => mt[c.id] && mt[c.id].s === 'ok').length, xd = daily.filter(c => mt[c.id] && mt[c.id].s === 'x').length;
       const xs = Object.keys(ch.marks || {}).filter(s => s.slice(0, 7) === mk).reduce((n, s) => n + Object.values(ch.marks[s]).filter(m => m && m.s === 'x').length, 0), lim = ch.limit || 8;
-      items.push({ title: `🧹 Chores today · ${daily.length}`, sub: `${esc(daily.map(c => c.name).join(', '))}<br>X’s this month: ${xs} of ${lim}${xs >= lim ? ` (no ${esc(ch.reward)} this month)` : ''}`, st: `${done} ✓${xd ? ` · ${xd} ✗` : ''} · ${daily.length - done - xd} not marked`, ok: done + xd === daily.length, acts: '<button class="btn btn-small" data-goto="chores">Check off chores</button>' });
+      items.push({ title: `🧹 Chores${isToday ? ' today' : ''} · ${daily.length}`, sub: `${esc(daily.map(c => c.name).join(', '))}<br>X’s this month: ${xs} of ${lim}${xs >= lim ? ` (no ${esc(ch.reward)} this month)` : ''}`, st: `${done} ✓${xd ? ` · ${xd} ✗` : ''} · ${daily.length - done - xd} not marked`, ok: done + xd === daily.length, acts: '<button class="btn btn-small" data-goto="chores">Check off chores</button>' });
     }
     list.innerHTML = items.length ? items.map((it, i) => `<div class="dayitem${it.off ? ' off' : ''}"><span class="n">${i + 1}</span><div class="body"><b>${it.title}</b><div class="sub">${it.sub}</div>${it.acts ? `<div class="acts2">${it.acts}</div>` : ''}</div><span class="st${it.ok ? ' ok' : ''}">${it.st}</span></div>`).join('')
-      : '<p class="help">Nothing on his device yet. Type today’s sight words (Phonics → Daily Sight Words) or assign a worksheet.</p>';
+      : `<p class="help">${isToday ? 'Nothing on his device yet. Type today’s sight words (Phonics → Daily Sight Words) or assign a worksheet.' : future ? 'Nothing assigned for that day yet. On a worksheet tab, pick this day under “For”, then Assign to his device.' : 'Nothing was on his list that day.'}</p>`;
     list.onclick = async e => {
       const r = e.target.closest('[data-reset]');
       if (r) {   // keep the results (Parent Review, email) but start his day fresh with the same words
@@ -1242,14 +1259,17 @@ async function openDay() {
         const res = await sb.from('study_state').upsert({ key, data, updated_at: new Date().toISOString() });
         if (res.error) { r.textContent = 'Couldn’t reset: ' + res.error.message; return; }
         lsSet(key === 'daily' ? 'spell-daily' : 'spell-queue', data);
-        return openDay();
+        return openDay(ds);
       }
       const go = e.target.closest('[data-goto]');
       if (go) { document.getElementById('dayWrap').hidden = true; state.tool = go.dataset.goto; state.cls = classOf(state.tool); save(); history.replaceState(null, '', '#' + state.tool); return renderPanel(); }
       const b = e.target.closest('[data-tryday]'); if (!b) return; const a = S.sheets.list[+b.dataset.tryday]; lsSet('study-sheet-try', { ...a, id: 'try' }); window.open('do.html?try=1', '_blank'); };
   } catch (e) { list.innerHTML = `<p class="help">Couldn’t load his day right now (${esc(e.message || e)}).</p>`; }
 }
-document.getElementById('dayBtn').onclick = openDay;
+document.getElementById('dayBtn').onclick = () => openDay();
+document.getElementById('dayPrev').onclick = () => openDay(addDays(dayView, -1));
+document.getElementById('dayNext').onclick = () => openDay(addDays(dayView, 1));
+document.getElementById('dayToday').onclick = () => openDay();
 document.getElementById('dayClose').onclick = () => { document.getElementById('dayWrap').hidden = true; };
 document.getElementById('dayWrap').onclick = e => { if (e.target.id === 'dayWrap') e.target.hidden = true; };
 document.getElementById('switchUser').onclick = async () => { try { const sb = sbClient(); if (sb) await sb.auth.signOut(); } catch (e) { } location.href = 'spell.html'; };
@@ -1310,6 +1330,7 @@ function snapshot(t) {   // what the on-screen worksheet needs, frozen at the mo
   return { title: TOOL_NAMES.eagles, data: {}, ok: true };
 }
 const onScreenBlock = () => `<div class="onscreen"><h3>On screen</h3><p class="help" style="margin:0 0 8px">Saves paper. He does it on his device, and you get the grade by email and in Parent Review.</p>
+  <label class="assign-day">For <select id="assignDay"></select></label>
   <div class="btn-row"><button class="btn btn-assign" id="assignBtn">Assign to his device</button>${state.tool === 'fixup' ? '' : '<button class="btn btn-small" id="tryBtn">Try it on screen</button>'}</div>
   <div class="assign-msg" id="assignMsg"></div><div class="assigned" id="assignedList"></div></div>`;
 const amsg = (t, bad) => { const m = document.getElementById('assignMsg'); if (m) { m.innerHTML = t; m.style.color = bad ? 'var(--warn-ink)' : '#34D399'; } };
@@ -1318,12 +1339,28 @@ async function studySession() {
   try { const { data } = await sb.auth.getSession(); return data.session ? sb : null; } catch (e) { return null; }
 }
 const dayOf = t => { const x = new Date(t); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
-const expired = a => a.tool === 'mtest' && dayOf(a.at) < dayOf(Date.now());   // the Mastered Words Test is only for the day you assign it
+/* Which day a worksheet is for (Nov 9, 2026, Dylan: "assign to his next day… something to assign to a day and something to review per day").
+   a.day is picked when assigning; older ones use the school worksheet's day, or the day they were assigned. On his list for day ds:
+   its own day; Daily Steps and Weather Watch every day from then on; the Mastered Words Test only on its day; any other worksheet he
+   didn't finish on its day carries over to the next days until he does it. Same rule in spell.html (his start screen). */
+const RECUR = ['steps', 'weather'];
+const sheetDay = a => a.day || (a.data && a.data.schoolDay) || (a.data && a.data.exact ? '2026-11-09' : dayOf(a.at));   // the old undated “📄 School copy” ones were all the 11/09/26 sheets
+function onList(a, ds, doneDays) {
+  const d = sheetDay(a);
+  if (a.tool === 'mtest') return d === ds;
+  if (d > ds) return false;
+  if (d === ds || RECUR.includes(a.tool)) return true;
+  return !doneDays(a).some(x => x < ds);
+}
+const addDays = (ds, n) => { const x = new Date(ds + 'T12:00:00'); x.setDate(x.getDate() + n); return dayOf(x); };
+const dayName = (ds, long) => { const x = new Date(ds + 'T12:00:00'), t = dayOf(Date.now()), rel = ds === t ? 'today' : ds === addDays(t, 1) ? 'tomorrow' : ds === addDays(t, -1) ? 'yesterday' : '';
+  const base = long ? x.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : `${x.toLocaleDateString(undefined, { weekday: 'short' })} ${x.getMonth() + 1}/${x.getDate()}`; return rel ? `${base} (${rel})` : base; };
+const expired = a => (a.tool === 'mtest' && sheetDay(a) < dayOf(Date.now())) || (!RECUR.includes(a.tool) && sheetDay(a) < addDays(dayOf(Date.now()), -21));   // the Mastered Words Test is only for its day; anything 3 weeks old is tidied away
 async function loadSheets(sb) {
   const { data, error } = await sb.from('study_state').select('data').eq('key', 'sheets').maybeSingle();
   if (error) throw error;
   const list = (data && data.data && data.data.list) || [];
-  if (list.some(expired)) { const keep = list.filter(a => !expired(a)); try { await saveSheets(sb, keep); } catch (e) { } return keep; }   // tidy up yesterday's test
+  if (list.some(expired)) { const keep = list.filter(a => !expired(a)); try { await saveSheets(sb, keep); } catch (e) { } return keep; }   // tidy up yesterday's test and old work
   return list;
 }
 async function saveSheets(sb, list) {
@@ -1339,12 +1376,14 @@ async function renderAssigned() {
     const list = await loadSheets(sb); refreshOnDay(list);
     const since = new Date(Date.now() - 30 * 864e5).toISOString();
     const { data: logs } = await sb.from('study_log').select('kind,t,data').in('kind', ['sheet', 'fixup']).gte('t', since);
-    const today = new Date().toDateString();
+    const today = new Date().toDateString(), td = dayOf(Date.now());
     const doneFor = a => (logs || []).map(r => r.data).filter(d => (d.aid || d.cid) === a.id && (!['steps', 'weather'].includes(a.tool) || new Date(d.t).toDateString() === today)).sort((x, y) => y.t - x.t)[0];
+    const doneDays = a => (logs || []).map(r => r.data).filter(d => (d.aid || d.cid) === a.id).map(d => dayOf(d.t));
+    const shown = list.filter(a => sheetDay(a) > td || onList(a, td, doneDays)).sort((x, y) => sheetDay(x).localeCompare(sheetDay(y)));   // today's (and carried-over) work, then what's coming
     if (!document.getElementById('assignedList')) return;
-    document.getElementById('assignedList').innerHTML = list.length ? `<b style="font-size:14px">On his device now:</b>` + list.map(a => {
-      const d = doneFor(a), g = d && d.grade;
-      return `<div><span>${esc(a.title)}<br><small style="color:var(--muted)">assigned ${esc(checkDate(a.at))}</small></span>${d ? `<span class="ok">✓ ${g ? `${g.letter} ${g.pct}%` : a.tool === 'weather' && d.extra && d.extra.day ? `day ${d.extra.day} today` : a.tool === 'steps' ? 'today' : 'done'}</span>` : ''}<button class="btn btn-small" data-unassign="${esc(a.id)}" aria-label="Remove ${esc(a.title)} from his device">Remove</button></div>`;
+    document.getElementById('assignedList').innerHTML = shown.length ? `<b style="font-size:14px">On his device:</b>` + shown.map(a => {
+      const d = doneFor(a), g = d && d.grade, sd = sheetDay(a), when = sd > td ? `for ${dayName(sd)}` : sd < td && !RECUR.includes(a.tool) ? `from ${dayName(sd)}, not done yet` : RECUR.includes(a.tool) && sd < td ? 'every day' : 'for today';
+      return `<div><span>${esc(a.title)}<br><small style="color:var(--muted)">${esc(when)} · assigned ${esc(checkDate(a.at))}</small></span>${d ? `<span class="ok">✓ ${g ? `${g.letter} ${g.pct}%` : a.tool === 'weather' && d.extra && d.extra.day ? `day ${d.extra.day} today` : a.tool === 'steps' ? 'today' : 'done'}</span>` : ''}<button class="btn btn-small" data-unassign="${esc(a.id)}" aria-label="Remove ${esc(a.title)} from his device">Remove</button></div>`;
     }).join('') : '';
   } catch (e) { el.innerHTML = ''; }
 }
@@ -1364,7 +1403,12 @@ function wireWeather() {
   document.getElementById('wxWhere').onkeydown = e => { if (e.key === 'Enter') document.getElementById('wxFind').click(); };
 }
 function wireOnScreen() {
-  const t = state.tool;
+  const t = state.tool, today = dayOf(Date.now()), sel = document.getElementById('assignDay');
+  // which day: the school worksheet's own day if it's coming up, otherwise today (or the day picked last time on this tab, if still ahead)
+  const want = (() => { const sd = (snapshot(t).data || {}).schoolDay; if (sd && sd >= today) return sd; const last = (state.assignDay || {})[t]; return last && last > today ? last : today; })();
+  const days = Array.from({ length: 10 }, (_, k) => addDays(today, k)); if (!days.includes(want)) days.push(want);
+  sel.innerHTML = days.map(ds => `<option value="${ds}" ${ds === want ? 'selected' : ''}>${esc(dayName(ds))}</option>`).join('');
+  sel.onchange = () => { state.assignDay = { ...(state.assignDay || {}), [t]: sel.value }; save(); };
   document.getElementById('assignBtn').onclick = async () => {
     const snap = snapshot(t);
     if (!snap.ok) return amsg(snap.need || 'Add some words or questions first.', true);
@@ -1372,10 +1416,11 @@ function wireOnScreen() {
     if (!sb) return amsg('Sign in first on the <a href="spell.html">Spelling Helper</a> page (the “Shared across devices” box), then come back and assign it.', true);
     amsg('Assigning…');
     try {
-      const list = (await loadSheets(sb)).filter(a => !(a.tool === t && a.title === snap.title));   // re-assigning replaces the same worksheet
-      list.push({ id: Date.now().toString(36), tool: t, title: snap.title, at: Date.now(), data: snap.data });
-      await saveSheets(sb, list.slice(-12));
-      amsg(`Assigned ✓ “${esc(snap.title)}” is on his start screen now.`);
+      const day = sel.value || today;
+      const list = (await loadSheets(sb)).filter(a => !(a.tool === t && a.title === snap.title && sheetDay(a) === day));   // re-assigning replaces the same worksheet on the same day
+      list.push({ id: Date.now().toString(36), tool: t, title: snap.title, at: Date.now(), day, data: snap.data });
+      await saveSheets(sb, list.slice(-40));
+      amsg(day === today ? `Assigned ✓ “${esc(snap.title)}” is on his start screen now.` : `Assigned ✓ “${esc(snap.title)}” for ${esc(dayName(day, true))}. It shows up on his start screen that day.`);
       renderAssigned();
     } catch (e) { amsg(`Couldn’t assign it: ${esc(e.message || e)}. Check the internet and try again.`, true); }
   };
