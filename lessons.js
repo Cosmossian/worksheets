@@ -450,6 +450,11 @@ if (L_IN_DO) {
     .ra-page { flex:1 1 520px; box-sizing:border-box; max-width:100%; background:#fff; color:#1F2937; border-radius:16px; padding:18px 26px; }
     .ra-title { font:700 34px Fredoka,sans-serif; text-align:center; color:#1E3A5F; margin-bottom:8px; }
     .ra-text { font:400 clamp(28px,3.6vw,40px)/1.8 Andika,sans-serif; } .ra-s.now { background:#FEF08A; border-radius:8px; box-shadow:0 0 0 4px #FEF08A; } .ra-s.done { color:#94A3B8; }
+    .ls-bub-home { min-height:74px; display:flex; justify-content:center; align-items:center; margin:6px 0; }
+    .ls-bubble { display:inline-block; font:700 36px Andika,sans-serif; background:#FACC15; color:#17201A; border-radius:999px; padding:6px 28px; touch-action:none; cursor:grab; box-shadow:0 4px 0 #A16207; user-select:none; }
+    .ls-bubble.sel { outline:4px solid #fff; outline-offset:3px; } .ls-bubble.drag { position:fixed; z-index:60; pointer-events:none; cursor:grabbing; box-shadow:0 10px 24px rgba(0,0,0,.45); }
+    #sortChart .c { min-width:120px; transition:outline-color .1s; } #sortChart .c.over { outline:4px solid #FACC15; outline-offset:2px; } #sortChart .c.good { outline:4px solid var(--good); }
+    #sortChart .c span { min-height:28px; }
     .ls-help-box .ls-choices { width:100%; } .ls-help-box .ls-choices.row2 button { flex:1 1 120px; }
     .ls-help-box { background:var(--surface-2); border:2px solid var(--try); border-radius:16px; padding:10px 14px; margin:8px auto; max-width:620px; text-align:center; display:flex; flex-direction:column; gap:8px; align-items:center; }
     .ls-teamwords { display:flex; flex-wrap:wrap; gap:10px 22px; justify-content:center; max-width:760px; margin:8px auto; font:700 40px Andika,sans-serif; }
@@ -582,29 +587,43 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
   try { await document.fonts.load(`700 ${fsMax}px Andika`); } catch (e) { }
   // Free writing of a sentence (Nov 9, 2026, Dylan: "make sure he is writing in his grids… Need more space"): big rows like a
   // single word's, starting with 2, and ➕ Need more space adds another (up to 5). Every pad has ↶ Undo (the last line he drew).
-  const multi = !guide && /\s/.test(text.trim());
+  // Tracing a sentence (Nov 9, later: "This section needs an option to add more space"): it wraps onto rows at a size he can trace
+  // (not squeezed onto one line), and ➕ Need more space makes the letters bigger (more rows; starts the tracing over).
+  const multi = !guide && /\s/.test(text.trim()), gMulti = guide && /\s/.test(text.trim());
   if (multi) { fsMax = Math.max(fsMax, 110); H = Math.max(H, 200); }
+  if (gMulti) { fsMax = Math.min(fsMax, 110); H = Math.min(H, 190); }
   let nRows = guide ? 1 : rows0 || (multi ? 2 : 1); const maxRows = guide ? 1 : multi ? 5 : 2;
+  const gSizes = [fsMax, Math.round(fsMax * 1.25), Math.round(fsMax * 1.5)]; let gStep = 0;
   return new Promise(done => {
     $('lsPad').innerHTML = `<div class="tracebox"><canvas id="lsCv"></canvas></div><div class="message" id="msg"></div>
-      <div class="row acts"><button class="btn big" id="lsUndo">↶ Undo</button><button class="btn big" id="lsClear">↺ Start over</button>${guide ? '' : '<button class="btn big" id="lsMore">➕ Need more space</button>'}<button class="btn big primary" id="lsDone">Done ✓</button></div>`;
-    const cv = $('lsCv'), dpr = window.devicePixelRatio || 1, Wd = Math.min(960, window.innerWidth - 40), rowH = H;
+      <div class="row acts"><button class="btn big" id="lsUndo">↶ Undo</button><button class="btn big" id="lsClear">↺ Start over</button>${!guide || gMulti ? '<button class="btn big" id="lsMore">➕ Need more space</button>' : ''}<button class="btn big primary" id="lsDone">Done ✓</button></div>`;
+    const cv = $('lsCv'), dpr = window.devicePixelRatio || 1, Wd = Math.min(960, window.innerWidth - 40); let rowH = H;
     let Ht = rowH * nRows, ctx = cv.getContext('2d');
     const size = () => { Ht = rowH * nRows; cv.width = Wd * dpr; cv.height = Ht * dpr; cv.style.width = Wd + 'px'; cv.style.height = Ht + 'px'; ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
     size();
     const font = s => `700 ${s}px Andika, sans-serif`;
-    let fs = fsMax; ctx.font = font(fs); while (guide && ctx.measureText(text).width > Wd * 0.9 && fs > 34) { fs -= 4; ctx.font = font(fs); }
-    if (!guide) { fs = Math.min(fs, rowH * 0.55); ctx.font = font(fs); }
-    const tw = ctx.measureText(text).width, x0 = guide ? (Wd - tw) / 2 : 24;
+    let fs = fsMax, tw = 0, x0 = 24, gRows = [], spans = [], coreD = null, nearD = null;
     const geo = r => { const base = r * rowH + rowH * 0.68; return { top: base - fs * 0.74, mid: base - fs * 0.5, base }; };
-    const { top, mid: midl, base } = geo(0);
-    const spans = [...text].map((ch, k) => ({ ch, a: x0 + ctx.measureText(text.slice(0, k)).width, b: x0 + ctx.measureText(text.slice(0, k + 1)).width })).filter(s => /[a-z]/i.test(s.ch));
-    const make = (h = rowH) => { const c = document.createElement('canvas'); c.width = Wd; c.height = h; const g = c.getContext('2d'); g.font = font(fs); return [c, g]; };
-    const [core, cg] = make(); cg.fillText(text, x0, base);
-    const [near, ng] = make(); ng.lineWidth = Math.max(16, fs * 0.16); ng.lineJoin = 'round'; ng.strokeText(text, x0, base); ng.fillText(text, x0, base);
-    const coreD = cg.getImageData(0, 0, Wd, rowH).data, nearD = ng.getImageData(0, 0, Wd, rowH).data;
+    const make = (h = Ht) => { const c = document.createElement('canvas'); c.width = Wd; c.height = h; const g = c.getContext('2d'); g.font = font(fs); return [c, g]; };
+    const layout = () => {   // guide text → rows (a sentence wraps by words), each centered; the letter spans remember their row
+      fs = guide && gMulti ? gSizes[gStep] : fsMax; ctx.font = font(fs); if (guide && gMulti) rowH = Math.max(150, Math.round(fs * 1.55));
+      if (guide && !gMulti) { while (ctx.measureText(text).width > Wd * 0.9 && fs > 34) { fs -= 4; ctx.font = font(fs); } }
+      if (!guide) { fs = Math.min(fs, rowH * 0.55); ctx.font = font(fs); }
+      tw = ctx.measureText(text).width;
+      if (guide) {
+        const lines = []; if (gMulti) { let cur = ''; text.trim().split(/\s+/).forEach(w => { const t = cur ? cur + ' ' + w : w; if (cur && ctx.measureText(t).width > Wd * 0.92) { lines.push(cur); cur = w; } else cur = t; }); if (cur) lines.push(cur); } else lines.push(text);
+        nRows = lines.length; size(); ctx.font = font(fs);
+        gRows = lines.map((t, r) => ({ t, r, x: (Wd - ctx.measureText(t).width) / 2 }));
+        spans = gRows.flatMap(g => [...g.t].map((ch, k) => ({ ch, r: g.r, a: g.x + ctx.measureText(g.t.slice(0, k)).width, b: g.x + ctx.measureText(g.t.slice(0, k + 1)).width })).filter(z => /[a-z]/i.test(z.ch)));
+        const [core, cg] = make(); gRows.forEach(g => cg.fillText(g.t, g.x, geo(g.r).base));
+        const [near, ng] = make(); ng.lineWidth = Math.max(16, fs * 0.16); ng.lineJoin = 'round'; gRows.forEach(g => { ng.strokeText(g.t, g.x, geo(g.r).base); ng.fillText(g.t, g.x, geo(g.r).base); });
+        coreD = cg.getImageData(0, 0, Wd, Ht).data; nearD = ng.getImageData(0, 0, Wd, Ht).data;
+      }
+    };
+    layout();
+    const base = geo(0).base;
     let strokes = [], cur = null, orange = new Set(), redo = 0, flagged = null, offLines = new Set(), caseAsked = '';
-    window.__lsPad = { text, x0, base, fs, Wd, Ht, guide, rowH, geo, rows: () => nRows, strokes: () => strokes };   // for automated tests
+    window.__lsPad = { text, x0, base, get fs() { return fs; }, Wd, get Ht() { return Ht; }, guide, rowH, geo, rows: () => nRows, strokes: () => strokes, spans: () => spans };   // for automated tests
     const lines = () => {
       for (let r = 0; r < nRows; r++) {
         const g = geo(r);
@@ -618,7 +637,7 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
       ctx.clearRect(0, 0, Wd, Ht); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, Wd, Ht);
       if (flagged) { ctx.fillStyle = 'rgba(251,146,60,.28)'; flagged.forEach(f => { const g = geo(f.row); ctx.fillRect(f.x0 - 6, g.top - 10, f.x1 - f.x0 + 12, g.base - g.top + 20); }); }
       lines();
-      if (guide) { ctx.font = font(fs); [...text].forEach((ch, k) => { const xa = x0 + ctx.measureText(text.slice(0, k)).width, s = spans.find(z => Math.abs(z.a - xa) < 0.01); ctx.fillStyle = s && orange.has(s) ? '#FDBA74' : '#CBD5E1'; ctx.fillText(ch, xa, base); }); }
+      if (guide) { ctx.font = font(fs); gRows.forEach(g => [...g.t].forEach((ch, k) => { const xa = g.x + ctx.measureText(g.t.slice(0, k)).width, s = spans.find(z => z.r === g.r && Math.abs(z.a - xa) < 0.01); ctx.fillStyle = s && orange.has(s) ? '#FDBA74' : '#CBD5E1'; ctx.fillText(ch, xa, geo(g.r).base); })); }
       ctx.lineCap = ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(7, fs * 0.07);
       strokes.forEach(st => { ctx.strokeStyle = offLines.has(st) ? '#F97316' : '#2563EB'; ctx.beginPath(); st.forEach(([px, py], k) => k ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); if (st.length === 1) ctx.lineTo(st[0][0] + 0.1, st[0][1]); ctx.stroke(); });
     };
@@ -633,8 +652,14 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
     $('lsUndo').onclick = () => { if (cur) return; strokes.pop(); changed(); setMsg(''); draw(); };
     if ($('lsMore')) {
       const moreBtn = $('lsMore'), syncMore = () => { moreBtn.disabled = nRows >= maxRows; moreBtn.textContent = nRows >= maxRows ? 'No more space' : '➕ Need more space'; };
+      if (guide) {   // tracing: bigger letters on more rows (the tracing starts over)
+        const syncG = () => { moreBtn.disabled = gStep >= gSizes.length - 1; moreBtn.textContent = moreBtn.disabled ? 'Biggest letters' : '➕ Need more space'; };
+        moreBtn.onclick = () => { if (gStep >= gSizes.length - 1) return; gStep++; strokes = []; orange.clear(); changed(); layout(); draw(); syncG(); setMsg('Bigger letters! Trace them from the start.', 'good'); cv.scrollIntoView({ block: 'end', behavior: 'smooth' }); };
+        syncG();
+      } else {
       moreBtn.onclick = () => { if (nRows >= maxRows) return; nRows++; size(); changed(); draw(); syncMore(); setMsg('Here’s another line. Keep going!', 'good'); cv.scrollIntoView({ block: 'end', behavior: 'smooth' }); };
       syncMore();
+      }
     }
     const snap = () => { try { const sm = document.createElement('canvas'); sm.width = 420; sm.height = Math.round(420 * Ht / Wd); sm.getContext('2d').drawImage(cv, 0, 0, sm.width, sm.height); return sm.toDataURL('image/png'); } catch (er) { return ''; } };
     const finishPad = extra => {
@@ -648,13 +673,13 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
       if (guide) {
         const [ink, ig] = make(); ig.lineCap = ig.lineJoin = 'round'; ig.lineWidth = Math.max(12, fs * 0.12);
         strokes.forEach(st => { ig.beginPath(); st.forEach(([px, py], k) => k ? ig.lineTo(px, py) : ig.moveTo(px, py)); if (st.length === 1) ig.lineTo(st[0][0] + 0.1, st[0][1]); ig.stroke(); });
-        const inkD = ig.getImageData(0, 0, Wd, rowH).data;
+        const inkD = ig.getImageData(0, 0, Wd, Ht).data;
         let all = 0, out = 0; const per = spans.map(() => [0, 0]);
-        for (let py = 0; py < rowH; py += 3) for (let px = 0; px < Wd; px += 3) {
+        for (let py = 0; py < Ht; py += 3) { const r = Math.min(nRows - 1, Math.floor(py / rowH)); for (let px = 0; px < Wd; px += 3) {
           const o = (py * Wd + px) * 4 + 3, isInk = inkD[o] > 40;
           if (isInk) { all++; if (nearD[o] < 40) out++; }
-          if (coreD[o] > 100) { const s = spans.findIndex(z => px >= z.a && px < z.b); if (s >= 0) { per[s][1]++; if (isInk) per[s][0]++; } }
-        }
+          if (coreD[o] > 100) { const s = spans.findIndex(z => z.r === r && px >= z.a && px < z.b); if (s >= 0) { per[s][1]++; if (isInk) per[s][0]++; } }
+        } }
         const missed = spans.filter((s, k) => per[k][1] && per[k][0] / per[k][1] < need);
         orange = new Set(missed);
         if ((all ? out / all : 1) > 0.4) { redo++; draw(); setMsg('Stay on the gray letters. Tap ↶ Undo or Start over and trace them carefully.', 'try'); say('Stay on the gray letters.', 0.95); return; }
@@ -1181,9 +1206,46 @@ LT.letter.run = () => {
 };
 
 /* ---------- Spelling Sort ---------- */
+/* The word he just spelled becomes a yellow bubble: he drags it onto a column of #sortChart (or taps the bubble, then a column).
+   A wrong column shakes and the bubble goes back. Resolves the headings he tried, in order. */
+function L_placeBubble(word, heads, right, hint) {
+  return new Promise(res => {
+    const picks = [], io = $('io');
+    io.innerHTML = `<div class="message" id="msg">Now put <b>${L_esc(word)}</b> in its column. Drag the bubble (or tap it, then tap a column).</div><div class="ls-bub-home"><span class="ls-bubble" id="bub">${L_esc(word)}</span></div>`;
+    say(`Now put ${word} in its column.`, 0.95);
+    const bub = $('bub'), chartEl = () => $('sortChart'), colAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest('#sortChart .c'); };
+    let sel = false, drag = null, over = null, live = true;
+    const setOver = c => { if (over) over.classList.remove('over'); over = c; if (c) c.classList.add('over'); };
+    const back = () => { bub.classList.remove('drag', 'sel'); bub.style.left = bub.style.top = ''; sel = false; setOver(null); };
+    const drop = c => {
+      if (!live || !c) return back();
+      const hi = +c.dataset.h; picks.push(heads[hi]); back();
+      if (hi === right) { live = false; c.classList.add('good'); bub.remove(); setMsg(picks.length === 1 ? 'Yes! It goes there!' : 'You got it!', 'good'); say('Yes!', 1); return setTimeout(() => res(picks), 500); }
+      shakeEl(c); setMsg(`Not that one. ${hint}`, 'try'); say('Not that one. Look at how it ends.', 0.95);
+    };
+    bub.onpointerdown = e => {
+      if (!live) return; e.preventDefault(); const r = bub.getBoundingClientRect();
+      drag = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY, moved: false };
+      try { bub.setPointerCapture(e.pointerId); } catch (er) { }
+    };
+    bub.onpointermove = e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 8) return;
+      drag.moved = true; bub.classList.add('drag'); bub.style.left = (e.clientX - drag.dx) + 'px'; bub.style.top = (e.clientY - drag.dy) + 'px';
+      setOver(colAt(e.clientX, e.clientY));
+    };
+    bub.onpointerup = bub.onpointercancel = e => {
+      if (!drag || e.pointerId !== drag.id) return; const d = drag; drag = null;
+      if (d.moved) return drop(colAt(e.clientX, e.clientY));
+      sel = !sel; bub.classList.toggle('sel', sel); if (sel) setMsg('Now tap the column it goes in.');
+    };
+    const onCol = e => { if (!sel || !live) return; const c = e.target.closest('#sortChart .c'); if (c) drop(c); };
+    chartEl().addEventListener('click', onCol);
+  });
+}
 LT.sort.run = () => {
   const d = SD, H = d.heads, run = Date.now().toString(36);
-  const chart = filled => `<div class="ls-grid small" style="margin-top:12px">${H.map((h, hi) => `<div class="c"><b style="background:${L_COL[hi % 8]}">${L_esc(h)}</b>${d.words.filter(x => x.h === hi).map(x => `<span>${filled.has(x.w) ? L_esc(x.w) : '&nbsp;'}</span>`).join('')}</div>`).join('')}</div>`;
+  const chart = filled => `<div class="ls-grid small" id="sortChart" style="margin-top:12px">${H.map((h, hi) => `<div class="c" data-h="${hi}"><b style="background:${L_COL[hi % 8]}">${L_esc(h)}</b>${d.words.filter(x => x.h === hi).map(x => `<span>${filled.has(x.w) ? L_esc(x.w) : '&nbsp;'}</span>`).join('')}</div>`).join('')}</div>`;
   const ending = x => H[x.h].replace(/^[-–—]\s*/, '');
   const sortP = async () => {
     const pool = L_shuf(d.words);
@@ -1202,8 +1264,12 @@ LT.sort.run = () => {
       const x = pool[i];
       app.innerHTML = L_exactTag() + head('Listen to the word, then spell it. It goes in the chart!') + L_count(i, pool.length, 'Word') + `<div class="hidden-word">Listen 👂</div><button class="btn" id="hearW">${SPK}Hear the word</button><div id="io"></div>` + chart(filled);
       $('hearW').onclick = () => playWord(x.w); playWord(x.w);
-      const r = await freeType({ answer: x.w, hint: t => { const m = L_soundAlike(t, x.w); return m ? `Good listening, ${t} sounds right! But it’s spelled with ${m.want}.` : `Not quite. This word ends with ${ending(x)}. Try again.`; } });
-      filled.add(x.w); mark('Write the Chart', x.w, r.ok, r.typed, x.w, x.w, { text: `He heard “${x.w}” and spelled it.` }, r.attempts); done();
+      const r = await freeType({ answer: x.w, hint: t => { const m = L_soundAlike(t, x.w); return m ? `Good listening, ${t} sounds right! But it’s spelled with ${m.want}.` : 'Not quite. Say it slowly and listen to the end of the word. Try again.'; } });
+      mark('Write the Chart', `Spell “${x.w}”`, r.ok, r.typed, x.w, x.w, { text: `He heard “${x.w}” and spelled it.` }, r.attempts);
+      const picks = await L_placeBubble(x.w, H, x.h, `Look at how ${x.w} ends: ${ending(x)}.`);
+      filled.add(x.w); app.querySelector('#sortChart').outerHTML = chart(filled);
+      mark('Write the Chart', `Put “${x.w}” in its column`, picks.length === 1, picks[0], H[x.h], null, { text: `He spelled “${x.w}”, then put it under a heading.`, choices: H }, picks);
+      await wait(700); done();
     }));
     app.innerHTML = L_exactTag() + head('Your chart is done!') + chart(new Set(d.words.map(x => x.w)));
     await wait(1500);
@@ -1230,7 +1296,7 @@ LT.sort.run = () => {
     partDone('Three great sentences!');
   };
   PARTS = [{ name: 'Sort the Words', run: sortP }];
-  if (d.spell) PARTS.push({ name: 'Write the Chart', run: spellP });
+  if (d.spell) PARTS.push({ name: 'Write the Chart', run: spellP });   // spell it, then drag it into its column (Nov 9: "put the word into a little draggable bubble")
   if (d.say) PARTS.push({ name: 'Say Sentences', run: sayP });
   return { intro: 'Sort your spelling words!' };
 };
