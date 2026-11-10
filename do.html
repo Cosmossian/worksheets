@@ -1867,6 +1867,8 @@ function showResults() {
   saveAndSend(rec);
 }
 function saveAndSend(rec) {
+  // Test day: keep it on this device only so his start screen shows it as done; End test puts his real copy back
+  if (TESTDAY) { const log = store('sheet-log') || []; log.push(rec); store('sheet-log', log.slice(-40)); return; }
   if (TRY) return;
   const log = store('sheet-log') || []; log.push(rec); store('sheet-log', log.slice(-40));
   cloudSaveSheet(rec);

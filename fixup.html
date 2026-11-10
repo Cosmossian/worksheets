@@ -902,7 +902,7 @@ function showResults() {
   store('fixup-latest', rec);
   const flog = store('fixup-log') || []; flog.push(rec); store('fixup-log', flog.slice(-30));
   cloudSaveFixup(rec);
-  }
+  } else { const flog = store('fixup-log') || []; flog.push(rec); store('fixup-log', flog.slice(-30)); }   // test day: this device only (End test puts his real copy back), so it shows as done
   rec.body = emailBody(rec);
   if (emailOn()) { const box = store('fixup-outbox') || []; box.push(rec); store('fixup-outbox', box.slice(-20)); }
   app.innerHTML = `<div class="part-title"><h2>You finished the Fix-Up!</h2><p>Practice Test</p></div>

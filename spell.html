@@ -197,6 +197,11 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .traces { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
 .traces figure { margin: 0; } .traces img { width: 220px; background: #fff; border-radius: 10px; display: block; } .traces figcaption { font-size: 13px; color: var(--muted); }
 .rv-sec h4 span { font: 500 14px Andika, sans-serif; color: var(--muted); margin-left: 6px; }
+.rv-sec h4 em.att { font: 700 13px Fredoka, sans-serif; font-style: normal; margin-left: 8px; padding: 2px 9px; border-radius: 999px; background: #0F2E25; color: #6EE7B7; border: 1px solid #34D399; vertical-align: 2px; }
+.rv-tries { border: 2px solid #F59E0B; border-radius: 16px; padding: 8px 10px 2px; margin: 10px 0; background: rgba(245,158,11,.06); }
+.rv-tries-h { font: 700 16px Fredoka, sans-serif; color: #FDE68A; margin: 0 0 6px 4px; } .rv-tries-h small { font: 500 14px Andika, sans-serif; color: var(--muted); }
+.rv-tries .rv-sec { margin-bottom: 8px; }
+.rv-sec h4 em.att.redo { background: #2A220B; color: #FDE68A; border-color: #F59E0B; }
 .rv-sec .ln { font-size: 15px; line-height: 1.5; }
 .rv-sec .ok { color: var(--good); } .rv-sec .no { color: var(--try); }
 .rv-sec .del { margin-top: 8px; border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 13px; padding: 0; }
@@ -267,6 +272,19 @@ body.kidgrown #acctCard, body.kidgrown #dailyCard { display: none !important; }
 .kid-sheets a.done { background: #1F4F43; border-color: var(--good); }
 .kid-sheets a small { font: 600 17px Fredoka, sans-serif; color: #BBF7D0; white-space: nowrap; }
 .kid-sheets a small.left { color: #FDE68A; }
+/* Nov 10: "2 of 5 done" stars, and the All done shelf (finished ones: smaller, faded, star stamp) */
+.kid-prog { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 2px 0 6px; }
+.kid-prog b { font: 700 24px Fredoka, sans-serif; color: #FDE68A; }
+.kp-stars { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; font-size: 34px; line-height: 1; }
+.kp-stars span { color: #64748B; } .kp-stars span.on { filter: drop-shadow(0 0 6px rgba(250,204,21,.55)); }
+.kid-shelf { margin-top: 10px; gap: 10px; }
+.kid-shelf a.done { position: relative; font-size: 21px; min-height: 0; padding: 12px 64px 12px 28px; min-width: min(400px, 86vw); opacity: .8; border-style: dashed; }
+.kid-shelf a.done span { text-decoration: line-through; text-decoration-color: rgba(187,247,208,.6); text-decoration-thickness: 2px; }
+.kid-shelf a.done small { font-size: 16px; }
+.kid-shelf .stamp { position: absolute; right: 12px; top: 50%; transform: translateY(-50%) rotate(-12deg); font-style: normal; font-size: 30px; width: 44px; height: 44px; display: grid; place-items: center; border: 3px solid #FACC15; border-radius: 50%; background: #3A2E0C; }
+.kid-again .ka-star { font-size: 64px; line-height: 1; }
+.kid-again .ka-t { font: 600 20px Fredoka, sans-serif; color: #fff; } .kid-again .ka-g { font: 700 22px Fredoka, sans-serif; color: #BBF7D0; }
+.kid-again [data-k="redo"] { margin-top: 6px; }
 
 /* ---------- Child's screen ---------- */
 .play { max-width: 980px; margin: 0 auto; padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
@@ -627,11 +645,13 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 <main class="kidhome" id="kidhome" hidden>
   <h2 id="kidHi">Hi! 👋</h2>
   <p id="kidMsg">Today’s words are ready.</p>
+  <div class="kid-prog" id="kidProg" hidden></div>
   <div class="kid-sheets" id="kidSheets" hidden></div>
   <h3 class="kid-h" id="kidWordsH" hidden>Last: today’s sight words</h3>
   <div class="done-today" id="kidDone" hidden></div>
   <div id="kidMicSlot" style="max-width:560px;margin:0 auto 14px"></div>
   <button class="btn big primary" id="kidStart">Start today’s words</button>
+  <div class="kid-sheets kid-shelf" id="kidShelf" hidden></div>
   <div class="kid-sheets" id="kidChores" hidden></div>
   <div class="kid-hold"><button class="grownup" id="kidGrown">🔒 Grown-up screen <small>(hold)</small></button><button class="grownup" id="kidSwitch">↺ Switch user <small>(hold)</small></button><button class="grownup" id="kidTest">🧪 Test day <small>(hold)</small></button></div>
 </main>
@@ -2489,22 +2509,39 @@ async function renderReview(noPull) {
   const td = ymd(Date.now()), listA = (store('study-sheets') || {}).list || [], ag = (agendas[calSel] || {}).items || [], allLogs = [...sheets, ...fixes.map(f => ({ ...f, aid: f.cid }))];
   const asg = [...listA.filter(a => a.tool !== 'mtest' && (sheetDay(a) === calSel || (a.tool === 'weather' && sheetDay(a) <= calSel && calSel <= td && allLogs.some(l => l.aid === a.id && ymd(l.t) === calSel)))).map(a => ({ id: a.id, tool: a.tool, title: a.title })), ...ag.filter(it => it.tool !== 'check' && it.tool !== 'spellq' && it.title && !listA.some(a => a.id === it.id))];
   const asgHtml = asg.length ? `<div class="rv-asg"><h4>Assigned for this day</h4>${asg.map(a => {
-      const d = allLogs.filter(l => l.aid === a.id && (RECUR.includes(a.tool) ? ymd(l.t) === calSel : ymd(l.t) <= calSel)).sort((x, y) => y.t - x.t)[0], g = d && d.grade;
-      const st = d ? `<span class="ok">✓ done${g ? `: ${esc(g.letter)} (${g.pct}%)` : ''}</span>` : OPTIONAL.includes(a.tool) ? '<span class="wait">extra (not required)</span>' : calSel < td ? '<span class="no">✗ Not completed</span>' : calSel === td ? '<span class="wait">not done yet</span>' : '<span class="wait">coming up</span>';
+      const all = allLogs.filter(l => l.aid === a.id && (RECUR.includes(a.tool) ? ymd(l.t) === calSel : ymd(l.t) <= calSel)).sort((x, y) => y.t - x.t), d = all[0], g = d && d.grade;
+      const st = d ? `<span class="ok">✓ done${g ? `: ${esc(g.letter)} (${g.pct}%)` : ''}${all.length > 1 ? ` · ${all.length} tries (1 + ${all.length - 1} redo${all.length > 2 ? 's' : ''})` : ''}</span>` : OPTIONAL.includes(a.tool) ? '<span class="wait">extra (not required)</span>' : calSel < td ? '<span class="no">✗ Not completed</span>' : calSel === td ? '<span class="wait">not done yet</span>' : '<span class="wait">coming up</span>';
       return `<div class="rv-asg-row"><span>${esc(a.title)}</span>${st}</div>`; }).join('')}</div>` : '';
   if (!order.length) { $('reviewList').innerHTML = asgHtml + (asgHtml ? '' : '<p class="rv-empty">Nothing on this day.</p>'); return; }
+  // Nov 10 (Dylan: "First attempt" then "Redo 1", "Redo 2"…): number each try at the same assignment, in time order.
+  // Worksheets / Fix-Ups by assignment id (Daily Steps by assignment and day), the sight word check by day.
+  const attempts = {}, tryOf = (grp, list) => list.sort((a, b) => a.t - b.t).forEach((x, i) => { attempts[grp + x.id] = { n: i + 1, of: list.length, g: grp + (list[0].id), all: list }; });
+  const groupBy = (xs, key) => xs.reduce((m, x) => { const k = key(x); if (k) (m[k] = m[k] || []).push(x); return m; }, {});
+  Object.values(groupBy(sheets, x => x.aid && (RECUR.includes(x.tool) ? `${x.aid}@${ymd(x.t)}` : x.aid))).forEach(l => tryOf('sheet:', l));
+  Object.values(groupBy(fixes, x => x.cid)).forEach(l => tryOf('fix:', l));
+  Object.values(groupBy(checks, x => ymd(x.t))).forEach(l => tryOf('check:', l));
+  const tryTag = k => { const a = attempts[k]; return a && a.of > 1 ? `<em class="att${a.n > 1 ? ' redo' : ''}">${a.n === 1 ? 'First attempt' : `Redo ${a.n - 1}`}</em>` : ''; };
   const wordList = rs => rs.map(r => r.ok ? `<span class="ok">✓ ${esc(r.word)}</span>` : `<span class="no">✗ ${esc(r.word)} (wrote “${esc(r.typed)}”)</span>`).join(' · ');
-  $('reviewList').innerHTML = asgHtml + order.map(d => `<div class="rv-day" id="rv-${ymd(d.t)}">`
-    + d.items.sort((a, b) => a.t - b.t).map(it => {
+  const kindKey = it => (it.kind === 'sheet' ? 'sheet:' : it.kind === 'fix' ? 'fix:' : it.kind === 'check' ? 'check:' : '') + (it.x && it.x.id);
+  // put tries at the same thing next to each other (where the first one that day was), then wrap them in a stack
+  const stackTries = items => {
+    const out = [], seen = {};
+    items.forEach(it => { const a = it.kind !== 'look' && attempts[kindKey(it)];
+      if (!a || a.of < 2) return out.push(it);
+      if (seen[a.g]) return seen[a.g].kids.push(it);
+      seen[a.g] = { stack: true, att: a, kids: [it], t: it.t }; out.push(seen[a.g]); });
+    return out.map(x => x.stack ? (x.kids.length > 1 || x.att.all.some(y => ymd(y.t) !== calSel) ? { ...x, html: x.kids.map(one).join('') } : x.kids[0]) : x);
+  };
+  const one = it => {
       const x = it.x;
       if (it.kind === 'look') return `<div class="rv-sec"><h4>Look &amp; Listen<span>${esc(timeOf(x.t))}</span></h4>
         <div class="ln">${x.micOk === false && x.find ? `No microphone, so he did Look &amp; Find: ${findLine(x.find)}.` : x.micOk === false && x.micWanted ? 'The microphone wasn’t available, so it couldn’t check.' : x.total ? `Said out loud: ${x.heard} of ${x.total}` : ''}</div>
         ${x.clips && x.clips.length ? `<div class="clips">${clipButtons(x)}</div><button class="del" data-delsess="${x.session}">Delete these recordings</button>` : '<div class="ln rv-empty">No recordings saved.</div>'}</div>`;
       if (it.kind === 'check') { const right = x.results.filter(r => r.ok).length, g = x.grade || gradeFor(right, x.results.length);
-        return `<div class="rv-sec"><h4>Sight word check<span>${esc(timeOf(x.t))} · ${g.pct}% ${g.letter} · ${right} of ${x.results.length} right${x.sent ? ' · emailed ✓' : ''}</span></h4><div class="ln">${wordList(x.results)}</div>${seeAll(answerRows(x.results.map(r => ({ part: 'Check', label: r.word, ok: r.ok, answer: r.word, shown: { text: 'He heard the word and a sentence. The word wasn’t shown.' }, picks: [r.typed] }))), '', 'check:' + x.id)}</div>`; }
+        return `<div class="rv-sec"><h4>Sight word check${tryTag('check:' + x.id)}<span>${esc(timeOf(x.t))} · ${g.pct}% ${g.letter} · ${right} of ${x.results.length} right${x.sent ? ' · emailed ✓' : ''}</span></h4><div class="ln">${wordList(x.results)}</div>${seeAll(answerRows(x.results.map(r => ({ part: 'Check', label: r.word, ok: r.ok, answer: r.word, shown: { text: 'He heard the word and a sentence. The word wasn’t shown.' }, picks: [r.typed] }))), '', 'check:' + x.id)}</div>`; }
       if (it.kind === 'sheet') {
         const wrong = (x.items || []).filter(r => !r.ok);
-        return `<div class="rv-sec"><h4>${esc(x.title)}<span>${esc(timeOf(x.t))}${x.grade ? ` · ${x.grade.pct}% ${x.grade.letter} · ${x.right} of ${x.of} right the first time` : ' · done'}${x.sent ? ' · emailed ✓' : ''}</span></h4>
+        return `<div class="rv-sec"><h4>${esc(x.title)}${tryTag('sheet:' + x.id)}<span>${esc(timeOf(x.t))}${x.grade ? ` · ${x.grade.pct}% ${x.grade.letter} · ${x.right} of ${x.of} right the first time` : ' · done'}${x.sent ? ' · emailed ✓' : ''}</span></h4>
           ${wrong.length ? `<div class="ln">${wrong.map(r => `<span class="no">✗ ${esc(r.part)}: ${esc(r.label)}${r.typed ? ` (put “${esc(r.typed)}”)` : ''} → ${esc(r.answer)}</span>`).join(' · ')}</div>` : (x.items || []).length ? '<div class="ln"><span class="ok">Everything right the first time ✓</span></div>' : ''}
           ${x.extra && x.extra.marks ? `<div class="ln">Quarters: ${x.extra.marks.map((m, i) => `${i + 1} ${m === 'has' ? '🦅' : '✗'}`).join(' · ')}</div>` : ''}
           ${x.extra && x.extra.stepTimes ? `<div class="ln">Steps done at ${x.extra.stepTimes.map(t => esc(timeOf(t))).join(', ')}</div>` : ''}
@@ -2512,12 +2549,20 @@ async function renderReview(noPull) {
           ${seeAll(answerRows(x.items || []), x.extra && x.extra.traces ? `<div class="ans-row"><div class="ans-h"><b>Trace</b><span>what he traced with his finger</span></div><div class="traces">${x.extra.traces.map(tr => `<figure><img src="${tr.img}" alt="His tracing of ${esc(tr.word)}"><figcaption>${esc(tr.word)}${tr.redo ? ` · traced more ${tr.redo}×` : ''}</figcaption></figure>`).join('')}</div></div>` : '', 'sheet:' + x.id)}</div>`;
       }
       const right = x.test.filter(r => r.ok).length;
-      return `<div class="rv-sec"><h4>Spelling Fix-Up<span>${esc(timeOf(x.t))} · Practice Test ${x.grade.pct}% ${x.grade.letter} · ${right} of ${x.test.length} right</span></h4>
+      return `<div class="rv-sec"><h4>Spelling Fix-Up${tryTag('fix:' + x.id)}<span>${esc(timeOf(x.t))} · Practice Test ${x.grade.pct}% ${x.grade.letter} · ${right} of ${x.test.length} right</span></h4>
         <div class="ln">${wordList(x.test)}</div><div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div>${seeAll(answerRows(x.detail || x.test.map(r => ({ part: 'Practice Test', label: r.word, ok: r.ok, answer: r.word, picks: [r.typed] }))), '', 'fixup:' + x.id)}</div>`;
-    }).join('') + '</div>').join('');
+  };
+  const stackHtml = it => {   // Nov 10 (Dylan: "stack the tries together"): every try at the same thing that day, in one box, oldest first
+    const a = it.att, day = t => new Date(t).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    const other = (xs, word) => xs.length ? ` <small>· ${xs.length} more on ${new Set(xs.map(x => ymd(x.t))).size > 1 ? `${word} days` : `a${word === 'earlier' ? 'n' : ''} ${word} day`} ${[...new Set(xs.map(x => ymd(x.t)))].map(d => ` <button class="linkbtn" data-goday="${d}">${esc(day(d + 'T12:00'))} →</button>`).join('')}</small>` : '';
+    const n = it.kids.length;
+    return `<div class="rv-tries"><div class="rv-tries-h">↺ ${n} ${n === 1 ? 'try' : 'tries'} this day${other(a.all.filter(x => ymd(x.t) < calSel), 'earlier')}${other(a.all.filter(x => ymd(x.t) > calSel), 'later')}</div>${it.html}</div>`;
+  };
+  $('reviewList').innerHTML = asgHtml + order.map(d => `<div class="rv-day" id="rv-${ymd(d.t)}">` + stackTries(d.items.sort((a, b) => a.t - b.t)).map(it => it.stack ? stackHtml(it) : one(it)).join('') + '</div>').join('');
 }
 $('reviewList').addEventListener('click', async e => {
   const rpb = e.target.closest('[data-replay]'); if (rpb) return openReplay(rpb.dataset.replay);
+  const gd = e.target.closest('[data-goday]'); if (gd) { calSel = gd.dataset.goday; calMonth.review = [+calSel.slice(0, 4), +calSel.slice(5, 7) - 1]; renderReview(true); window.scrollTo(0, 0); return; }   // a try on another day
   const c = e.target.closest('[data-clip]'); if (c) return playLogClip(c.dataset.clip);
   const d = e.target.closest('[data-delsess]');
   if (!d) return;
@@ -2872,20 +2917,59 @@ function renderKidHome() {
   const logs = [...(store('sheet-log') || []), ...(store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))];
   const doneFor = a => logs.filter(l => l.aid === a.id && (!['steps', 'weather'].includes(a.tool) || new Date(l.t).toDateString() === new Date().toDateString())).sort((x, y) => y.t - x.t)[0];
   const href = a => a.tool === 'spellq' ? '#spellq' : a.tool === 'fixup' ? `fixup.html?w=${encodeURIComponent(((a.data && a.data.words) || []).map(x => `${x.w}:${x.his || ''}`).join('|'))}&from=${encodeURIComponent(a.title)}&cid=${encodeURIComponent(a.id)}` : `do.html?a=${encodeURIComponent(a.id)}`;
-  $('kidSheets').hidden = !sheets.length;
-  $('kidSheets').innerHTML = sheets.length ? `<h3 class="kid-h">${words.length ? 'First: worksheets' : 'Worksheets'}</h3>` + sheets.map(a => { const d = doneFor(a), g = d && d.grade;
+  // Nov 10 (Dylan: so he knows which ones he already did): to-do ones stay big and blue at the top; finished ones move to
+  // the "All done" shelf at the bottom, smaller, with a star stamp. Tapping a finished one says so first (kidAgain).
+  const todo = sheets.filter(a => !doneFor(a)), fin = sheets.filter(a => doneFor(a));
+  const wordsDone = words.length > 0 && today.length > 0;
+  $('kidSheets').hidden = !todo.length;
+  $('kidSheets').innerHTML = todo.length ? `<h3 class="kid-h">${words.length && !wordsDone ? 'First: worksheets' : 'Worksheets'}</h3>` + todo.map(a => {
     const left = a.tool !== 'spellq' && !RECUR.includes(a.tool) && sheetDay(a) < ymd(Date.now()) ? `<small class="left">from ${esc(new Date(sheetDay(a) + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long' }))}</small>` : '';
-    return `<a class="${d ? 'done' : ''}" href="${href(a)}"><span>${esc(a.title)}</span>${left}${d ? `<small>✓ ${g ? `${g.letter} (${g.pct}%)` : a.tool === 'weather' ? `day ${d.extra && d.extra.day} done today` : a.tool === 'steps' ? 'done today' : 'done'}${a.tool === 'weather' ? '' : ' · again?'}</small>` : ''}</a>`; }).join('') : '';
+    return `<a href="${href(a)}"><span>${esc(a.title)}</span>${left}</a>`; }).join('') : '';
+  const doneLine = (a, d) => { const g = d.grade; return g ? `${g.letter} (${g.pct}%)` : a.tool === 'weather' ? `day ${d.extra && d.extra.day} done today` : ''; };
+  const shelf = [...(wordsDone ? [(() => { const r = today.at(-1), g = r.grade || gradeFor(r.results.filter(x => x.ok).length, r.results.length);
+      return `<a class="done" href="#words" data-title="${esc('📝 Today’s sight words')}" data-line="${esc(`${g.letter} (${g.pct}%)`)}"><span>📝 Today’s sight words</span><small>Done! ⭐ ${esc(`${g.letter} (${g.pct}%)`)}</small><i class="stamp" aria-hidden="true">⭐</i></a>`; })()] : []),
+    ...fin.map(a => { const d = doneFor(a), line = doneLine(a, d);
+      return `<a class="done" href="${a.tool === 'weather' ? '#weather' : href(a)}" data-title="${esc(a.title)}" data-line="${esc(line)}"><span>${esc(a.title)}</span><small>Done! ⭐${line ? ' ' + esc(line) : ''}</small><i class="stamp" aria-hidden="true">⭐</i></a>`; })];
+  $('kidShelf').hidden = !shelf.length;
+  $('kidShelf').innerHTML = shelf.length ? `<h3 class="kid-h">✓ All done</h3>` + shelf.join('') : '';
+  // "2 of 5 done" with a star for each thing on his day (chores aren't counted)
+  const total = sheets.length + (words.length ? 1 : 0), nDone = fin.length + (wordsDone ? 1 : 0);
+  $('kidProg').hidden = !total;
+  $('kidProg').innerHTML = total ? `<div class="kp-stars" aria-hidden="true">${Array.from({ length: total }, (_, i) => `<span class="${i < nDone ? 'on' : ''}">${i < nDone ? '⭐' : '☆'}</span>`).join('')}</div><b>${nDone === total ? 'All done for today! 🎉' : `${nDone} of ${total} done`}</b>` : '';
+  if (total && nDone === total) $('kidMsg').textContent = 'You did everything today. Great job!';
+  else if (wordsDone && todo.length) $('kidMsg').textContent = 'Here’s what’s left for today. Take your time and try your best!';
   recordAgenda(words, sheets);
   // Chore chart (chores.html): grown-ups check chores off on their devices; here he just sees how he's doing
   const ch = store('study-chores');
   $('kidChores').hidden = !(ch && ch.chores && ch.chores.length);
   if (ch && ch.chores) { const mk = ymd(Date.now()).slice(0, 7), lim = ch.limit || 8, xs = Object.keys(ch.marks || {}).filter(s => s.slice(0, 7) === mk).reduce((n, s) => n + Object.values(ch.marks[s]).filter(m => m && m.s === 'x').length, 0);
     $('kidChores').innerHTML = `<h3 class="kid-h">My chores</h3><a href="chores.html"><span>🧹 My Chores</span><small>${xs >= lim ? `No ${esc(ch.reward || 'reward')} this month` : `${esc(ch.reward || 'Reward')}: still on · ${xs} X${xs === 1 ? '' : '’s'} this month`}</small></a>`; }
-  $('kidStart').hidden = !words.length;
-  $('kidDone').hidden = !today.length;
-  if (today.length) { const r = today.at(-1), g = r.grade || gradeFor(r.results.filter(x => x.ok).length, r.results.length); $('kidDone').textContent = `You already did a check today: ${g.letter} (${g.pct}%). You can practice again!`; }
+  // sight words done today: they're on the All done shelf instead (tap there to do them again)
+  $('kidWordsH').hidden = !(words.length && sheets.length) || wordsDone;
+  $('kidStart').hidden = !words.length || wordsDone;
+  $('kidMicSlot').hidden = wordsDone;
+  $('kidDone').hidden = true;
 }
+/* Tapping something he already finished: "You already did this one!" with OK, or Do it again (Dylan is fine with redos;
+   Parent Review shows each one as First attempt / Redo 1 / Redo 2…). Weather is once a day, so no redo. */
+function kidAgain(a) {
+  const w = document.createElement('div'); w.className = 'ph-wrap'; w.setAttribute('role', 'dialog');
+  const kind = a.getAttribute('href'), redo = kind !== '#weather';
+  w.innerHTML = `<div class="ph-box kid-again"><div class="ka-star" aria-hidden="true">⭐</div><h3>You already did this one! 🎉</h3><p class="ka-t">${esc(a.dataset.title)}</p>${a.dataset.line ? `<p class="ka-g">${esc(a.dataset.line)}</p>` : ''}
+    ${redo ? '' : '<p>Come back tomorrow for the next day.</p>'}
+    <button class="btn big primary" data-k="ok">OK 👍</button>${redo ? '<button class="btn" data-k="redo">↺ Do it again</button>' : ''}</div>`;
+  document.body.appendChild(w);
+  say(redo ? 'You already did this one! Great job!' : 'You already did today’s weather! Great job!', 0.95);
+  w.onclick = e => {
+    const b = e.target.closest('[data-k]'); if (!b && e.target !== w) return;
+    w.remove(); talkGen++; sayEpoch++; if (canTalk) speechSynthesis.cancel();
+    if (!b || b.dataset.k !== 'redo') return;
+    if (kind === '#words') { if (testing) stopMicTest(); const d = store('spell-daily') || {}; const ws = d.on === false ? [] : dailyWords(); if (ws.length) startDaily(ws, d); return; }
+    if (kind === '#spellq') { const q = store('spell-queue'); if (q && q.words && q.words.length) startDaily(q.words, { look: false, practice: true, only: true, qid: q.id }); return; }
+    location.href = kind;
+  };
+}
+$('kidShelf').addEventListener('click', e => { const a = e.target.closest('a.done'); if (!a) return; e.preventDefault(); kidAgain(a); });
 
 renderRecent();
 renderSetup();

@@ -1282,9 +1282,9 @@ async function openDay(ds) {
     }
     ((S.sheets && S.sheets.list) || []).forEach((a, k) => { if (!onList(a, ds, doneDays)) return;
       const sd = sheetDay(a), carried = false;
-      const mine = L.filter(x => (x.aid || x.cid) === a.id && (RECUR.includes(a.tool) ? today(x) : dayOf(x.t) <= ds)).sort((x, y) => y.t - x.t)[0];
+      const tries = L.filter(x => (x.aid || x.cid) === a.id && (RECUR.includes(a.tool) ? today(x) : dayOf(x.t) <= ds)).sort((x, y) => y.t - x.t), mine = tries[0];
       const g = mine && mine.grade, over = ds < td;
-      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}` : OPTIONAL.includes(a.tool) ? 'extra (not required)' : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over && !OPTIONAL.includes(a.tool),
+      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}${tries.length > 1 ? ` · ${tries.length} tries` : ''}` : OPTIONAL.includes(a.tool) ? 'extra (not required)' : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over && !OPTIONAL.includes(a.tool),
         acts: a.tool === 'fixup' ? '' : `<button class="btn btn-small" data-tryday="${k}">Try it</button>` });
     });
     const ch = S.chores;
