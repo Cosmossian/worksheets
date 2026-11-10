@@ -1378,7 +1378,7 @@ async function renderSchoolList(cls, sel) {
     const list = await loadSheets(sb), { data: logs } = await sb.from('study_log').select('kind,data').in('kind', ['sheet', 'fixup']).gte('t', new Date(Date.now() - 120 * 864e5).toISOString());
     const L = (logs || []).map(r => r.data);
     el.querySelectorAll('[data-stat]').forEach(sp => {
-      const [t, day] = sp.dataset.stat.split('@'), mine = list.filter(a => a.tool === t && a.data && a.data.exact && a.data.schoolDay === day).sort((a, b) => b.at - a.at);
+      const [t, day] = sp.dataset.stat.split('@'), mine = list.filter(a => a.tool === t && schoolDayOf(a) === day).sort((a, b) => b.at - a.at);
       if (!mine.length) { sp.textContent = day > td ? 'not on his day yet' : 'not assigned'; return; }
       const a = mine[0], r = L.filter(x => (x.aid || x.cid) === a.id).sort((x, y) => y.t - x.t)[0], d = sheetDay(a), more = mine.length > 1 ? ` · assigned ${mine.length}×` : '';
       if (r) { sp.textContent = `✓ done${r.grade ? `: ${r.grade.letter} (${r.grade.pct}%)` : ''}${more}`; sp.className = 'stat ok'; const res = el.querySelector(`[data-sres="${t}@${day}"]`); res.hidden = false; res.href = `spell.html?day=${dayOf(r.t)}#review`; }
@@ -1478,6 +1478,8 @@ const dayOf = t => { const x = new Date(t); return `${x.getFullYear()}-${String(
    its own day only (Daily Steps and Weather Watch every day from then on). Nothing carries over: once its day is over, a worksheet he
    didn't finish shows as ✗ Not completed on that day. Same rule in spell.html (his start screen). */
 const RECUR = ['steps', 'weather'];
+// which official school worksheet an assignment is (the old undated “📄 School copy” ones were all 11/09/26)
+const schoolDayOf = a => (a.data && (a.data.schoolDay || (a.data.exact ? '2026-11-09' : ''))) || '';
 const sheetDay = a => a.day || (a.data && a.data.schoolDay) || (a.data && a.data.exact ? '2026-11-09' : dayOf(a.at));   // the old undated “📄 School copy” ones were all the 11/09/26 sheets
 /* Nov 9 (Dylan): only chores are every day. Daily Steps is an extra (never counted). Weather Watch stays on until he's done its days
    (never counted as missed). Sight words: Monday to Friday. */
@@ -1566,7 +1568,7 @@ let assignedCache = [];
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-aopen]'); if (!b) return;
   const a = assignedCache.find(x => x.id === b.dataset.aopen); if (!a) return;
-  const t = a.tool === 'mtest' ? 'master' : a.tool, sd = a.data && (a.data.schoolDay || (a.data.exact ? '2026-11-09' : ''));
+  const t = a.tool === 'mtest' ? 'master' : a.tool, sd = schoolDayOf(a);
   state.cls = classOf(t);
   if (sd && LT[t] && LT[t].schools && LT[t].schools[sd]) { state.folders = { ...(state.folders || {}), [state.cls]: 'school' }; state.schoolSel = { t, day: sd }; }
   else { state.folders = { ...(state.folders || {}), [state.cls]: 'templates' }; state.tool = t; history.replaceState(null, '', '#' + t); }
