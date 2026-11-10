@@ -1287,6 +1287,28 @@ async function openDay(ds) {
       items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}${tries.length > 1 ? ` · ${tries.length} tries` : ''}` : OPTIONAL.includes(a.tool) ? 'extra (not required)' : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over && !OPTIONAL.includes(a.tool),
         acts: a.tool === 'fixup' ? '' : `<button class="btn btn-small" data-tryday="${k}">Try it</button>` });
     });
+    // 🛠️ Extra help: his device adds Fix My Spelling Mistakes by itself for words he missed on that day's worksheets
+    // (spell.html autoFixit; same rules here, from the results in the Study database). Not when one was assigned for that day.
+    if (!future && !((S.sheets && S.sheets.list) || []).some(a => a.tool === 'fixit' && onList(a, ds, doneDays))) {
+      const dl = L.filter(x => x.kind === 'sheet' && today(x)), fixes = dl.filter(x => x.tool === 'fixit'), miss = new Map();
+      dl.filter(x => x.tool !== 'fixit' && x.tool !== 'mtest').sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
+        const w = String(m.word || '').trim().toLowerCase(); if (!/[a-z]/.test(w)) return;
+        const his = String(m.typed || '').trim().toLowerCase();
+        miss.set(w, { w, his: his && his !== w ? his : (miss.get(w) || {}).his || '', t: r.t, from: r.title || '' });
+      }));
+      const fixedAfter = (w, t) => fixes.some(f => f.t > t && (f.items || []).some(x => x.part === 'Spell It' && x.word === w));
+      const all = [...miss.values()], pending = all.filter(m => !fixedAfter(m.w, m.t));
+      const autoF = fixes.filter(f => String(f.aid || '').startsWith('fixit-auto-')).sort((a, b) => b.t - a.t), last = autoF[0];
+      if (all.length || last) {
+        const shownW = (pending.length ? pending : all).map(m => m.his ? `${esc(m.w)} <s style="opacity:.7">${esc(m.his)}</s>` : esc(m.w)).join(', ');
+        const froms = [...new Set(all.map(m => m.from).filter(Boolean))];
+        const g = last && last.grade, k = 'auto' + Date.now().toString(36);
+        window.__autoFix = window.__autoFix || {}; window.__autoFix[k] = { id: 'try', tool: 'fixit', title: '🛠️ Let’s fix our mistakes from earlier', data: { words: (pending.length ? pending : all).map(({ w, his }) => ({ w, his })), trace: 2 } };
+        items.push({ title: `🛠️ Extra help: Let’s fix our mistakes from earlier · ${(pending.length ? pending : all).length}`, sub: `${shownW}<br>Added by itself from ${froms.length ? esc(froms.join('; ')) : 'his worksheets'} · hear it, trace it, spell it`,
+          st: pending.length ? (last ? `new words since · last time ${g ? `${g.letter} (${g.pct}%)` : 'done'}` : 'not done yet') : `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}${autoF.length > 1 ? ` · ${autoF.length} tries` : ''}`,
+          ok: !pending.length, acts: `<button class="btn btn-small" data-tryauto="${k}">Try it</button>` });
+      }
+    }
     const ch = S.chores;
     if (ch && ch.chores) {   // the chore chart (grown-ups check these off; his device only shows them)
       const td = ds, on = c => (c.from || '') <= td && (!c.to || td <= c.to), mk = td.slice(0, 7);
@@ -1309,6 +1331,7 @@ async function openDay(ds) {
       }
       const go = e.target.closest('[data-goto]');
       if (go) { document.getElementById('dayWrap').hidden = true; state.tool = go.dataset.goto; state.cls = classOf(state.tool); save(); history.replaceState(null, '', '#' + state.tool); return renderPanel(); }
+      const ta = e.target.closest('[data-tryauto]'); if (ta) { lsSet('study-sheet-try', window.__autoFix[ta.dataset.tryauto]); window.open('do.html?try=1', '_blank'); return; }
       const b = e.target.closest('[data-tryday]'); if (!b) return; const a = S.sheets.list[+b.dataset.tryday]; lsSet('study-sheet-try', { ...a, id: 'try' }); window.open('do.html?try=1', '_blank'); };
   } catch (e) { list.innerHTML = `<p class="help">Couldn’t load his day right now (${esc(e.message || e)}).</p>`; }
 }
