@@ -715,12 +715,12 @@ function partRainbow() {
           }
           let img = ''; try { const sm = document.createElement('canvas'); sm.width = 360; sm.height = Math.round(360 * cv.height / cv.width); sm.getContext('2d').drawImage(cv, 0, 0, sm.width, sm.height); img = sm.toDataURL('image/png'); } catch (er) { }
           $('pal').innerHTML = img ? `<img class="wl-done" src="${img}" alt="What he wrote">` : ''; $('keys').hidden = false;
-          finishAll(img);
+          finishAll(img, caseFlags);
         };
         drawAll();
       };
     };
-    const finishAll = img => {
+    const finishAll = (img, caseFlags = null) => {   // Nov 10: caseFlags lives inside writeLine; reading it here threw and froze line 4 after Done
       note('Rainbow Write', w, lineKeys[0].length === letters.length && lineKeys[1].length === letters.length && memTries.length === 1, w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory (he typed the whole word, then double-checked it), line 4 written by hand.' + (caseFlags ? ` The capital-letter check asked about ${caseFlags.join(', ')} on line 4, and he kept it.` : ''), img: img || undefined }, [`line 1: ${lineKeys[0].join(' ')}`, `line 2: ${lineKeys[1].join(' ')}`, ...memTries.map((s, k) => `line 3${memTries.length > 1 ? `, try ${k + 1}` : ''}: ${s}`)]);
       onKey = null; $('memActs').hidden = true; $('wordShow').innerHTML = `<div class="big-word">${esc(dw)}</div>`;
       $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join('');
