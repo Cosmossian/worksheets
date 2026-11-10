@@ -41,6 +41,7 @@ body.framefull { overflow: hidden; }
 .daywrap { position: fixed; inset: 0; background: rgba(5, 9, 14, .78); z-index: 80; display: grid; place-items: start center; padding: 40px 16px; overflow: auto; }
 .daywrap[hidden] { display: none; }
 .daybox { background: var(--surface); border: 2px solid var(--study); border-radius: 22px; padding: 20px 22px; width: 100%; max-width: 640px; }
+.aopen { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; } .aopen:hover span { text-decoration: underline; } .aopen:focus-visible { outline: 2px solid var(--study); border-radius: 6px; }
 .assign-day { display: flex; align-items: center; gap: 8px; font-weight: 700; margin: 0 0 8px; } .assign-day select { flex: 1; }
 .daynav { display: flex; align-items: center; gap: 8px; margin: 2px 0 2px; } .daytoday { text-align: center; margin: 0 0 6px; } .daytoday .btn { font-size: 13px; padding: 4px 12px; } .daynav b { flex: 1; text-align: center; font: 700 18px Fredoka, sans-serif; } .daynav button:disabled { opacity: .35; }
 .dayhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
@@ -1547,16 +1548,30 @@ async function renderAssigned() {
     const since = new Date(Date.now() - 30 * 864e5).toISOString();
     const { data: logs } = await sb.from('study_log').select('kind,t,data').in('kind', ['sheet', 'fixup']).gte('t', since);
     const today = new Date().toDateString(), td = dayOf(Date.now());
-    const doneFor = a => (logs || []).map(r => r.data).filter(d => (d.aid || d.cid) === a.id && (!['steps', 'weather'].includes(a.tool) || new Date(d.t).toDateString() === today)).sort((x, y) => y.t - x.t)[0];
+    // Nov 9 (Dylan: "if I picked Monday, to only see the stuff assigned to his device on that day"): the list follows the For day.
+    const ds = (document.getElementById('assignDay') || {}).value || td;
+    const doneFor = a => (logs || []).map(r => r.data).filter(d => (d.aid || d.cid) === a.id && (!['steps', 'weather'].includes(a.tool) ? dayOf(d.t) <= ds : dayOf(d.t) === ds)).sort((x, y) => y.t - x.t)[0];
     const doneDays = a => (logs || []).map(r => r.data).filter(d => (d.aid || d.cid) === a.id).map(d => dayOf(d.t));
-    const shown = list.filter(a => sheetDay(a) > td || onList(a, td, doneDays)).sort((x, y) => sheetDay(x).localeCompare(sheetDay(y)));   // today's (and carried-over) work, then what's coming
+    const shown = list.filter(a => onList(a, ds, doneDays)).sort((x, y) => (OPTIONAL.includes(x.tool) - OPTIONAL.includes(y.tool)) || x.at - y.at);
     if (!document.getElementById('assignedList')) return;
-    document.getElementById('assignedList').innerHTML = shown.length ? `<b style="font-size:14px">On his device:</b>` + shown.map(a => {
-      const d = doneFor(a), g = d && d.grade, sd = sheetDay(a), when = (sd > td ? `for ${dayName(sd)}` : RECUR.includes(a.tool) && sd < td ? 'every day' : 'for today') + (a.auto ? ' · put on his day by itself' : '');
-      return `<div><span>${esc(a.title)}<br><small style="color:var(--muted)">${esc(when)} · assigned ${esc(checkDate(a.at))}</small></span>${d ? `<span class="ok">✓ ${g ? `${g.letter} ${g.pct}%` : a.tool === 'weather' && d.extra && d.extra.day ? `day ${d.extra.day} today` : a.tool === 'steps' ? 'today' : 'done'}</span>` : ''}<button class="btn btn-small" data-unassign="${esc(a.id)}" aria-label="Remove ${esc(a.title)} from his device">Remove</button></div>`;
-    }).join('') : '';
+    document.getElementById('assignedList').innerHTML = `<b style="font-size:14px">On his device ${ds === td ? 'today' : esc(dayName(ds))}:</b>` + (shown.length ? shown.map(a => {
+      const d = doneFor(a), g = d && d.grade, sd = sheetDay(a), when = (OPTIONAL.includes(a.tool) ? 'extra' : a.data && a.data.exact ? '📄 school' : '🧩 template') + (a.auto ? ' · put on his day by itself' : ` · assigned ${checkDate(a.at)}`);
+      return `<div><button class="aopen" data-aopen="${esc(a.id)}" title="Open this worksheet"><span>${esc(a.title)}</span><small style="color:var(--muted)">${esc(when)} · tap to open</small></button>${d ? `<span class="ok">✓ ${g ? `${g.letter} ${g.pct}%` : a.tool === 'weather' && d.extra && d.extra.day ? `day ${d.extra.day} today` : a.tool === 'steps' ? 'today' : 'done'}</span>` : ''}<button class="btn btn-small" data-unassign="${esc(a.id)}" aria-label="Remove ${esc(a.title)} from his device">Remove</button></div>`;
+    }).join('') : `<p class="help" style="margin:6px 0 0">Nothing on his device ${ds === td ? 'today' : 'that day'} yet.</p>`);
+    assignedCache = list;
   } catch (e) { el.innerHTML = ''; }
 }
+/* Tap an item in "On his device" to open it: a school worksheet opens in School Assigned on its date, anything else in Templates */
+let assignedCache = [];
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-aopen]'); if (!b) return;
+  const a = assignedCache.find(x => x.id === b.dataset.aopen); if (!a) return;
+  const t = a.tool === 'mtest' ? 'master' : a.tool, sd = a.data && (a.data.schoolDay || (a.data.exact ? '2026-11-09' : ''));
+  state.cls = classOf(t);
+  if (sd && LT[t] && LT[t].schools && LT[t].schools[sd]) { state.folders = { ...(state.folders || {}), [state.cls]: 'school' }; state.schoolSel = { t, day: sd }; }
+  else { state.folders = { ...(state.folders || {}), [state.cls]: 'templates' }; state.tool = t; history.replaceState(null, '', '#' + t); }
+  showPv = false; save(); renderPanel(); window.scrollTo({ top: 0, behavior: 'smooth' });
+});
 function wireWeather() {
   const found = (t, ok) => { const f = document.getElementById('wxFound'); f.innerHTML = t; f.style.color = ok ? '#34D399' : 'var(--warn-ink)'; };
   document.getElementById('wxFind').onclick = async () => {
@@ -1578,7 +1593,7 @@ function wireOnScreen() {
   const want = (() => { const sd = (snapshot(t).data || {}).schoolDay; if (sd && sd >= today) return sd; const last = (state.assignDay || {})[t]; return last && last > today ? last : today; })();
   const days = Array.from({ length: 10 }, (_, k) => addDays(today, k)); if (!days.includes(want)) days.push(want);
   sel.innerHTML = days.map(ds => `<option value="${ds}" ${ds === want ? 'selected' : ''}>${esc(dayName(ds))}</option>`).join('');
-  sel.onchange = () => { state.assignDay = { ...(state.assignDay || {}), [t]: sel.value }; save(); };
+  sel.onchange = () => { state.assignDay = { ...(state.assignDay || {}), [t]: sel.value }; save(); renderAssigned(); };
   document.getElementById('assignBtn').onclick = async () => {
     const snap = snapshot(t);
     if (!snap.ok) return amsg(snap.need || 'Add some words or questions first.', true);
