@@ -1281,6 +1281,11 @@ const ymd = d => { const x = new Date(d); return `${x.getFullYear()}-${String(x.
    assigned; older ones: the school worksheet's day or the day it was assigned); Daily Steps and Weather Watch every day from then on;
    the Mastered Words Test only on its day; anything else he didn't finish on its day carries over until he does it. */
 const RECUR = ['steps', 'weather'];
+/* Nov 9, 2026 (Dylan): only chores are every day. Daily Steps is an extra (never counted). Weather Watch stays on his screen until he's
+   done its days (never counted as missed). Sight words are Monday to Friday. */
+const OPTIONAL = ['steps', 'weather'];
+const isWeekday = ds => { const g = new Date(ds + 'T12:00:00').getDay(); return g > 0 && g < 6; };
+const wxDone = (a, L) => new Set(L.filter(l => l.aid === a.id).map(l => ymd(l.t))).size >= (+(a.data && a.data.days) || 5);
 const sheetDay = a => a.day || (a.data && a.data.schoolDay) || (a.data && a.data.exact ? '2026-11-09' : ymd(a.at));   // the old undated “📄 School copy” ones were all the 11/09/26 sheets
 function sheetsFor(ds) {
   const L = [...(store('sheet-log') || []), ...(store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))];
@@ -1288,7 +1293,8 @@ function sheetsFor(ds) {
     const d = sheetDay(a);
     if (a.tool === 'mtest') return d === ds;
     if (d > ds) return false;
-    return d === ds || RECUR.includes(a.tool);   // Nov 9: nothing carries over; a missed one shows as Not completed in Parent Review
+    if (a.tool === 'weather') return d <= ds && !wxDone(a, L.filter(l => ymd(l.t) < ds));   // until he's done all its days
+    return d === ds || (a.tool === 'steps' && d <= ds);   // Nov 9: nothing carries over; a missed one shows as Not completed in Parent Review
   }).sort((x, y) => sheetDay(x).localeCompare(sheetDay(y)));
 }
 const isSchool = d => d.getDay() !== 0 && d.getDay() !== 6;
@@ -1344,7 +1350,9 @@ function dayStatus(ds, agendas) {
   if (ds <= ymd(Date.now())) { const mine = list.filter(a => !RECUR.includes(a.tool) && a.tool !== 'mtest' && sheetDay(a) === ds); if (mine.length) { items = [...(items || [])]; mine.forEach(a => { if (!items.some(x => x.id === a.id)) items.push({ id: a.id, tool: a.tool, title: a.title }); }); } }
   if (items) items = items.filter(it => {
     const a = list.find(x => x.id === it.id);
-    if (it.tool === 'check' || it.tool === 'spellq' || RECUR.includes(it.tool)) return !wkend || done(it);
+    if (it.tool === 'steps') return false;   // an extra, never counted
+    if (it.tool === 'weather') return done(it);   // counts when he did a day, never as missed
+    if (it.tool === 'check' || it.tool === 'spellq') return !wkend || done(it);
     return !a || sheetDay(a) <= ds;
   });
   if (!items || !items.length) return any ? { cls: 'done', title: 'He did some work' } : { cls: 'none', title: 'Nothing assigned' };
@@ -2460,7 +2468,11 @@ async function renderReview(noPull) {
   $('reviewPts').innerHTML = `<div class="pts-card"><b>⭐ ${esc(kidName() || 'His')} points: ${P0.total}</b><span>today ${upDown(P0.today)} · best day ${P0.best ? P0.best.pts : 0}</span><button class="btn" id="reviewPtsBtn">See every point</button></div>`;
   $('reviewPtsBtn').onclick = () => openPoints(true);
   if (cloudMember() && !noPull) { $('reviewList').innerHTML = '<p class="rv-empty">Loading…</p>'; await cloudPullLogs(); if ($('review').hidden) return; }
-  if (!calSel) calSel = ymd(Date.now());
+  if (!calSel) {   // the Results link on the Worksheets page opens a given day: spell.html?day=YYYY-MM-DD#review
+    const want = new URLSearchParams(location.search).get('day');
+    calSel = /^\d{4}-\d{2}-\d{2}$/.test(want || '') ? want : ymd(Date.now());
+    if (want) calMonth.review = [+calSel.slice(0, 4), +calSel.slice(5, 7) - 1];
+  }
   const looks = lookLog(), checks = store('spell-check-log') || [], fixes = store('fixup-log') || [], sheets = store('sheet-log') || [];
   const days = {};
   const add = (t, item) => { (days[dayKey(t)] = days[dayKey(t)] || { t, items: [] }).items.push(item); };
@@ -2474,12 +2486,11 @@ async function renderReview(noPull) {
   $('reviewDay').textContent = new Date(calSel + 'T12:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + (calSel === ymd(Date.now()) ? ' (today)' : '');
   // Nov 9 (Dylan: "if I look at parent review, it'll show the assignments for that date"): every worksheet assigned for this day,
   // done (with its grade) or ✗ Not completed once the day is over. From the assigned list, plus the list his device saved that day.
-  const td = ymd(Date.now()), listA = (store('study-sheets') || {}).list || [], ag = (agendas[calSel] || {}).items || [];
-  const asg = [...listA.filter(a => a.tool !== 'mtest' && (sheetDay(a) === calSel || (RECUR.includes(a.tool) && sheetDay(a) <= calSel && calSel <= td))).map(a => ({ id: a.id, tool: a.tool, title: a.title })), ...ag.filter(it => it.tool !== 'check' && it.tool !== 'spellq' && it.title && !listA.some(a => a.id === it.id))];
-  const allLogs = [...sheets, ...fixes.map(f => ({ ...f, aid: f.cid }))];
+  const td = ymd(Date.now()), listA = (store('study-sheets') || {}).list || [], ag = (agendas[calSel] || {}).items || [], allLogs = [...sheets, ...fixes.map(f => ({ ...f, aid: f.cid }))];
+  const asg = [...listA.filter(a => a.tool !== 'mtest' && (sheetDay(a) === calSel || (a.tool === 'weather' && sheetDay(a) <= calSel && calSel <= td && allLogs.some(l => l.aid === a.id && ymd(l.t) === calSel)))).map(a => ({ id: a.id, tool: a.tool, title: a.title })), ...ag.filter(it => it.tool !== 'check' && it.tool !== 'spellq' && it.title && !listA.some(a => a.id === it.id))];
   const asgHtml = asg.length ? `<div class="rv-asg"><h4>Assigned for this day</h4>${asg.map(a => {
       const d = allLogs.filter(l => l.aid === a.id && (RECUR.includes(a.tool) ? ymd(l.t) === calSel : ymd(l.t) <= calSel)).sort((x, y) => y.t - x.t)[0], g = d && d.grade;
-      const st = d ? `<span class="ok">✓ done${g ? `: ${esc(g.letter)} (${g.pct}%)` : ''}</span>` : calSel < td ? '<span class="no">✗ Not completed</span>' : calSel === td ? '<span class="wait">not done yet</span>' : '<span class="wait">coming up</span>';
+      const st = d ? `<span class="ok">✓ done${g ? `: ${esc(g.letter)} (${g.pct}%)` : ''}</span>` : OPTIONAL.includes(a.tool) ? '<span class="wait">extra (not required)</span>' : calSel < td ? '<span class="no">✗ Not completed</span>' : calSel === td ? '<span class="wait">not done yet</span>' : '<span class="wait">coming up</span>';
       return `<div class="rv-asg-row"><span>${esc(a.title)}</span>${st}</div>`; }).join('')}</div>` : '';
   if (!order.length) { $('reviewList').innerHTML = asgHtml + (asgHtml ? '' : '<p class="rv-empty">Nothing on this day.</p>'); return; }
   const wordList = rs => rs.map(r => r.ok ? `<span class="ok">✓ ${esc(r.word)}</span>` : `<span class="no">✗ ${esc(r.word)} (wrote “${esc(r.typed)}”)</span>`).join(' · ');
@@ -2851,7 +2862,7 @@ setInterval(() => { if (cloudMember() && !daily && (!$('kidhome').hidden || !$('
 
 /* ---- His start screen ---- */
 function renderKidHome() {
-  const d = store('spell-daily') || {}, words = d.on === false ? [] : dailyWords();
+  const d = store('spell-daily') || {}, words = d.on === false || !isWeekday(ymd(Date.now())) ? [] : dailyWords();   // sight words: Monday to Friday
   const today = (store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString() && r.t > (d.resetAt || 0));   // "Reset today" starts his day fresh
   $('kidHi').textContent = kidName() ? `Hi ${kidName()}! 👋` : 'Hi! 👋';
   const sq = store('spell-queue'), sheets = [...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq', title: `✏️ Spelling practice · ${sq.words.length} word${sq.words.length > 1 ? 's' : ''}` }] : []), ...sheetsFor(ymd(Date.now()))];

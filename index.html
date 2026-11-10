@@ -293,6 +293,32 @@ body.authwait .tabs, body.authwait .classes, body.authwait .workspace, body.auth
 /* dropdowns: our own arrow, with room from the edge */
 select { -webkit-appearance: none; appearance: none; padding-right: 40px !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1.5 1.5 L7 7 L12.5 1.5' fill='none' stroke='%239AABBF' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 14px 9px; cursor: pointer; }
 select::-ms-expand { display: none; }
+
+/* School Assigned | Templates (Nov 9, 2026) */
+.rightcol { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.folders { display: flex; gap: 8px; padding: 0 24px 10px; flex-wrap: wrap; }
+.folders button { font: 700 16px Fredoka, sans-serif; padding: 9px 18px; border-radius: 999px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.folders button[aria-pressed="true"] { border-color: var(--study); background: #17325A; }
+.folders button small { font: 700 12px Fredoka, sans-serif; background: #0E151D; border-radius: 999px; padding: 1px 8px; color: var(--muted); }
+body.schoolmode .tabs { display: none; }
+.workspace.school .preview { display: none; } .workspace.school.showpv .preview { display: flex; } .workspace.school.showpv .schoollist { display: none; }
+.panel .ls-mode { display: none; }   /* the folder picks school or own now */
+.schoollist { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+.sl-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; } .sl-head h3 { margin: 0; flex: 1; font: 700 20px Fredoka, sans-serif; }
+.sl-filter { display: inline-flex; border: 2px solid var(--line); border-radius: 999px; overflow: hidden; } .sl-filter button { border: 0; background: transparent; color: var(--muted); font: 700 13px Fredoka, sans-serif; padding: 6px 12px; cursor: pointer; } .sl-filter button[aria-pressed="true"] { background: var(--study); color: #fff; }
+.sl-group { margin-top: 10px; } .sl-group > h4, .sl-group > summary { font: 700 15px Fredoka, sans-serif; color: var(--muted); margin: 0 0 6px; cursor: pointer; }
+.srow { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: start; padding: 9px 10px; border-radius: 12px; border: 2px solid transparent; cursor: pointer; }
+.srow:hover { background: #172233; } .srow.on { border-color: var(--study); background: #142744; }
+.srow .sd { font: 700 14px Fredoka, sans-serif; text-align: center; line-height: 1.15; color: var(--ink); } .srow .sd small { display: block; color: var(--muted); font-size: 12px; }
+.srow .sm { display: flex; flex-direction: column; gap: 3px; min-width: 0; } .srow .sub { font-size: 12px; color: var(--muted); } .srow .tt { font-weight: 700; }
+.srow .stat { font: 600 13px Fredoka, sans-serif; color: var(--muted); } .srow .stat.ok { color: #34D399; } .srow .stat.miss { color: #F87171; } .srow .stat.on { color: #93C5FD; }
+.srow .sa { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; } .srow .sa .btn { font-size: 12px; padding: 4px 10px; }
+.srow .again { display: flex; gap: 6px; align-items: center; margin-top: 6px; } .srow .again select { flex: 1; }
+.sl-empty { color: var(--muted); padding: 10px 2px; }
+.previewbar { display: flex; gap: 8px; justify-content: space-between; }
+.schoolhead { background: #3A2E0C; border: 1px solid #B7791F; color: #FDE68A; border-radius: 12px; padding: 8px 12px; margin: 0 0 10px; font: 700 15px Fredoka, sans-serif; }
+@media (max-width: 900px) { .rightcol { order: -1; } }
+@media print { .rightcol { display: block; } .schoollist, .previewbar, .folders { display: none !important; } .workspace.school .preview { display: block !important; } }
 </style>
 </head>
 <body class="authwait">
@@ -302,6 +328,7 @@ select::-ms-expand { display: none; }
 </header>
 <nav class="classes" id="classes" aria-label="Classes"></nav>
 <div class="autonote" id="autoNote" hidden></div>
+<div class="folders" id="folders" role="group" aria-label="School Assigned or Templates"></div>
 <nav class="tabs" role="tablist" aria-label="Worksheets in this class">
   <button role="tab" data-tool="daily" data-day="daily">📝 Daily Sight Words</button>
   <button role="tab" data-tool="helper" data-day="spellq">✏️ Spelling Helper</button>
@@ -334,7 +361,11 @@ select::-ms-expand { display: none; }
 </div></div>
 <main class="workspace">
   <aside class="panel" id="panel" aria-label="Worksheet options"></aside>
-  <div class="preview" id="preview" aria-label="Worksheet preview"></div>
+  <div class="rightcol">
+    <div class="schoollist" id="schoolList" hidden></div>
+    <div class="previewbar" id="previewBar" hidden><button class="btn btn-small" id="pvBack">← Back to the list</button><button class="btn btn-small" id="pvPrint">🖨 Print</button></div>
+    <div class="preview" id="preview" aria-label="Worksheet preview"></div>
+  </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -1144,7 +1175,7 @@ function panelWeather() {
     <div class="btn-row" style="margin-top:6px"><button class="btn btn-small" id="wxFind">Find it</button><button class="btn btn-small" id="wxHere">Use my location</button></div>
     <small id="wxFound" style="color:${st.place ? '#34D399' : 'var(--muted)'}">${st.place ? `Weather for: ${esc(st.place.name)} ✓` : 'Needed for the on-screen version (it uses the real weather there).'}</small></div>
   <div class="field"><span class="lbl">Temperature in</span><label class="check" style="display:inline-flex;margin-right:14px"><input type="radio" name="wxUnit" value="F" ${st.unit !== 'C' ? 'checked' : ''}> °F</label><label class="check" style="display:inline-flex"><input type="radio" name="wxUnit" value="C" ${st.unit === 'C' ? 'checked' : ''}> °C</label></div>
-  <div class="field"><label for="wxDays">How many days</label><select id="wxDays">${[2, 3, 4, 5].map(n => `<option value="${n}" ${+st.days === n ? 'selected' : ''}>${n} days</option>`).join('')}</select><small>Day 1 ends with a forecast for Day 2.</small></div>
+  <div class="field"><label for="wxDays">How many days</label><select id="wxDays">${[2, 3, 4, 5, 10].map(n => `<option value="${n}" ${+st.days === n ? 'selected' : ''}>${n === 5 ? '5 days (1 school week)' : n === 10 ? '10 days (2 school weeks)' : n + ' days'}</option>`).join('')}</select><small>Day 1 ends with a forecast for Day 2.</small></div>
   ${printBlock(false)}`;
 }
 async function findPlace(q) {
@@ -1229,7 +1260,8 @@ async function openDay(ds) {
     if (words.length) {
       const steps = [d.look !== false ? `Look &amp; Listen (3 rounds${d.mic !== false ? ', with the microphone' : ''})` : '', d.practice !== false ? 'practice each word with the Spelling Helper' : '', 'the check (spoken words, letter grade)'].filter(Boolean).join(' → ');
       const chk = L.filter(x => x.kind === 'check' && today(x) && x.t > (d.resetAt || 0)).sort((a, b) => b.t - a.t)[0];
-      if (!isToday) {
+      if (!isWeekday(ds)) items.push({ title: '📝 Sight words', sub: 'Weekends off (sight words are Monday to Friday).', st: 'off', ok: false });
+      else if (!isToday) {
         const pc = L.filter(x => x.kind === 'check' && today(x)).sort((a, b) => b.t - a.t)[0];
         if (future) items.push({ off: d.on === false, title: `📝 Sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : 'coming up', ok: false, acts: '<button class="btn btn-small" data-goto="daily">Change the words</button>' });
         else if (pc) items.push({ title: `📝 Sight words check`, sub: esc((pc.results || []).map(r => r.word).join(', ')), st: pc.grade ? `✓ done: ${pc.grade.letter} (${pc.grade.pct}%)` : '✓ done', ok: true });
@@ -1245,7 +1277,7 @@ async function openDay(ds) {
       const sd = sheetDay(a), carried = false;
       const mine = L.filter(x => (x.aid || x.cid) === a.id && (RECUR.includes(a.tool) ? today(x) : dayOf(x.t) <= ds)).sort((x, y) => y.t - x.t)[0];
       const g = mine && mine.grade, over = ds < td;
-      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}` : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over,
+      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}` : OPTIONAL.includes(a.tool) ? 'extra (not required)' : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over && !OPTIONAL.includes(a.tool),
         acts: a.tool === 'fixup' ? '' : `<button class="btn btn-small" data-tryday="${k}">Try it</button>` });
     });
     const ch = S.chores;
@@ -1290,16 +1322,110 @@ window.addEventListener('message', e => {
   if (typeof e.data.studyH === 'number') frame.style.height = Math.max(400, e.data.studyH + 8) + 'px';
   if (typeof e.data.studyFull === 'boolean') { frame.classList.toggle('full', e.data.studyFull); document.body.classList.toggle('framefull', e.data.studyFull); }
 });
+/* ---------- 📄 School Assigned | 🧩 Templates (Nov 9, 2026, Dylan: "shift them into two folders under each subject… a panel
+   for the specific dates… the panels where you fill in the work shifted to the LEFT"). School Assigned: the dated official school
+   worksheets (left: that sheet's form; right: the list by date, this subject or all, with his result, Try it, Assign again, Results).
+   Templates: the reusable worksheets (lesson worksheets in their ✏️ My own version). The printable preview is behind 🖨. ---------- */
+const schoolEntries = clsId => L_IDS.filter(t => LT[t].schools && (!clsId || classOf(t) === clsId)).flatMap(t => Object.keys(LT[t].schools).map(day => ({ t, day })));
+const folderOf = clsId => { const f = (state.folders || {})[clsId]; return f || (schoolEntries(clsId).length ? 'school' : 'templates'); };
+function renderFolders(cls) {
+  const n = schoolEntries(cls.id).length, f = folderOf(cls.id);
+  document.getElementById('folders').innerHTML = `<button data-folder="school" aria-pressed="${f === 'school'}">📄 School Assigned <small>${n}</small></button><button data-folder="templates" aria-pressed="${f === 'templates'}">🧩 Templates <small>${cls.tools.length + (cls.extra || 0)}</small></button>`;
+  document.body.classList.toggle('schoolmode', f === 'school');
+}
+document.getElementById('folders').addEventListener('click', e => {
+  const b = e.target.closest('[data-folder]'); if (!b) return;
+  const cls = state.cls || classOf(state.tool);
+  state.folders = { ...(state.folders || {}), [cls]: b.dataset.folder }; showPv = false;
+  if (b.dataset.folder === 'templates') { const c = CLASSES.find(x => x.id === cls); if (c.tools.length && !c.tools.includes(state.tool)) state.tool = c.tools[0]; }
+  save(); renderPanel();
+});
+let showPv = false;
+function schoolPick(cls) {   // the school sheet shown on the left: the one picked, else the next one coming up, else the newest
+  const all = schoolEntries(state.schoolAll ? null : cls.id), sel = state.schoolSel, td = dayOf(Date.now());
+  if (sel && LT[sel.t] && LT[sel.t].schools && LT[sel.t].schools[sel.day] && (state.schoolAll || classOf(sel.t) === cls.id)) return sel;
+  const up = all.filter(e => e.day >= td).sort((a, b) => a.day.localeCompare(b.day))[0];
+  return up || all.sort((a, b) => b.day.localeCompare(a.day))[0] || null;
+}
+function renderSchool(cls) {
+  const ws = document.querySelector('.workspace'), sel = schoolPick(cls);
+  ws.classList.add('school'); ws.classList.toggle('showpv', showPv);
+  document.getElementById('schoolList').hidden = false; document.getElementById('previewBar').hidden = !showPv;
+  if (!sel) { $panel.innerHTML = `<h2>${cls.icon} ${esc(cls.name)}</h2><p class="help">No school worksheets for ${esc(cls.name)} yet. When you send me the school’s sheets, they’ll show up here by date.</p>`; renderSchoolList(cls, null); return; }
+  state.schoolSel = sel; state.tool = sel.t;
+  const st = L_st(sel.t); st.mode = 'school'; st.day = sel.day;
+  $panel.innerHTML = `<div class="schoolhead">📄 School worksheet for ${esc(dayName(sel.day, true))}</div>` + L_panel(sel.t) + onScreenBlock();
+  wireOnScreen();
+  document.getElementById('printBtn').onclick = () => { showPv = true; renderPanel(); setTimeout(() => window.print(), 400); };
+  if (showPv) scheduleRender();
+  renderSchoolList(cls, sel);
+}
+async function renderSchoolList(cls, sel) {
+  const el = document.getElementById('schoolList'), td = dayOf(Date.now()), all = schoolEntries(state.schoolAll ? null : cls.id);
+  const wk = ds => { const x = new Date(ds + 'T12:00:00'); x.setDate(x.getDate() - x.getDay()); return dayOf(x); }, thisWk = wk(td);
+  const up = all.filter(e => e.day > td).sort((a, b) => a.day.localeCompare(b.day)), now = all.filter(e => e.day === td);
+  const past = all.filter(e => e.day < td).sort((a, b) => b.day.localeCompare(a.day));
+  const weeks = {}; past.forEach(e => { const k = wk(e.day); (weeks[k] = weeks[k] || []).push(e); });
+  const row = e => { const L = LT[e.t], snap = L_snapshotDay(e.t, e.day), c = CLASSES.find(x => x.id === classOf(e.t)), on = sel && sel.t === e.t && sel.day === e.day, x = new Date(e.day + 'T12:00:00');
+    return `<div class="srow${on ? ' on' : ''}" data-sopen="${e.t}@${e.day}"><div class="sd">${x.toLocaleDateString(undefined, { weekday: 'short' })}<small>${x.getMonth() + 1}/${x.getDate()}</small></div><div class="sm"><span class="sub">${c.icon} ${esc(c.name)} · ${esc(L.name)}</span><span class="tt">${esc(snap.title.replace(/^📄 School [\d/]+ · /, ''))}</span><span class="stat" data-stat="${e.t}@${e.day}">…</span><div class="sa"><button class="btn btn-small" data-stry="${e.t}@${e.day}">▶ Try it</button><button class="btn btn-small" data-sagain="${e.t}@${e.day}">↻ Assign again…</button><a class="btn btn-small" data-sres="${e.t}@${e.day}" hidden>📋 Results</a></div><div class="again" data-againbox="${e.t}@${e.day}" hidden></div></div></div>`; };
+  const group = (h, list, open = true) => list.length ? (open ? `<div class="sl-group"><h4>${h}</h4>${list.map(row).join('')}</div>` : `<details class="sl-group"><summary>${h} (${list.length})</summary>${list.map(row).join('')}</details>`) : '';
+  el.innerHTML = `<div class="sl-head"><h3>📅 School worksheets by date</h3><div class="sl-filter"><button data-sall="0" aria-pressed="${!state.schoolAll}">${esc(cls.name)}</button><button data-sall="1" aria-pressed="${!!state.schoolAll}">All subjects</button></div></div>`
+    + (all.length ? group('Coming up', up) + group('Today', now) + Object.keys(weeks).sort().reverse().map(k => group(k === thisWk ? 'Earlier this week' : `Week of ${new Date(k + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`, weeks[k].sort((a, b) => b.day.localeCompare(a.day)), k === thisWk)).join('') : `<p class="sl-empty">No school worksheets ${state.schoolAll ? '' : `for ${esc(cls.name)} `}yet.</p>`);
+  // his results: assigned? done (grade)? not completed?
+  const sb = await studySession(); if (!sb) return;
+  try {
+    const list = await loadSheets(sb), { data: logs } = await sb.from('study_log').select('kind,data').in('kind', ['sheet', 'fixup']).gte('t', new Date(Date.now() - 120 * 864e5).toISOString());
+    const L = (logs || []).map(r => r.data);
+    el.querySelectorAll('[data-stat]').forEach(sp => {
+      const [t, day] = sp.dataset.stat.split('@'), mine = list.filter(a => a.tool === t && a.data && a.data.exact && a.data.schoolDay === day).sort((a, b) => b.at - a.at);
+      if (!mine.length) { sp.textContent = day > td ? 'not on his day yet' : 'not assigned'; return; }
+      const a = mine[0], r = L.filter(x => (x.aid || x.cid) === a.id).sort((x, y) => y.t - x.t)[0], d = sheetDay(a), more = mine.length > 1 ? ` · assigned ${mine.length}×` : '';
+      if (r) { sp.textContent = `✓ done${r.grade ? `: ${r.grade.letter} (${r.grade.pct}%)` : ''}${more}`; sp.className = 'stat ok'; const res = el.querySelector(`[data-sres="${t}@${day}"]`); res.hidden = false; res.href = `spell.html?day=${dayOf(r.t)}#review`; }
+      else if (d < td) { sp.textContent = `✗ Not completed (${dayName(d)})${more}`; sp.className = 'stat miss'; }
+      else { sp.textContent = `on his day ${d === td ? 'today' : dayName(d)}${more}`; sp.className = 'stat on'; }
+    });
+  } catch (e) { console.warn('school list', e); }
+}
+document.getElementById('schoolList').addEventListener('click', async e => {
+  const f = e.target.closest('[data-sall]'); if (f) { state.schoolAll = f.dataset.sall === '1'; state.schoolSel = null; save(); return renderPanel(); }
+  const tr = e.target.closest('[data-stry]');
+  if (tr) { e.stopPropagation(); const [t, day] = tr.dataset.stry.split('@'), snap = L_snapshotDay(t, day); if (!snap.ok) return alert(snap.need); lsSet('study-sheet-try', { id: 'try', tool: t, title: snap.title, data: snap.data }); return window.open('do.html?try=1', '_blank'); }
+  if (e.target.closest('[data-sres]')) { e.stopPropagation(); return; }
+  const ag = e.target.closest('[data-sagain]');
+  if (ag) { e.stopPropagation(); const k = ag.dataset.sagain, box = document.querySelector(`[data-againbox="${k}"]`), td = dayOf(Date.now());
+    box.hidden = !box.hidden; box.innerHTML = box.hidden ? '' : `<select>${Array.from({ length: 10 }, (_, i) => addDays(td, i)).map(ds => `<option value="${ds}">${esc(dayName(ds))}</option>`).join('')}</select><button class="btn btn-small btn-assign" data-sgo="${k}">Assign</button>`; return; }
+  const go = e.target.closest('[data-sgo]');
+  if (go) { e.stopPropagation(); const [t, day] = go.dataset.sgo.split('@'), snap = L_snapshotDay(t, day), when = go.previousElementSibling.value;
+    if (!snap.ok) return alert(snap.need);
+    const sb = await studySession(); if (!sb) return alert('Sign in as the grown-up first.');
+    go.disabled = true; go.textContent = 'Assigning…';
+    try { const list = await loadSheets(sb); list.push({ id: Date.now().toString(36), tool: t, title: snap.title, at: Date.now(), day: when, data: snap.data }); await saveSheets(sb, list.slice(-40));
+      state.autoSkip = (state.autoSkip || []).filter(x => x !== `${t}@${day}`); save(); go.textContent = `✓ On his day ${dayName(when)}`; refreshOnDay(list); renderAssigned(); setTimeout(() => renderPanel(), 1200);
+    } catch (er) { go.disabled = false; go.textContent = 'Try again'; }
+    return; }
+  if (e.target.closest('select, .again')) { e.stopPropagation(); return; }
+  const op = e.target.closest('[data-sopen]');
+  if (op) { const [t, day] = op.dataset.sopen.split('@'); state.schoolSel = { t, day }; showPv = false; save(); renderPanel(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+});
+document.getElementById('pvBack').onclick = () => { showPv = false; renderPanel(); };
+document.getElementById('pvPrint').onclick = () => window.print();
+
 function renderPanel() {
   renderClasses();
   const cls = CLASSES.find(c => c.id === (state.cls || classOf(state.tool)));
-  if (!cls.tools.length) {   // a class with nothing in it yet
+  if (!cls.tools.length && !schoolEntries(cls.id).length) {   // a class with nothing in it yet
+    renderFolders(cls); document.getElementById('schoolList').hidden = true; document.querySelector('.workspace').classList.remove('school', 'showpv');
     $panel.innerHTML = `<h2>${cls.icon} ${esc(cls.name)}</h2><p class="help">No worksheets for ${esc(cls.name)} yet.</p>`;
     $preview.innerHTML = `<div class="empty-class">Nothing in ${esc(cls.name)} yet. As he works on new things in ${esc(cls.name)}, worksheets for them will show up here.</div>`;
     return;
   }
-  const t = state.tool;
+  renderFolders(cls);
   const ws = document.querySelector('.workspace');
+  if (folderOf(cls.id) === 'school') { ws.classList.remove('embedded'); frame = null; return renderSchool(cls); }
+  ws.classList.remove('school', 'showpv'); document.getElementById('schoolList').hidden = true; document.getElementById('previewBar').hidden = true;
+  if (!cls.tools.includes(state.tool)) state.tool = cls.tools[0];
+  const t = state.tool;
+  if (LT[t] && LT[t].schools) L_st(t).mode = 'own';   // Templates = the ✏️ My own version
   if (EMBED[t]) {   // Daily Sight Words / Spelling Helper: their page, shown right here (it goes full screen while he works)
     document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tool === t));
     ws.classList.add('embedded');
@@ -1352,11 +1478,16 @@ const dayOf = t => { const x = new Date(t); return `${x.getFullYear()}-${String(
    didn't finish shows as ✗ Not completed on that day. Same rule in spell.html (his start screen). */
 const RECUR = ['steps', 'weather'];
 const sheetDay = a => a.day || (a.data && a.data.schoolDay) || (a.data && a.data.exact ? '2026-11-09' : dayOf(a.at));   // the old undated “📄 School copy” ones were all the 11/09/26 sheets
+/* Nov 9 (Dylan): only chores are every day. Daily Steps is an extra (never counted). Weather Watch stays on until he's done its days
+   (never counted as missed). Sight words: Monday to Friday. */
+const OPTIONAL = ['steps', 'weather'];
+const isWeekday = ds => { const g = new Date(ds + 'T12:00:00').getDay(); return g > 0 && g < 6; };
 function onList(a, ds, doneDays) {
   const d = sheetDay(a);
   if (a.tool === 'mtest') return d === ds;
   if (d > ds) return false;
-  return d === ds || RECUR.includes(a.tool);   // Nov 9 (Dylan): no carrying over; a day that's over shows it as Not completed
+  if (a.tool === 'weather') return new Set(doneDays(a).filter(x => x < ds)).size < (+(a.data && a.data.days) || 5);
+  return d === ds || a.tool === 'steps';   // Nov 9 (Dylan): no carrying over; a day that's over shows it as Not completed
 }
 const addDays = (ds, n) => { const x = new Date(ds + 'T12:00:00'); x.setDate(x.getDate() + n); return dayOf(x); };
 const dayName = (ds, long) => { const x = new Date(ds + 'T12:00:00'), t = dayOf(Date.now()), rel = ds === t ? 'today' : ds === addDays(t, 1) ? 'tomorrow' : ds === addDays(t, -1) ? 'yesterday' : '';
@@ -1397,7 +1528,7 @@ async function autoSchool() {
     if (el) {
       el.hidden = !waiting.length;
       el.innerHTML = waiting.length ? `📄 Official school worksheets go on his day by themselves. <b>Waiting for you:</b> ${waiting.map((w, i) => `${esc(LT[w.t].name)} for ${esc(dayName(w.day))}: ${esc(w.need)} <button class="btn btn-small" data-autogo="${i}">Open it</button>`).join(' · ')}` : '';
-      el.onclick = e => { const b = e.target.closest('[data-autogo]'); if (!b) return; const w = waiting[+b.dataset.autogo]; const st = L_st(w.t); st.mode = 'school'; st.day = w.day; state.tool = w.t; state.cls = classOf(w.t); save(); history.replaceState(null, '', '#' + w.t); renderPanel(); };
+      el.onclick = e => { const b = e.target.closest('[data-autogo]'); if (!b) return; const w = waiting[+b.dataset.autogo]; state.cls = classOf(w.t); state.folders = { ...(state.folders || {}), [state.cls]: 'school' }; state.schoolSel = { t: w.t, day: w.day }; showPv = false; save(); renderPanel(); };
     }
   } catch (e) { console.warn('autoSchool', e); }
   finally { autoBusy = false; }
