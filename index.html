@@ -1236,7 +1236,7 @@ function renderClasses() {
 document.getElementById('classes').addEventListener('click', e => {
   const b = e.target.closest('[data-cls]'); if (!b) return;
   const c = CLASSES.find(x => x.id === b.dataset.cls);
-  state.cls = c.id; if (c.tools.length && !c.tools.includes(state.tool)) state.tool = c.tools[0];
+  state.cls = c.id; schoolOpen = false; if (c.tools.length && !c.tools.includes(state.tool)) state.tool = c.tools[0];
   save(); history.replaceState(null, '', '#' + (c.tools.length ? state.tool : c.id)); renderPanel();
 });
 /* Review Child's Day: what his start screen shows today, straight from the Study database */
@@ -1343,7 +1343,7 @@ function renderFolders(cls) {
 document.getElementById('folders').addEventListener('click', e => {
   const b = e.target.closest('[data-folder]'); if (!b) return;
   const cls = state.cls || classOf(state.tool);
-  state.folders = { ...(state.folders || {}), [cls]: b.dataset.folder }; showPv = false;
+  state.folders = { ...(state.folders || {}), [cls]: b.dataset.folder }; showPv = false; schoolOpen = false;
   if (b.dataset.folder === 'templates') { const c = CLASSES.find(x => x.id === cls); if (c.tools.length && !c.tools.includes(state.tool)) state.tool = c.tools[0]; }
   save(); renderPanel();
 });
@@ -1354,14 +1354,30 @@ function schoolPick(cls) {   // the school sheet shown on the left: the one pick
   const up = all.filter(e => e.day >= td).sort((a, b) => a.day.localeCompare(b.day))[0];
   return up || all.sort((a, b) => b.day.localeCompare(a.day))[0] || null;
 }
+/* Nov 9 (Dylan: "I don't want it above like that… If I CLICK the assigned assignment under that subject, then give me the
+   settings for it"): School Assigned opens on his day (a day picker + the assigned worksheets as buttons). A worksheet's settings
+   show only after tapping it (or a row in the date list), with ← Back to his day. */
+let schoolOpen = false;
+function renderSchoolDay(cls) {
+  const td = dayOf(Date.now()), ds = state.schoolDay && state.schoolDay >= addDays(td, -21) ? state.schoolDay : td;
+  $panel.innerHTML = `<h2>📄 ${esc(cls.name)}: his day</h2><p class="help" style="margin:0 0 10px">Pick a day to see the ${state.schoolAll ? '' : esc(cls.name) + ' '}school worksheets on his device that day. Tap one to see or change it, or tap a worksheet in the list by date.</p>
+    <div class="onscreen" style="border-top:0;padding-top:0;margin-top:0"><label class="assign-day">Day <select id="assignDay">${Array.from({ length: 32 }, (_, i) => addDays(td, i - 21)).map(d => `<option value="${d}" ${d === ds ? 'selected' : ''}>${esc(dayName(d))}</option>`).join('')}</select></label>
+    <div class="assign-msg" id="assignMsg"></div><div class="assigned" id="assignedList"></div></div>`;
+  const sel = document.getElementById('assignDay');
+  sel.onchange = () => { state.schoolDay = sel.value; save(); renderAssigned(); };
+  document.getElementById('assignedList').onclick = unassignClick;
+  renderAssigned();
+}
 function renderSchool(cls) {
-  const ws = document.querySelector('.workspace'), sel = schoolPick(cls);
+  const ws = document.querySelector('.workspace'), sel = schoolOpen ? schoolPick(cls) : (state.schoolSel || null);
   ws.classList.add('school'); ws.classList.toggle('showpv', showPv);
   document.getElementById('schoolList').hidden = false; document.getElementById('previewBar').hidden = !showPv;
+  if (!schoolOpen) { renderSchoolDay(cls); renderSchoolList(cls, null); return; }
   if (!sel) { $panel.innerHTML = `<h2>${cls.icon} ${esc(cls.name)}</h2><p class="help">No school worksheets for ${esc(cls.name)} yet. When you send me the school’s sheets, they’ll show up here by date.</p>`; renderSchoolList(cls, null); return; }
   state.schoolSel = sel; state.tool = sel.t;
   const st = L_st(sel.t); st.mode = 'school'; st.day = sel.day;
-  $panel.innerHTML = `<div class="schoolhead">📄 School worksheet for ${esc(dayName(sel.day, true))}</div>` + L_panel(sel.t) + onScreenBlock();
+  $panel.innerHTML = `<button class="btn btn-small" id="schoolBack" style="margin-bottom:10px">← Back to his day</button><div class="schoolhead">📄 School worksheet for ${esc(dayName(sel.day, true))}</div>` + L_panel(sel.t) + onScreenBlock();
+  document.getElementById('schoolBack').onclick = () => { schoolOpen = false; showPv = false; renderPanel(); };
   wireOnScreen();
   document.getElementById('printBtn').onclick = () => { showPv = true; renderPanel(); setTimeout(() => window.print(), 400); };
   if (showPv) scheduleRender();
@@ -1394,7 +1410,7 @@ async function renderSchoolList(cls, sel) {
   } catch (e) { console.warn('school list', e); }
 }
 document.getElementById('schoolList').addEventListener('click', async e => {
-  const f = e.target.closest('[data-sall]'); if (f) { state.schoolAll = f.dataset.sall === '1'; state.schoolSel = null; save(); return renderPanel(); }
+  const f = e.target.closest('[data-sall]'); if (f) { state.schoolAll = f.dataset.sall === '1'; if (!schoolOpen) state.schoolSel = null; save(); return renderPanel(); }
   const tr = e.target.closest('[data-stry]');
   if (tr) { e.stopPropagation(); const [t, day] = tr.dataset.stry.split('@'), snap = L_snapshotDay(t, day); if (!snap.ok) return alert(snap.need); lsSet('study-sheet-try', { id: 'try', tool: t, title: snap.title, data: snap.data }); return window.open('do.html?try=1', '_blank'); }
   if (e.target.closest('[data-sres]')) { e.stopPropagation(); return; }
@@ -1412,7 +1428,7 @@ document.getElementById('schoolList').addEventListener('click', async e => {
     return; }
   if (e.target.closest('select, .again')) { e.stopPropagation(); return; }
   const op = e.target.closest('[data-sopen]');
-  if (op) { const [t, day] = op.dataset.sopen.split('@'); state.schoolSel = { t, day }; showPv = false; save(); renderPanel(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  if (op) { const [t, day] = op.dataset.sopen.split('@'); state.schoolSel = { t, day }; schoolOpen = true; showPv = false; save(); renderPanel(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 });
 document.getElementById('pvBack').onclick = () => { showPv = false; renderPanel(); };
 document.getElementById('pvPrint').onclick = () => window.print();
@@ -1537,7 +1553,7 @@ async function autoSchool() {
     if (el) {
       el.hidden = !waiting.length;
       el.innerHTML = waiting.length ? `📄 Official school worksheets go on his day by themselves. <b>Waiting for you:</b> ${waiting.map((w, i) => `${esc(LT[w.t].name)} for ${esc(dayName(w.day))}: ${esc(w.need)} <button class="btn btn-small" data-autogo="${i}">Open it</button>`).join(' · ')}` : '';
-      el.onclick = e => { const b = e.target.closest('[data-autogo]'); if (!b) return; const w = waiting[+b.dataset.autogo]; state.cls = classOf(w.t); state.folders = { ...(state.folders || {}), [state.cls]: 'school' }; state.schoolSel = { t: w.t, day: w.day }; showPv = false; save(); renderPanel(); };
+      el.onclick = e => { const b = e.target.closest('[data-autogo]'); if (!b) return; const w = waiting[+b.dataset.autogo]; state.cls = classOf(w.t); state.folders = { ...(state.folders || {}), [state.cls]: 'school' }; state.schoolSel = { t: w.t, day: w.day }; schoolOpen = true; showPv = false; save(); renderPanel(); };
     }
   } catch (e) { console.warn('autoSchool', e); }
   finally { autoBusy = false; }
@@ -1580,7 +1596,7 @@ document.addEventListener('click', e => {
   const a = assignedCache.find(x => x.id === b.dataset.aopen); if (!a) return;
   const t = a.tool === 'mtest' ? 'master' : a.tool, sd = schoolDayOf(a);
   state.cls = classOf(t);
-  if (sd && LT[t] && LT[t].schools && LT[t].schools[sd]) { state.folders = { ...(state.folders || {}), [state.cls]: 'school' }; state.schoolSel = { t, day: sd }; }
+  if (sd && LT[t] && LT[t].schools && LT[t].schools[sd]) { state.folders = { ...(state.folders || {}), [state.cls]: 'school' }; state.schoolSel = { t, day: sd }; schoolOpen = true; }
   else { state.folders = { ...(state.folders || {}), [state.cls]: 'templates' }; state.tool = t; history.replaceState(null, '', '#' + t); }
   showPv = false; save(); renderPanel(); window.scrollTo({ top: 0, behavior: 'smooth' });
 });
@@ -1629,8 +1645,12 @@ function wireOnScreen() {
     lsSet('study-sheet-try', { id: 'try', tool: t, title: snap.title, at: Date.now(), data: snap.data });
     window.open('do.html?try=1', '_blank');
   };
-  document.getElementById('assignedList').onclick = async e => {
+  document.getElementById('assignedList').onclick = unassignClick;
+  renderAssigned();
+}
+async function unassignClick(e) {
     const b = e.target.closest('[data-unassign]'); if (!b) return;
+    const amsg = (t, bad) => { const m = document.getElementById('assignMsg'); if (m) { m.innerHTML = t; m.style.color = bad ? 'var(--warn-ink)' : '#34D399'; } };
     const sb = await studySession(); if (!sb) return;
     b.disabled = true;
     try {
@@ -1640,8 +1660,6 @@ function wireOnScreen() {
     }
     catch (er) { amsg(`Couldn’t remove it: ${esc(er.message || er)}`, true); }
     renderAssigned();
-  };
-  renderAssigned();
 }
 
 /* ---------- events ---------- */
