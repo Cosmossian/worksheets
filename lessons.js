@@ -681,6 +681,20 @@ const L_ask = qs => async () => {
    guide: gray letters to trace (checked letter by letter, like Sight Word Practice). No guide: free writing (checked that he wrote across the line).
    Renders into #lsPad. Resolves { img, redo }. */
 let L_usedPen = false;
+/* What happened on a writing pad, for Parent Review (Nov 10, Dylan: "he had to trace more 2 times… I don't know what he had to trace";
+   "don't know if he did 4 lines or if it auto came that way") */
+function L_padNote(r, guide) {
+  const x = n => n === 1 ? 'once' : `${n} times`, w = r.why || {}, bits = [];
+  if (w.missed) bits.push(`${x(w.missed)} it asked him to trace letters he had skipped (they turned orange)`);
+  if (w.off) bits.push(`${x(w.off)} it asked him to stay on the gray letters`);
+  if (w.lines) bits.push(`${x(w.lines)} it asked him to keep his letters on the lines`);
+  if (w.short) bits.push(`${x(w.short)} it asked him to write all of it`);
+  if (!bits.length && r.redo) bits.push(`${x(r.redo)} it asked him to fix it`);
+  let t = bits.length ? ` Before it was right, ${bits.join('; ')}.` : ' Right the first time he tapped Done.';
+  if (r.more) t += guide ? ` He tapped ➕ Need more space ${x(r.more)} for bigger letters (the tracing started over).` : ` He tapped ➕ Need more space ${x(r.more)} (${r.rows || r.more + 1} lines; it starts with 1).`;
+  else if (!guide) t += ' He used the 1 line it starts with.';
+  return t;
+}
 async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, label = '', check = true, rows: rows0 = 0 }) {
   try { await document.fonts.load(`700 ${fsMax}px Andika`); } catch (e) { }
   // Free writing of a sentence (Nov 9, 2026, Dylan: "make sure he is writing in his grids… Need more space"): big rows like a
@@ -690,7 +704,7 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
   const multi = !guide && /\s/.test(text.trim()), gMulti = guide && /\s/.test(text.trim());
   if (multi) { fsMax = Math.max(fsMax, 110); H = Math.max(H, 200); }
   if (gMulti) { fsMax = Math.min(fsMax, 110); H = Math.min(H, 190); }
-  let nRows = guide ? 1 : rows0 || (multi ? 2 : 1); const maxRows = guide ? 1 : multi ? 5 : 2;
+  let nRows = guide ? 1 : rows0 || 1; const maxRows = guide ? 1 : multi ? 5 : 2;   // Nov 10 (Dylan): always one row first; ➕ Need more space adds rows
   const gSizes = [fsMax, Math.round(fsMax * 1.25), Math.round(fsMax * 1.5)]; let gStep = 0;
   return new Promise(done => {
     $('lsPad').innerHTML = `<div class="tracebox"><canvas id="lsCv"></canvas></div><div class="message" id="msg"></div>
@@ -720,6 +734,7 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
     };
     layout();
     const base = geo(0).base;
+    let more = 0; const why = { missed: 0, off: 0, lines: 0, short: 0 };   // for Parent Review: what each "try again" was about, and ➕ taps
     let strokes = [], cur = null, orange = new Set(), redo = 0, flagged = null, offLines = new Set(), caseAsked = '';
     window.__lsPad = { text, x0, base, get fs() { return fs; }, Wd, get Ht() { return Ht; }, guide, rowH, geo, rows: () => nRows, strokes: () => strokes, spans: () => spans };   // for automated tests
     const lines = () => {
@@ -753,10 +768,10 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
       const moreBtn = $('lsMore'), syncMore = () => { moreBtn.disabled = nRows >= maxRows; moreBtn.textContent = nRows >= maxRows ? 'No more space' : '➕ Need more space'; };
       if (guide) {   // tracing: bigger letters on more rows (the tracing starts over)
         const syncG = () => { moreBtn.disabled = gStep >= gSizes.length - 1; moreBtn.textContent = moreBtn.disabled ? 'Biggest letters' : '➕ Need more space'; };
-        moreBtn.onclick = () => { if (gStep >= gSizes.length - 1) return; gStep++; strokes = []; orange.clear(); changed(); layout(); draw(); syncG(); setMsg('Bigger letters! Trace them from the start.', 'good'); cv.scrollIntoView({ block: 'end', behavior: 'smooth' }); };
+        moreBtn.onclick = () => { if (gStep >= gSizes.length - 1) return; gStep++; more++; strokes = []; orange.clear(); changed(); layout(); draw(); syncG(); setMsg('Bigger letters! Trace them from the start.', 'good'); cv.scrollIntoView({ block: 'end', behavior: 'smooth' }); };
         syncG();
       } else {
-      moreBtn.onclick = () => { if (nRows >= maxRows) return; nRows++; size(); changed(); draw(); syncMore(); setMsg('Here’s another line. Keep going!', 'good'); cv.scrollIntoView({ block: 'end', behavior: 'smooth' }); };
+      moreBtn.onclick = () => { if (nRows >= maxRows) return; nRows++; more++; size(); changed(); draw(); syncMore(); setMsg('Here’s another line. Keep going!', 'good'); cv.scrollIntoView({ block: 'end', behavior: 'smooth' }); };
       syncMore();
       }
     }
@@ -766,7 +781,7 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
       flagged = null; draw();
       tools.setMode(false); flagged = null; draw();
       const img = snap(); ['lsDone', 'lsClear', 'lsUndo', 'lsMore', 'lsErase'].forEach(id => { if ($(id)) $(id).disabled = true; });
-      nextUp(1100).then(() => done({ img, redo, ...extra }));
+      nextUp(1100).then(() => done({ img, redo, more, why, rows: nRows, ...extra }));
     };
     $('lsDone').onclick = () => {
       if (!strokes.length) return setMsg(guide ? 'Use your finger to trace the gray letters.' : 'Write it on the lines with your finger or pencil.', 'try');
@@ -782,8 +797,8 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
         } }
         const missed = spans.filter((s, k) => per[k][1] && per[k][0] / per[k][1] < need);
         orange = new Set(missed);
-        if ((all ? out / all : 1) > 0.4) { redo++; draw(); setMsg('Stay on the gray letters. Tap ↶ Undo or Start over and trace them carefully.', 'try'); say('Stay on the gray letters.', 0.95); return; }
-        if (missed.length) { redo++; draw(); setMsg(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 'try'); say(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 0.95); return; }
+        if ((all ? out / all : 1) > 0.4) { redo++; why.off++; draw(); setMsg('Stay on the gray letters. Tap ↶ Undo or Start over and trace them carefully.', 'try'); say('Stay on the gray letters.', 0.95); return; }
+        if (missed.length) { redo++; why.missed++; draw(); setMsg(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 'try'); say(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 0.95); return; }
         return finishPad({});
       }
       // free writing: (1) on the lines, (2) all of it, (3) capital or small letters
@@ -791,12 +806,12 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
       const inBand = ([, y]) => { const g = geo(rowOf(y)), xh = g.base - g.mid; return y >= g.top - xh * 0.45 && y <= g.base + xh * 1.1; };
       offLines = new Set(strokes.filter(st => st.filter(p => !inBand(p)).length > st.length * 0.5));
       const outFrac = pts.filter(p => !inBand(p)).length / pts.length;
-      if (outFrac > 0.25) { redo++; draw(); setMsg('Keep your letters on the lines: tall letters touch the top line, and every letter sits on the bottom line. Tap ↶ Undo to fix the orange ones.', 'try'); say('Keep your letters on the lines.', 0.95); return; }
+      if (outFrac > 0.25) { redo++; why.lines++; draw(); setMsg('Keep your letters on the lines: tall letters touch the top line, and every letter sits on the bottom line. Tap ↶ Undo to fix the orange ones.', 'try'); say('Keep your letters on the lines.', 0.95); return; }
       offLines.clear();
       let width = 0, n = pts.length;
       for (let r = 0; r < nRows; r++) { const xs = pts.filter(p => rowOf(p[1]) === r).map(p => p[0]); if (xs.length > 2) width += Math.max(...xs) - Math.min(...xs); }
       const want = Math.min(tw, (Wd - 48) * nRows) * (multi ? 0.35 : 0.45);
-      if (width < want || n < 40) { redo++; draw(); setMsg(label ? `Write ${label}. Keep going!` : `Write all of “${text}”. Keep going!${multi && nRows < maxRows ? ' Tap ➕ Need more space if you run out of room.' : ''}`, 'try'); say('Write all of it.', 0.95); return; }
+      if (width < want || n < 40) { redo++; why.short++; draw(); setMsg(label ? `Write ${label}. Keep going!` : `Write all of “${text}”. Keep going!${multi && nRows < maxRows ? ' Tap ➕ Need more space if you run out of room.' : ''}`, 'try'); say('Write all of it.', 0.95); return; }
       if (check && typeof hcCheck === 'function') {
         const dense = hcDense(strokes), rows = Array.from({ length: nRows }, (_, r) => ({ ...geo(r), pts: dense.filter(p => rowOf(p[1]) === r) }));
         const flags = hcCheck(rows, text), key = flags.map(f => f.ch + f.row + Math.round(f.x0)).join();
@@ -1301,7 +1316,7 @@ LT.heart.run = () => {
       app.innerHTML = L_exactTag() + head(`Write the word <b>${L_esc(w)}</b> on the lines.`) + L_count(i, 3, 'Time') + `<div class="ls-model">${L_esc(w)}</div><div id="lsPad"></div>`;
       if (i === 0) playWord(w);
       const r = await L_pad({ text: w, guide: false });
-      mark('Write It 3 Times', `${w} (${i + 1})`, true, '', '', null, { img: r.img, text: `Writing “${w}”, time ${i + 1} of 3.` }, []); L_free();
+      mark('Write It 3 Times', `${w} (${i + 1})`, true, '', '', null, { img: r.img, text: `Writing “${w}”, time ${i + 1} of 3.${L_padNote(r, false)}` }, []); L_free();
     }
     partDone('Written 3 times!');
   };
@@ -1313,7 +1328,7 @@ LT.heart.run = () => {
     stopMic();
     app.innerHTML = L_exactTag() + head(`Now write your sentence with <b>${L_esc(w)}</b>.`) + '<div id="lsPad"></div>';
     const p = await L_pad({ text: `${w} ${w} ${w} ${w}`, guide: false, fsMax: 70, H: 200, label: 'your whole sentence', check: false });
-    mark('Write a Sentence', `A sentence with ${w}`, true, '', '', null, { img: p.img, text: `He said a sentence with “${w}” out loud, then wrote it.`, clips: L_keepClip('heart', run, 0, r.clip) }, [r.heard ? 'said it out loud, then wrote it' : 'wrote it']); L_free();
+    mark('Write a Sentence', `A sentence with ${w}`, true, '', '', null, { img: p.img, text: `He said a sentence with “${w}” out loud, then wrote it.${L_padNote(p, false)}`, clips: L_keepClip('heart', run, 0, r.clip) }, [r.heard ? 'said it out loud, then wrote it' : 'wrote it']); L_free();
     partDone('Great sentence!');
   };
   const findP = async () => {
@@ -1342,7 +1357,7 @@ LT.letter.run = () => {
       if (stepSkip()) continue;   // done before a reload
       app.innerHTML = L_exactTag() + head(sub) + (n > 1 ? L_count(i, n, 'Time') : '') + extraTop + '<div id="lsPad"></div>';
       const r = await L_pad({ text, guide, fsMax: text.length <= 1 ? 190 : 150, H: text.length <= 1 ? 250 : 230 });
-      mark(part, `${text}${n > 1 ? ` (${i + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `${guide ? 'Tracing' : 'Writing'} “${text}”${r.redo ? `; he had to ${guide ? 'trace' : 'write'} more ${r.redo} time${r.redo > 1 ? 's' : ''}` : ''}${r.caseFlags ? `; the capital-letter check asked about ${r.caseFlags.join(', ')}, and he kept it` : ''}.` }, []); L_free(); stepDone();
+      mark(part, `${text}${n > 1 ? ` (${i + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `${guide ? 'Tracing' : 'Writing'} “${text}”${/[.!?]$/.test(text) ? '' : '.'}${L_padNote(r, guide)}${r.caseFlags ? ` The capital-letter check asked about ${r.caseFlags.join(', ')}, and he kept it.` : ''}` }, []); L_free(); stepDone();
     }
   };
   const P = [
@@ -1562,7 +1577,7 @@ LT.fixit.run = () => {
       app.innerHTML = head(`Trace the word <b>${L_esc(w)}</b>. Say each letter as you trace it.`) + L_count(i, W.length, 'Word') + (n > 1 ? L_count(k, n, 'Time') : '') + '<div id="lsPad"></div>';
       playWord(w);
       const r = await L_pad({ text: w, guide: true });
-      mark('Trace It', `${w}${n > 1 ? ` (${k + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `Tracing “${w}”${r.redo ? `; he had to trace more ${r.redo} time${r.redo > 1 ? 's' : ''}` : ''}.` }, []); L_free(); stepDone();
+      mark('Trace It', `${w}${n > 1 ? ` (${k + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `Tracing “${w}”.${L_padNote(r, true)}` }, []); L_free(); stepDone();
     }
     partDone('All traced!');
   };
