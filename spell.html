@@ -287,6 +287,9 @@ body.kidgrown #acctCard, body.kidgrown #dailyCard { display: none !important; }
 .kid-prog b { font: 700 24px Fredoka, sans-serif; color: #FDE68A; }
 .kp-stars { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; font-size: 34px; line-height: 1; }
 .kp-stars span { color: #64748B; } .kp-stars span.on { filter: drop-shadow(0 0 6px rgba(250,204,21,.55)); }
+.kid-extra a { background: #7C2D12; border-color: #F59E0B; }   /* 🛠️ Extra help (Fix My Spelling Mistakes): after his worksheets, before sight words */
+.kid-extra a small { color: #FDE68A; }
+.kid-extra h3 { color: #FDBA74; }
 .kid-shelf { margin-top: 10px; gap: 10px; }
 .kid-shelf a.done { position: relative; font-size: 21px; min-height: 0; padding: 12px 64px 12px 28px; min-width: min(400px, 86vw); opacity: .8; border-style: dashed; }
 .kid-shelf a.done span { text-decoration: line-through; text-decoration-color: rgba(187,247,208,.6); text-decoration-thickness: 2px; }
@@ -658,6 +661,7 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
   <p id="kidMsg">Today’s words are ready.</p>
   <div class="kid-prog" id="kidProg" hidden></div>
   <div class="kid-sheets" id="kidSheets" hidden></div>
+  <div class="kid-sheets kid-extra" id="kidExtra" hidden></div>
   <h3 class="kid-h" id="kidWordsH" hidden>Last: today’s sight words</h3>
   <div class="done-today" id="kidDone" hidden></div>
   <div id="kidMicSlot" style="max-width:560px;margin:0 auto 14px"></div>
@@ -2950,21 +2954,50 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && cl
 setInterval(() => { if (cloudMember() && !daily && (!$('kidhome').hidden || !$('setup').hidden)) cloudPull(); }, 60000);
 
 /* ---- His start screen ---- */
+/* Nov 10, 2026 (Dylan: "is it auto assigned for today as well"): 🛠️ Extra help puts itself on his day. Any spelling word he missed
+   on today's on-screen worksheets (this device's results) becomes a Fix My Spelling Mistakes sheet (hear it, trace it, spell it),
+   until he has spelled it in one after the miss. Skipped when a grown-up assigned one for today. Saved as study-fixit-auto for do.html. */
+const FIXIT_TITLE = '🛠️ Let’s fix our mistakes from earlier';
+function autoFixit(ds, assigned) {
+  if (assigned.some(a => a.tool === 'fixit')) return null;
+  const day = r => ymd(r.t) === ds, log = (store('sheet-log') || []).filter(day);
+  const fixes = log.filter(r => r.tool === 'fixit'), miss = new Map();
+  log.filter(r => r.tool !== 'fixit' && r.tool !== 'mtest').sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
+    const w = String(m.word || '').trim().toLowerCase(); if (!/[a-z]/.test(w)) return;
+    const his = String(m.typed || '').trim().toLowerCase();
+    miss.set(w, { w, his: his && his !== w ? his : (miss.get(w) || {}).his || '', t: r.t });
+  }));
+  const fixedAfter = (w, t) => fixes.some(f => f.t > t && (f.items || []).some(x => x.part === 'Spell It' && x.word === w));
+  const pending = [...miss.values()].filter(m => !fixedAfter(m.w, m.t)).map(({ w, his }) => ({ w, his }));
+  const last = fixes.filter(f => String(f.aid || '').startsWith('fixit-auto-')).sort((a, b) => b.t - a.t)[0];
+  if (!pending.length && !last) return null;
+  const prev = store('study-fixit-auto'), id = `fixit-auto-${ds}`;
+  const A = { id, tool: 'fixit', title: FIXIT_TITLE, day: ds, at: Date.now(), auto: true, pending: pending.length, data: { words: pending.length ? pending : (prev && prev.id === id ? prev.data.words : []), trace: 2 } };
+  if (!A.data.words.length) return null;
+  store('study-fixit-auto', A);
+  return A;
+}
 function renderKidHome() {
   const d = store('spell-daily') || {}, words = d.on === false || !isWeekday(ymd(Date.now())) ? [] : dailyWords();   // sight words: Monday to Friday
   const today = (store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString() && r.t > (d.resetAt || 0));   // "Reset today" starts his day fresh
   $('kidHi').textContent = kidName() ? `Hi ${kidName()}! 👋` : 'Hi! 👋';
   const sq = store('spell-queue'), sheets = [...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq', title: `✏️ Spelling practice · ${sq.words.length} word${sq.words.length > 1 ? 's' : ''}` }] : []), ...sheetsFor(ymd(Date.now()))];
+  { const fx = autoFixit(ymd(Date.now()), sheets); if (fx) sheets.push(fx); }
   $('kidMsg').textContent = words.length && sheets.length ? `First your worksheet${sheets.length > 1 ? 's' : ''}, then your ${words.length} sight word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : words.length ? `Today you have ${words.length} word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : sheets.length ? 'Here’s your work for today. Take your time and try your best!' : 'Nothing yet. Ask a grown-up to add today’s work.';
   $('kidWordsH').hidden = !(words.length && sheets.length);
   // On-screen worksheets assigned from the Worksheets page (done ones show their grade; Daily Steps counts today only)
   const logs = [...(store('sheet-log') || []), ...(store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))];
-  const doneFor = a => logs.filter(l => l.aid === a.id && (!['steps', 'weather'].includes(a.tool) || new Date(l.t).toDateString() === new Date().toDateString())).sort((x, y) => y.t - x.t)[0];
+  const doneFor = a => a.auto && a.pending ? null : logs.filter(l => l.aid === a.id && (!['steps', 'weather'].includes(a.tool) || new Date(l.t).toDateString() === new Date().toDateString())).sort((x, y) => y.t - x.t)[0];
   const href = a => a.tool === 'spellq' ? '#spellq' : a.tool === 'fixup' ? `fixup.html?w=${encodeURIComponent(((a.data && a.data.words) || []).map(x => `${x.w}:${x.his || ''}`).join('|'))}&from=${encodeURIComponent(a.title)}&cid=${encodeURIComponent(a.id)}` : `do.html?a=${encodeURIComponent(a.id)}`;
   // Nov 10 (Dylan: so he knows which ones he already did): to-do ones stay big and blue at the top; finished ones move to
   // the "All done" shelf at the bottom, smaller, with a star stamp. Tapping a finished one says so first (kidAgain).
-  const todo = sheets.filter(a => !doneFor(a)), fin = sheets.filter(a => doneFor(a));
+  // Nov 10: Fix My Spelling Mistakes goes in its own "🛠️ Extra help" group, after the worksheets and before the sight words
+  const isExtra = a => a.tool === 'fixit';
+  const todoAll = sheets.filter(a => !doneFor(a)), todo = todoAll.filter(a => !isExtra(a)), extra = todoAll.filter(isExtra), fin = sheets.filter(a => doneFor(a));
   const wordsDone = words.length > 0 && today.length > 0;
+  $('kidExtra').hidden = !extra.length;
+  $('kidExtra').innerHTML = extra.length ? `<h3 class="kid-h">${todo.length ? 'Next: ' : ''}🛠️ Extra help</h3>` + extra.map(a => { const n = ((a.data && a.data.words) || []).length;
+    return `<a href="${href(a)}"><span>${esc(a.title.replace(/^🛠️\s*/, ''))}</span>${n ? `<small>${n} word${n > 1 ? 's' : ''} to fix</small>` : ''}</a>`; }).join('') : '';
   $('kidSheets').hidden = !todo.length;
   $('kidSheets').innerHTML = todo.length ? `<h3 class="kid-h">${words.length && !wordsDone ? 'First: worksheets' : 'Worksheets'}</h3>` + todo.map(a => {
     const left = a.tool !== 'spellq' && !RECUR.includes(a.tool) && sheetDay(a) < ymd(Date.now()) ? `<small class="left">from ${esc(new Date(sheetDay(a) + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long' }))}</small>` : '';

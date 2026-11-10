@@ -194,6 +194,7 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 .pill.used { opacity: .3; text-decoration: line-through; cursor: default; }
 .opts.five { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 820px; }
 .opts.five .opt { font-size: 36px; }
+.app-header button.back { background: none; cursor: pointer; }
 .app-header .back { font: 600 16px Fredoka, sans-serif; color: var(--ink); text-decoration: none; border: 2px solid var(--line); border-radius: 999px; padding: 6px 14px; }
 .trybar { background: var(--try-bg); color: var(--try); text-align: center; font: 600 15px Fredoka, sans-serif; padding: 6px 12px; }
 .lbox.ghost { color: #4B5D73; }
@@ -315,6 +316,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <a class="back" id="backLink" href="spell.html">← Back</a>
+  <button class="back reload" id="reloadBtn" type="button" hidden title="Reload this page and pick up where he left off">↻ Reload</button>
   <h1 id="sheetTitle">Worksheet</h1>
   <div class="prog" id="prog"></div>
 </header>
@@ -577,7 +579,7 @@ const seedOf = words => words.join('').split('').reduce((a, c) => a + c.charCode
 const COLORS = ['#3C7DD9', '#0F9F8F', '#8B5CF6', '#EA580C', '#DB2777', '#16A34A', '#6366F1', '#D97706'];
 </script>
 <script src="handcheck.js?v=2"></script>
-<script src="lessons.js?v=7"></script>
+<script src="lessons.js?v=8"></script>
 <script src="science.js?v=3"></script>
 <script>
 /* ============ Talking, keys, little helpers (same as the Fix-Up page) ============ */
@@ -882,6 +884,7 @@ async function loadAssignment() {
   if (params.get('daily') === '1') return store('study-sheet-daily');
   const id = params.get('a'); if (!id) return null;
   let a = ((store('study-sheets') || {}).list || []).find(x => x.id === id);
+  if (!a && id.startsWith('fixit-auto-')) { const fx = store('study-fixit-auto'); if (fx && fx.id === id) a = fx; }   // 🛠️ Extra help that put itself on his day (spell.html autoFixit)
   if (!a) {
     try {
       const sb = sbClient(); const { data: s } = await sb.auth.getSession();
@@ -895,12 +898,29 @@ let A = null, SD = {}, PARTS = [], partIdx = 0;
 const items = [];       // every graded answer: { part, label, ok, typed, answer, word }
 const partSum = [];     // [part name, how it went]
 let extra = {};         // anything else worth keeping (coin marks, step times)
+/* Pick up where he left off (Nov 10, 2026, Dylan: a bug on the Trace the Letter page meant closing the page and starting over; he wanted
+   a "reload current task" that goes back to where he was). After every finished screen the page saves sheet-progress {aid, day, partIdx,
+   step, items, partSum, extra, seed}. ↻ Reload (top bar) or opening the same worksheet again later that day offers "Pick up where you
+   left off": earlier parts stay done, and the part he was in skips the screens he already finished (the screen he was on starts fresh).
+   Each part's shuffles come from seed + part number, so after a reload the words come in the same order. */
+const RESUMABLE = a => a && !['weather', 'mtest', 'steps'].includes(a.tool);
+let progSeed = Math.floor(Math.random() * 2 ** 31), stepNo = 0, resumeSteps = 0, stepDepth = 0;   // stepDepth: only the outermost loop of a part counts screens
+const nativeRandom = Math.random;
+function seedRandom(n) { let t = n >>> 0; Math.random = () => { t += 0x6D2B79F5; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; }; }
+function saveProg() {
+  if (!RESUMABLE(A) || partIdx >= PARTS.length) return;
+  try { store('sheet-progress', { aid: A.id, day: new Date().toDateString(), t: Date.now(), partIdx, step: stepNo, items, partSum, extra, seed: progSeed }); } catch (e) { }
+}
+const clearProg = () => { try { localStorage.removeItem('sheet-progress'); } catch (e) { } };
+const savedProg = () => { const p = store('sheet-progress'); return p && A && p.aid === A.id && p.day === new Date().toDateString() && (p.partIdx > 0 || p.step > 0 || (p.items || []).length) ? p : null; };
+function stepSkip() { if (stepDepth) return false; if (stepNo < resumeSteps) { stepNo++; return true; } return false; }   // a screen he finished before the reload
+function stepDone() { if (stepDepth) return; stepNo++; saveProg(); }
 const picsOf = list => Object.fromEntries(list.map(([k, n, emo]) => [n, emo ? `<span style="font-size:46px;line-height:1">${emo}</span>` : WX_ICON(k, 64)]));
 const mark = (part, label, ok, typed, answer, word = null, shown = null, picks = null) => { const h = takeHeard(); items.push({ part, label, ok, typed: typed ?? '', answer: answer ?? '', word, shown: h ? { ...(shown || {}), heard: h } : shown, picks: picks || (typed ? [String(typed)] : []) }); };
 
 function renderProg() { $('prog').innerHTML = PARTS.length > 1 ? PARTS.map((p, i) => `<span class="${i === partIdx ? 'now' : i < partIdx ? 'done' : ''}">${i + 1}. ${esc(p.name)}</span>`).join('') : ''; }
 function startPart(i) { partGen++;
-  partIdx = i; renderProg(); window.scrollTo(0, 0); document.body.classList.add('inpart');
+  partIdx = i; stepNo = 0; stepDepth = 0; seedRandom(progSeed + i * 7919); saveProg(); renderProg(); window.scrollTo(0, 0); document.body.classList.add('inpart');
   if (canTalk) speechSynthesis.cancel(); onKey = null;
   PARTS[i].run();
 }
@@ -919,7 +939,8 @@ function addSkipButton() {
   b.onclick = skipPart; document.body.appendChild(b);
 }
 function partDone(msg) {
-  partSum.push([PARTS[partIdx].name, msg]);
+  partSum.push([PARTS[partIdx].name, msg]); resumeSteps = 0;
+  if (partIdx < PARTS.length - 1) { const k = partIdx; partIdx++; stepNo = 0; saveProg(); partIdx = k; }   // a reload now goes on to the next part
   if (partIdx >= PARTS.length - 1) return showResults();
   app.innerHTML = `<div class="part-title"><h2>${esc(PARTS[partIdx].name)}: done!</h2><p>${esc(msg)}</p></div>
     <button class="btn big primary" id="go">Next: ${esc(PARTS[partIdx + 1].name)} →</button>`;
@@ -929,7 +950,16 @@ function partDone(msg) {
 const head = sub => `<div class="part-title"><h2>${PARTS.length > 1 ? `${partIdx + 1}. ` : ''}${esc(PARTS[partIdx].name)}</h2><p>${sub}</p></div>`;
 const firstTry = (part) => { const xs = items.filter(x => x.part === part); return `${xs.filter(x => x.ok).length} of ${xs.length} right the first time`; };
 // Run fn(i) for i = 0..n-1, one screen at a time
-async function each(n, fn) { const g = partGen; for (let i = 0; i < n; i++) { if (g !== partGen) return stale(g); await fn(i); } if (g !== partGen) return stale(g); }
+async function each(n, fn) {
+  const g = partGen, top = !stepDepth;
+  for (let i = 0; i < n; i++) {
+    if (g !== partGen) return stale(g);
+    if (top && stepSkip()) continue;   // a screen he finished before a reload
+    if (top) stepDepth++; try { await fn(i); } finally { if (top && g === partGen) stepDepth--; }
+    if (top && g === partGen) stepDone();
+  }
+  if (g !== partGen) return stale(g);
+}
 
 /* ================= Sight Word Practice: Look & Say, Trace, Cover & Write (Check); Word Shapes, Missing Letters, Finish the Sentence ================= */
 function sightSheet() {
@@ -1867,6 +1897,7 @@ function showResults() {
   saveAndSend(rec);
 }
 function saveAndSend(rec) {
+  clearProg(); Math.random = nativeRandom;
   // Test day: keep it on this device only so his start screen shows it as done; End test puts his real copy back
   if (TESTDAY) { const log = store('sheet-log') || []; log.push(rec); store('sheet-log', log.slice(-40)); return; }
   if (TRY) return;
@@ -1954,8 +1985,24 @@ const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet
   }
   SD = A.data || {};
   document.title = `${A.title} · The Study`; $('sheetTitle').textContent = A.title;
+  const sp = RESUMABLE(A) ? savedProg() : null;   // he was partway through this one earlier today
+  if (sp && sp.seed != null) progSeed = sp.seed;
+  seedRandom(progSeed);
   const info = SHEETS[A.tool]();
-  if (info.skipIntro) return startPart(0);
+  if (RESUMABLE(A)) { $('reloadBtn').hidden = false; $('reloadBtn').onclick = () => { if (canTalk) speechSynthesis.cancel(); location.reload(); }; }
+  const resume = () => { items.push(...(sp.items || [])); partSum.push(...(sp.partSum || [])); extra = sp.extra || {}; resumeSteps = sp.step || 0; startPart(Math.min(sp.partIdx || 0, PARTS.length - 1)); };
+  if (info.skipIntro) return sp ? resume() : startPart(0);
+  if (sp) {
+    const pi = Math.min(sp.partIdx || 0, PARTS.length - 1);
+    app.innerHTML = `<div class="part-title"><h2>${esc(A.title)}</h2><p>You already started this one. Let’s keep going from where you left off!</p></div>
+      <p class="note">${PARTS.length > 1 ? `Part ${pi + 1} of ${PARTS.length}: ${esc(PARTS[pi].name)}` : esc(PARTS[pi].name)}${sp.step ? ` · ${sp.step} done in this part` : ''}</p>
+      <button class="btn big primary" id="resumeGo">Pick up where I left off →</button>
+      <div class="row" style="margin-top:22px"><button class="btn" id="resumeOver">↺ Start over</button></div>`;
+    say('You already started this one. Let’s keep going from where you left off!', 0.95);
+    $('resumeGo').onclick = resume;
+    $('resumeOver').onclick = () => { if (!confirm('Start this worksheet over from the beginning?')) return; clearProg(); startPart(0); };
+    renderProg(); return;
+  }
   app.innerHTML = `<div class="part-title"><h2>${esc(A.title)}</h2><p>${esc(info.intro)} Take your time and try your best.</p></div>
     ${info.words ? `<div class="row">${info.words.map(w => `<span class="big-word" style="font-size:34px;padding:4px 16px">${esc(w)}</span>`).join('')}</div>` : ''}
     ${A.tool === 'master' ? '' : ''}

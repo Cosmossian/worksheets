@@ -273,10 +273,31 @@ const LT = {
     title: c => `Read for class: ${(c.heading || '').trim() || 'my story'}`,
     data: c => ({ heading: (c.heading || '').trim(), text: String(c.text || '').trim(), pic: !!c.pic, follow: !!c.follow }),
     check: d => d.text ? '' : 'Type or paste the story (or tap 📋 Use the story from Story Time).'
+  },
+  /* Nov 10, 2026 (Dylan: a "Fix it" assignment for the words he missed spelling on his worksheets, "so he can practice hearing them,
+     tracing them, then spelling them"; on his start screen it sits after his worksheets and before his sight words, under 🛠️ Extra help) */
+  fixit: {
+    name: 'Fix My Spelling Mistakes', cls: 'phonics', noSchool: true,
+    help: 'Extra help for words he spelled wrong on his worksheets. Each word: he hears it spelled out loud (and sees what he wrote last time), traces it, then spells it by himself from hearing it. On his device it shows under “🛠️ Extra help”, after his worksheets and before his sight words. You don’t have to assign it for words he misses today: his device adds it by itself as soon as he finishes a worksheet with a spelling mistake. Use this to add words from earlier days, or your own.',
+    schools: {},
+    own: () => ({ words: '', trace: '2' }),
+    fields: () => [
+      { k: 'words', label: 'Words to fix', type: 'area', rows: 3, help: 'Separate with commas. To show him what he wrote, add it after a colon: pull: plull. The 📥 buttons fill this in from his worksheet results.' },
+      { k: 'trace', label: 'Trace each word', type: 'select', options: [['1', '1 time'], ['2', '2 times'], ['3', '3 times']] }
+    ],
+    acts: () => [['today', '📥 Load his spelling mistakes from today'], ['week', '📥 From the last 7 days']],
+    act: (a, c) => L_loadMisses(a === 'today' ? 0 : 6, c),
+    title: () => '🛠️ Let’s fix our mistakes from earlier',
+    data: c => {
+      const seen = new Set(), words = [];
+      L_list(c.words).forEach(x => { const [w, his = ''] = x.split(':').map(y => y.trim().toLowerCase()); const k = L_letters(w); if (k && !seen.has(w)) { seen.add(w); words.push({ w, his: L_letters(his) && L_letters(his) !== k ? his : '' }); } });
+      return { words: words.slice(0, 12), trace: Math.min(3, Math.max(1, +c.trace || 2)) };
+    },
+    check: d => d.words.length ? '' : 'Type the words, or tap 📥 to load his spelling mistakes.'
   }
 };
 const L_IDS = Object.keys(LT);
-const L_CLASS_OF = { tenmore: 'math', sound: 'phonics', story: 'phonics', readaloud: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela', sort: 'ela' };
+const L_CLASS_OF = { fixit: 'phonics', tenmore: 'math', sound: 'phonics', story: 'phonics', readaloud: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela', sort: 'ela' };
 
 /* =====================================================================
    Worksheets page (index.html): the settings panel and the printed page
@@ -385,6 +406,42 @@ LT.sort.print = (d, exact) => {
     + `<div style="font:400 30px/2 Andika,sans-serif;padding:10px 30px">${L_esc(d.hunt)}</div>`, exact, { gap: 14 }) : '';
   return p0 + L_sheetOf(p1, exact, { gap: 14 }) + L_sheetOf(p2, exact, { gap: 14 });
 };
+/* Fix My Spelling Mistakes: the words he missed spelling on his on-screen worksheets (what each result calls `missed`, with what he
+   typed), from the Study database and this device. days = 0 → today only. */
+async function L_loadMisses(days, c) {
+  await new Promise(r => setTimeout(r));   // after the panel redraws from the click
+  const msg = t => { const el = document.getElementById('lsLoad'); if (el) el.textContent = t; };
+  msg('Looking for his spelling mistakes…');
+  const from = new Date(); from.setHours(0, 0, 0, 0); from.setDate(from.getDate() - days);
+  let recs = [];
+  try { const sb = sbClient(); if (sb) { const { data } = await sb.from('study_log').select('t,data').eq('kind', 'sheet').gte('t', from.toISOString()); recs = (data || []).map(r => r.data).filter(Boolean); } } catch (e) { }
+  try { (store('sheet-log') || []).forEach(r => { if (r && r.t >= +from && !recs.some(x => x.id === r.id)) recs.push(r); }); } catch (e) { }
+  const got = new Map(), from2 = new Map();
+  recs.sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
+    const w = String(m.word || '').trim().toLowerCase(); if (!L_letters(w)) return;
+    const his = String(m.typed || '').trim().toLowerCase();
+    if (!got.has(w) || (his && !got.get(w))) got.set(w, his);
+    if (!from2.has(w)) from2.set(w, r.title || '');
+  }));
+  if (!got.size) { msg(days ? 'No spelling mistakes on his worksheets in the last 7 days. 🎉' : 'No spelling mistakes on his worksheets today. 🎉 (Results show up here once he finishes a worksheet.)'); return; }
+  const have = L_list(c.words).map(x => x.split(':')[0].trim().toLowerCase());
+  const add = [...got].filter(([w]) => !have.includes(w));
+  c.words = [...L_list(c.words), ...add.map(([w, his]) => his && his !== w ? `${w}: ${his}` : w)].join(', ');
+  if (typeof save === 'function') save();
+  if (typeof renderPanel === 'function') renderPanel();
+  const sheets = [...new Set([...got.keys()].map(w => from2.get(w)).filter(Boolean))];
+  msg(add.length ? `Added ${add.length} word${add.length > 1 ? 's' : ''}: ${add.map(([w]) => w).join(', ')}${sheets.length ? ` (from ${sheets.join('; ')})` : ''}.` : 'Those words are already in the list.');
+}
+LT.fixit.print = d => {
+  const row = x => `<div style="display:grid;grid-template-columns:1fr 1.3fr 1.3fr;gap:14px;align-items:center;border-bottom:2px solid #E2E8F0;padding:10px 0">
+      <div style="font:700 40px Andika,sans-serif;color:#1F2937">${L_esc(x.w)}${x.his ? `<div style="font:400 16px Fredoka,sans-serif;color:#64748B">not <s>${L_esc(x.his)}</s></div>` : ''}</div>
+      <div style="font:700 44px Andika,sans-serif;color:#CBD5E1;border-bottom:2px solid #1F2937;line-height:1.3">${L_esc(x.w)}</div>
+      <div style="border-bottom:2px solid #1F2937;height:58px"></div></div>`;
+  return L_sheetOf(nameDate() + title('Fix My Spelling Mistakes', 'Hear it, trace it, spell it', star('#F59E0B'), star('#DB2777'))
+    + L_h(1, '#0F766E', 'Say each word out loud and spell it. Trace it in the middle. Then fold the paper, listen, and write it on your own.')
+    + `<div style="display:grid;grid-template-columns:1fr 1.3fr 1.3fr;gap:14px;font:700 18px Fredoka,sans-serif;color:#475569;margin-top:10px"><div>Look</div><div>Trace</div><div>Write it</div></div>`
+    + d.words.map(row).join(''), false, { gap: 8 });
+};
 LT.readaloud.print = (d, exact) => L_sheetOf(nameDate() + title(d.heading || 'My Story', 'Read it out loud', star('#F59E0B'), star('#1D4ED8'))
   + `<div style="font:400 30px/1.9 Andika,sans-serif;padding:10px 24px">${L_esc(d.text)}</div>`, exact, { gap: 14 });
 
@@ -395,6 +452,7 @@ const L_dayLabel = d => { const [y, m, dd] = String(d).split('-'); return `${m}/
 const L_days = t => Object.keys(LT[t].schools || {}).sort();
 const L_schoolTag = day => `📄 School ${L_dayLabel(day)} · `;
 function L_st(t) {
+  if (LT[t].noSchool) { const s = state[t] || (state[t] = {}); s.mode = 'own'; if (!s.own) s.own = LT[t].own(); if (!s.schools) s.schools = {}; return s; }   // no official school sheets (Fix My Spelling Mistakes)
   const s = state[t] || (state[t] = { mode: 'school' });
   if (!s.schools) { s.schools = {}; if (s.school) s.schools[L_days(t)[0]] = s.school; delete s.school; }
   if (!s.day || !LT[t].schools[s.day]) s.day = L_days(t).at(-1);
@@ -417,9 +475,10 @@ function L_panel(t) {
   const acts = (L.acts(mode) || []);
   const d = L.data(c), problem = L.check(d), sc = L.schools[s.day];
   return `<h2>${L_esc(L.name)}</h2><p class="help">${L_esc(L.help)}</p>
-    <div class="ls-mode" role="group" aria-label="Which version">${L_days(t).map(day => `<button class="school" data-lday="${day}" aria-pressed="${mode === 'school' && s.day === day}">📄 Load ${L_dayLabel(day)} Official School Worksheet</button>`).join('')}<button class="own" data-lmode="own" aria-pressed="${mode === 'own'}">✏️ My own</button></div>
-    ${mode === 'school' ? `<div class="ls-school"><b>📄 ${L_dayLabel(s.day)} official school worksheet:</b> ${L_esc(sc.note)} On his device it’s called “${L_esc(L_schoolTag(s.day) + L.title(c))}”.</div>` : '<p class="help" style="margin-top:-4px">Your own version: change anything, and use it again any time. The school worksheets stay as they are.</p>'}
+    ${L.noSchool ? '' : `<div class="ls-mode" role="group" aria-label="Which version">${L_days(t).map(day => `<button class="school" data-lday="${day}" aria-pressed="${mode === 'school' && s.day === day}">📄 Load ${L_dayLabel(day)} Official School Worksheet</button>`).join('')}<button class="own" data-lmode="own" aria-pressed="${mode === 'own'}">✏️ My own</button></div>`}
+    ${L.noSchool ? '' : mode === 'school' ? `<div class="ls-school"><b>📄 ${L_dayLabel(s.day)} official school worksheet:</b> ${L_esc(sc.note)} On his device it’s called “${L_esc(L_schoolTag(s.day) + L.title(c))}”.</div>` : '<p class="help" style="margin-top:-4px">Your own version: change anything, and use it again any time. The school worksheets stay as they are.</p>'}
     ${acts.length ? `<div class="ls-acts">${acts.map(([k, lab]) => `<button class="btn btn-small" data-lact="${k}">${L_esc(lab)}</button>`).join('')}</div>` : ''}
+    ${L.noSchool ? '<div class="note" id="lsLoad" style="margin:-4px 0 12px"></div>' : ''}
     ${f}
     ${mode === 'school' ? `<button class="btn btn-small" data-lact="__reset" style="margin-bottom:12px">↺ Back to the ${L_dayLabel(s.day)} school sheet</button>` : ''}
     ${problem ? `<div class="warn" id="lsWarn">${L_esc(problem)}</div>` : '<div class="warn" id="lsWarn" hidden></div>'}
@@ -1280,9 +1339,10 @@ LT.letter.run = () => {
   const d = SD, Lt = d.letter, nm = Lt === Lt.toUpperCase() ? 'uppercase' : 'lowercase';
   const doPad = async (part, sub, text, guide, n = 1, extraTop = '') => {
     for (let i = 0; i < n; i++) {
+      if (stepSkip()) continue;   // done before a reload
       app.innerHTML = L_exactTag() + head(sub) + (n > 1 ? L_count(i, n, 'Time') : '') + extraTop + '<div id="lsPad"></div>';
       const r = await L_pad({ text, guide, fsMax: text.length <= 1 ? 190 : 150, H: text.length <= 1 ? 250 : 230 });
-      mark(part, `${text}${n > 1 ? ` (${i + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `${guide ? 'Tracing' : 'Writing'} “${text}”${r.redo ? `; he had to ${guide ? 'trace' : 'write'} more ${r.redo} time${r.redo > 1 ? 's' : ''}` : ''}${r.caseFlags ? `; the capital-letter check asked about ${r.caseFlags.join(', ')}, and he kept it` : ''}.` }, []); L_free();
+      mark(part, `${text}${n > 1 ? ` (${i + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `${guide ? 'Tracing' : 'Writing'} “${text}”${r.redo ? `; he had to ${guide ? 'trace' : 'write'} more ${r.redo} time${r.redo > 1 ? 's' : ''}` : ''}${r.caseFlags ? `; the capital-letter check asked about ${r.caseFlags.join(', ')}, and he kept it` : ''}.` }, []); L_free(); stepDone();
     }
   };
   const P = [
@@ -1458,4 +1518,66 @@ LT.readaloud.run = () => {
   };
   PARTS = [{ name: 'Read Aloud', run: readP }];
   return { intro: `Get ready to read “${d.heading}” for your class. When you’re ready, start your school recording, then tap Let’s go.` };
+};
+
+/* ---------- Fix My Spelling Mistakes (Nov 10, 2026): hear it, trace it, spell it ---------- */
+if (L_IN_DO) { (() => { const st = document.createElement('style'); st.textContent = `
+  .fx-was { font:600 22px Fredoka,sans-serif; color:#FCA5A5; margin:4px 0 2px; } .fx-was s { color:#F87171; text-decoration-thickness:3px; }
+  .fx-tiles .t { transition:background .15s, box-shadow .15s; } .fx-tiles .t.now { background:#FEF08A; box-shadow:inset 0 0 0 4px #F59E0B; }
+  .fx-tiles button.t { cursor:pointer; touch-action:manipulation; }
+`; document.head.appendChild(st); })(); }
+LT.fixit.run = () => {
+  const d = SD, W = d.words;
+  const tiles = w => `<div class="ls-tiles fx-tiles" id="fxT">${[...w].map((ch, i) => isLetter(ch) ? `<button class="t" data-i="${i}" aria-label="${L_esc(letterName(ch))}">${L_esc(ch)}</button>` : `<span class="t" style="border-color:transparent;background:transparent"></span>`).join('')}</div>`;
+  let spellGen = 0;
+  const spellOut = async w => {   // the word, each letter lighting up as it's said, then the word again
+    const my = ++spellGen, el = () => [...document.querySelectorAll('#fxT .t')];
+    await Promise.race([playWord(w), wait(2500)]); if (my !== spellGen) return;
+    for (const [i, ch] of [...w].entries()) {
+      if (!isLetter(ch)) continue; if (my !== spellGen) return;
+      el().forEach(x => x.classList.toggle('now', +x.dataset.i === i));
+      const nm = letterName(ch); await Promise.race([say(nm, 0.85), wait(550 + 110 * nm.length)]); await wait(150);
+    }
+    if (my !== spellGen) return; el().forEach(x => x.classList.remove('now'));
+    await Promise.race([playWord(w), wait(2500)]);
+  };
+  const hearP = async () => {
+    await each(W.length, i => new Promise(async done => {
+      const x = W[i];
+      app.innerHTML = head('Listen to how it’s spelled. Tap a letter to hear it again.') + L_count(i, W.length, 'Word')
+        + (x.his ? `<div class="fx-was">Earlier you wrote <s>${L_esc(x.his)}</s>. It’s spelled:</div>` : '')
+        + tiles(x.w) + `<div class="message" id="msg"></div><div class="row acts"><button class="btn big" id="fxAgain">${SPK}Hear it again</button><button class="btn big primary" id="fxNext" disabled>I heard it →</button></div>`;
+      $('fxT').onclick = e => { const b = e.target.closest('[data-i]'); if (!b) return; spellGen++; document.querySelectorAll('#fxT .t').forEach(t => t.classList.toggle('now', t === b)); say(letterName(x.w[+b.dataset.i]), 0.85); };
+      $('fxAgain').onclick = () => spellOut(x.w);
+      await spellOut(x.w); $('fxNext').disabled = false;
+      $('fxNext').onclick = () => { spellGen++; mark('Hear It', `Hear “${x.w}” spelled`, true, '', '', null, { text: `He heard “${x.w}” spelled out loud${x.his ? ` (earlier he wrote “${x.his}”)` : ''}.` }, ['heard it']); L_free(); done(); };
+    }));
+    partDone('You heard every word!');
+  };
+  const traceP = async () => {
+    const n = d.trace || 2;
+    for (let i = 0; i < W.length; i++) for (let k = 0; k < n; k++) {
+      if (stepSkip()) continue;   // done before a reload
+      const w = W[i].w;
+      app.innerHTML = head(`Trace the word <b>${L_esc(w)}</b>. Say each letter as you trace it.`) + L_count(i, W.length, 'Word') + (n > 1 ? L_count(k, n, 'Time') : '') + '<div id="lsPad"></div>';
+      playWord(w);
+      const r = await L_pad({ text: w, guide: true });
+      mark('Trace It', `${w}${n > 1 ? ` (${k + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `Tracing “${w}”${r.redo ? `; he had to trace more ${r.redo} time${r.redo > 1 ? 's' : ''}` : ''}.` }, []); L_free(); stepDone();
+    }
+    partDone('All traced!');
+  };
+  const spellP = async () => {
+    const pool = L_shuf(W);
+    await each(pool.length, i => new Promise(async done => {
+      const x = pool[i];
+      app.innerHTML = head('Now you spell it! Listen to the word, then type it.') + L_count(i, pool.length, 'Word') + `<div class="hidden-word">Listen 👂</div><button class="btn" id="hearW">${SPK}Hear the word</button><div id="io"></div>`;
+      $('hearW').onclick = () => playWord(x.w); playWord(x.w);
+      const r = await freeType({ answer: x.w, hint: t => { const m = typeof L_soundAlike === 'function' && L_soundAlike(t, x.w); return m ? `Good listening, ${t} sounds right! But it’s spelled with ${m.want}.` : 'Not quite. Think about how you heard it spelled. Try again.'; } });
+      mark('Spell It', `Spell “${x.w}”`, r.ok, r.typed, x.w, x.w, { text: `He heard “${x.w}” and spelled it${x.his ? ` (earlier he wrote “${x.his}”)` : ''}.` }, r.attempts);
+      done();
+    }));
+    partDone(firstTry('Spell It') + '.');
+  };
+  PARTS = [{ name: 'Hear It', run: hearP }, { name: 'Trace It', run: traceP }, { name: 'Spell It', run: spellP }];
+  return { intro: `Extra help! Let’s fix ${W.length === 1 ? 'a word' : `${W.length} words`} from earlier. First you’ll hear ${W.length === 1 ? 'it' : 'each one'} spelled, then trace ${W.length === 1 ? 'it' : 'them'}, then spell ${W.length === 1 ? 'it' : 'them'} by yourself.` };
 };
