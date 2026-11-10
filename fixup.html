@@ -166,6 +166,8 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 .rw-hint { margin: 0 auto 8px; } .rw-hint .rw-row .n { color: var(--muted); }
 .lbox.wd-ok { background: #166534; border-color: #4ADE80; color: #fff; } .lbox.wd-near { background: #854D0E; border-color: #FACC15; color: #fff; } .lbox.wd-no { background: #7F1D1D; border-color: #F87171; color: #fff; }
 .wd-key { font: 600 15px Fredoka, sans-serif; color: var(--muted); text-align: center; margin-top: 4px; } .wd-key span { display: inline-block; padding: 1px 8px; border-radius: 8px; margin: 2px 3px; color: #fff; }
+.wd-miss { font: 700 17px Fredoka, sans-serif; color: #FDE68A; text-align: center; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; } .wd-miss small { font: 600 14px Fredoka, sans-serif; color: var(--muted); }
+.lbox.wd-need { background: #1E3A8A; border: 2px solid #60A5FA; color: #fff; border-style: solid; }
 .wd-key .wd-ok { background: #166534; } .wd-key .wd-near { background: #854D0E; } .wd-key .wd-no { background: #7F1D1D; }
 .wl-wrap { width: 100%; max-width: 760px; margin: 8px auto 0; } .wl { width: 100%; height: 190px; border-radius: 16px; background: #fff; touch-action: none; display: block; } .wl-done { width: 360px; max-width: 100%; border-radius: 12px; background: #fff; display: block; margin: 8px auto; }
 #wlErase.on { background: #FDE68A; color: #17201A; border-color: #F59E0B; } canvas.erasing { cursor: cell; }
@@ -702,7 +704,8 @@ function partRainbow() {
       <div class="row acts" id="memActs" hidden><button class="btn big" id="backBtn">⌫ Back</button><button class="btn big primary" id="doneBtn" disabled>Done ✓</button></div>`;
     $('hear').onclick = () => playWord(w);
     const finish = () => writeLine();
-    /* Nov 10, 2026 (Dylan: he typed "behind" from memory 5 times; "after a couple of checks of wrong letters, tell him which letters he has
+    /* Nov 10, 2026, updated the same evening: try 4 wrong also shows the letters he's missing (not where they go); try 5 wrong shows the word.
+       Nov 10, 2026 (Dylan: he typed "behind" from memory 5 times; "after a couple of checks of wrong letters, tell him which letters he has
        correct like in a wordle"): try 1 wrong → the word shows for a moment (as before); try 2+ wrong → his last try in colors: green =
        right letter, right spot; yellow = in the word, wrong spot; red = not in the word (each letter counted as often as it's in the word);
        try 4 wrong → the word stays up and he copies it. */
@@ -713,8 +716,16 @@ function partRainbow() {
       g.forEach((c, k) => { if (res[k] !== 'ok' && left[c] > 0) { res[k] = 'near'; left[c]--; } });
       return res;
     };
+    // letters the word has that his try didn't use (each as many times as missing), in ABC order so it doesn't show where they go
+    const missingLetters = guess => {
+      const g = [...guess], a = [...target], left = {};
+      a.forEach(c => { left[c] = (left[c] || 0) + 1; });
+      g.forEach(c => { if (left[c] > 0) left[c]--; });
+      return Object.entries(left).flatMap(([c, n]) => Array(n).fill(c)).sort();
+    };
     const hintHtml = () => !memHint ? '' : `<div class="rw-hint"><div class="rw-row"><span class="n">↺</span>${[...memHint.guess].map((c, k) => `<span class="lbox wd-${memHint.marks[k]}">${esc(c)}</span>`).join('')}</div>
-      <div class="wd-key"><span class="wd-ok">right spot</span><span class="wd-near">in the word, wrong spot</span><span class="wd-no">not in the word</span> · the word has ${target.length} letters</div></div>`;
+      <div class="wd-key"><span class="wd-ok">right spot</span><span class="wd-near">in the word, wrong spot</span><span class="wd-no">not in the word</span> · the word has ${target.length} letters</div>
+      ${memHint.missing ? (memHint.missing.length ? `<div class="wd-miss">Letters you’re missing: ${memHint.missing.map(c => `<span class="lbox wd-need">${esc(c)}</span>`).join('')}<small>Where do they go?</small></div>` : `<div class="wd-miss">You have all the letters! Just the order is mixed up.</div>`) : ''}</div>`;
     /* Line 4: he writes the word himself with his pencil or finger, no guide letters (the word is shown), to practice the motion */
     const writeLine = () => {
       onKey = null; $('memActs').hidden = true; $('keys').hidden = true;
@@ -762,7 +773,7 @@ function partRainbow() {
       };
     };
     const finishAll = (img, caseFlags = null) => {   // Nov 10: caseFlags lives inside writeLine; reading it here threw and froze line 4 after Done
-      note('Rainbow Write', w, lineKeys[0].length === letters.length && lineKeys[1].length === letters.length && memTries.length === 1, w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory (he typed the whole word, then double-checked it), line 4 written by hand.' + (memTries.length >= 3 ? ` After his 2nd wrong try he got color hints (green right spot, yellow wrong spot, red not in the word)${memTries.length >= 5 ? '; after the 4th the word stayed up to copy' : ''}.` : '') + (caseFlags ? ` The capital-letter check asked about ${caseFlags.join(', ')} on line 4, and he kept it.` : ''), img: img || undefined }, [`line 1: ${lineKeys[0].join(' ')}`, `line 2: ${lineKeys[1].join(' ')}`, ...memTries.map((s, k) => `line 3${memTries.length > 1 ? `, try ${k + 1}` : ''}: ${s}`)]);
+      note('Rainbow Write', w, lineKeys[0].length === letters.length && lineKeys[1].length === letters.length && memTries.length === 1, w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory (he typed the whole word, then double-checked it), line 4 written by hand.' + (memTries.length >= 3 ? ` After his 2nd wrong try he got color hints (green right spot, yellow wrong spot, red not in the word)${memTries.length >= 5 ? '; after the 4th he was shown the letters he was missing' : ''}${memTries.length >= 6 ? '; after the 5th the word stayed up to copy' : ''}.` : '') + (caseFlags ? ` The capital-letter check asked about ${caseFlags.join(', ')} on line 4, and he kept it.` : ''), img: img || undefined }, [`line 1: ${lineKeys[0].join(' ')}`, `line 2: ${lineKeys[1].join(' ')}`, ...memTries.map((s, k) => `line 3${memTries.length > 1 ? `, try ${k + 1}` : ''}: ${s}`)]);
       onKey = null; $('memActs').hidden = true; $('wordShow').innerHTML = `<div class="big-word">${esc(dw)}</div>`;
       $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join('');
       setMsg('Rainbow done!', 'good'); say(dw, 0.85); nextUp(1500).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); });
@@ -778,12 +789,14 @@ function partRainbow() {
         if (memTyped === letters.join('').toLowerCase()) { if (memTries.length === 1) score.rainbow.clean++; return finish(); }
         const n = memTries.length, last = memTyped;
         shakeEl($('rw')); memTyped = '';
-        if (n >= 4) {   // enough guessing: the word stays up, he copies it
+        if (n >= 5) {   // enough guessing: the word stays up, he copies it
           memHint = null; memCopy = true; draw();
           setMsg('Look at the word and type it. You can see it this time.', 'try'); say('Look at the word, and type it.', 0.95); return;
         }
         if (n >= 2) {   // color hints from his last try
-          memHint = { guess: last, marks: wordleMarks(last) }; memShow = false; draw();
+          memHint = { guess: last, marks: wordleMarks(last), missing: n === 4 ? missingLetters(last) : null }; memShow = false; draw();
+          if (n === 4) { const ms = memHint.missing; setMsg(ms.length ? `Here are the letters you’re missing: ${ms.join(', ')}. Where do they go? The colors show your last try.` : 'You have all the letters! Just the order is mixed up. Look at the colors.', 'try');
+            say(ms.length ? `Here are the letters you’re missing. ${ms.map(c => letterName(c)).join(', ')}. Where do they go?` : 'You have all the letters. Just the order is mixed up.', 0.9); return; }
           const g = memHint.marks.filter(m => m === 'ok').length;
           setMsg(`Not quite. Look at the colors: green letters are in the right spot${g ? ` (you have ${g})` : ''}, yellow ones go somewhere else, red ones aren’t in the word.`, 'try');
           say(n === 2 ? 'Not quite. Look at the colors. Green is right. Yellow is in the word, but in a different spot. Red is not in the word.' : 'Not quite. Look at the colors and try again.', 0.95);
