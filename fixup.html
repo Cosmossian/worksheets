@@ -167,6 +167,9 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 .lbox.wd-ok { background: #166534; border-color: #4ADE80; color: #fff; } .lbox.wd-near { background: #854D0E; border-color: #FACC15; color: #fff; } .lbox.wd-no { background: #7F1D1D; border-color: #F87171; color: #fff; }
 .wd-key { font: 600 15px Fredoka, sans-serif; color: var(--muted); text-align: center; margin-top: 4px; } .wd-key span { display: inline-block; padding: 1px 8px; border-radius: 8px; margin: 2px 3px; color: #fff; }
 .wd-miss { font: 700 17px Fredoka, sans-serif; color: #FDE68A; text-align: center; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; } .wd-miss small { font: 600 14px Fredoka, sans-serif; color: var(--muted); }
+.keys .key.wd-ok { background: #166534; border-color: #4ADE80; color: #fff; } .keys .key.wd-near { background: #854D0E; border-color: #FACC15; color: #fff; }
+.keys .key.wd-no { background: #3B1212; border-color: #7F1D1D; color: #FCA5A5; opacity: .4; pointer-events: none; text-decoration: line-through; }
+.keys .key.wd-need { box-shadow: 0 0 0 3px #60A5FA; }
 .lbox.wd-need { background: #1E3A8A; border: 2px solid #60A5FA; color: #fff; border-style: solid; }
 .wd-key .wd-ok { background: #166534; } .wd-key .wd-near { background: #854D0E; } .wd-key .wd-no { background: #7F1D1D; }
 .wl-wrap { width: 100%; max-width: 760px; margin: 8px auto 0; } .wl { width: 100%; height: 190px; border-radius: 16px; background: #fff; touch-action: none; display: block; } .wl-done { width: 360px; max-width: 100%; border-radius: 12px; background: #fff; display: block; margin: 8px auto; }
@@ -723,6 +726,22 @@ function partRainbow() {
       g.forEach(c => { if (left[c] > 0) left[c]--; });
       return Object.entries(left).flatMap(([c, n]) => Array(n).fill(c)).sort();
     };
+    /* Nov 10 (Dylan): the keyboard shows the same colors. Each key gets the best color that letter has earned in his hinted tries
+       (green > yellow > red), so a letter only goes red, and can't be tapped, when it isn't in the word at all; an extra copy that showed
+       red (two e's when the word has one) keeps its green or yellow key. On try 4 the letters he's missing get a blue outline. */
+    const keyBest = {};
+    const paintKeys = () => {
+      document.querySelectorAll('#keys .key').forEach(k => {
+        const c = k.dataset.k, m = keyBest[c];
+        k.classList.toggle('wd-ok', m === 3); k.classList.toggle('wd-near', m === 2); k.classList.toggle('wd-no', m === 1);
+        k.classList.toggle('wd-need', !!(memHint && memHint.missing && memHint.missing.includes(c)));
+        if (m === 1) k.setAttribute('aria-disabled', 'true'); else k.removeAttribute('aria-disabled');
+      });
+    };
+    const learnKeys = (guess, marks) => [...guess].forEach((c, k) => {
+      const v = !target.includes(c) ? 1 : marks[k] === 'ok' ? 3 : marks[k] === 'near' ? 2 : 0;
+      if (v > (keyBest[c] || 0)) keyBest[c] = v;
+    });
     const hintHtml = () => !memHint ? '' : `<div class="rw-hint"><div class="rw-row"><span class="n">↺</span>${[...memHint.guess].map((c, k) => `<span class="lbox wd-${memHint.marks[k]}">${esc(c)}</span>`).join('')}</div>
       <div class="wd-key"><span class="wd-ok">right spot</span><span class="wd-near">in the word, wrong spot</span><span class="wd-no">not in the word</span> · the word has ${target.length} letters</div>
       ${memHint.missing ? (memHint.missing.length ? `<div class="wd-miss">Letters you’re missing: ${memHint.missing.map(c => `<span class="lbox wd-need">${esc(c)}</span>`).join('')}<small>Where do they go?</small></div>` : `<div class="wd-miss">You have all the letters! Just the order is mixed up.</div>`) : ''}</div>`;
@@ -794,7 +813,7 @@ function partRainbow() {
           setMsg('Look at the word and type it. You can see it this time.', 'try'); say('Look at the word, and type it.', 0.95); return;
         }
         if (n >= 2) {   // color hints from his last try
-          memHint = { guess: last, marks: wordleMarks(last), missing: n === 4 ? missingLetters(last) : null }; memShow = false; draw();
+          memHint = { guess: last, marks: wordleMarks(last), missing: n === 4 ? missingLetters(last) : null }; memShow = false; learnKeys(last, memHint.marks); draw(); paintKeys();
           if (n === 4) { const ms = memHint.missing; setMsg(ms.length ? `Here are the letters you’re missing: ${ms.join(', ')}. Where do they go? The colors show your last try.` : 'You have all the letters! Just the order is mixed up. Look at the colors.', 'try');
             say(ms.length ? `Here are the letters you’re missing. ${ms.map(c => letterName(c)).join(', ')}. Where do they go?` : 'You have all the letters. Just the order is mixed up.', 0.9); return; }
           const g = memHint.marks.filter(m => m === 'ok').length;
@@ -812,7 +831,8 @@ function partRainbow() {
     onKey = (c) => {
       if (row > 2) return;
       if (!cols[row]) { setMsg('Pick a color first.', 'try'); return; }
-      if (row === 2) { if (memShow || !$('confirm').hidden) return; if (memTyped.length < 24) { memTyped += c; draw(); } return; }
+      if (row === 2) { if (memShow || !$('confirm').hidden) return; if (keyBest[c] === 1) { setMsg(`${c} isn’t in the word. Try a different letter.`, 'try'); return; }   // red key: not in the word
+        if (memTyped.length < 24) { memTyped += c; draw(); } return; }
       lineKeys[row].push(c);
       if (c === letters[pos].toLowerCase()) {
         pos++;
