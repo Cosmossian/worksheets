@@ -310,6 +310,10 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 @keyframes talkglow { 50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, .25); } }
 .talk-done { min-width: 200px; }
 .talk-note { min-height: 1.3em; font-weight: 700; } .talk-note.good { color: var(--good); } .talk-note.try { color: var(--try); }
+/* Nov 10 (Dylan): a 🔊 strip on every key, like the Spelling Helper's: tap it to hear the letter and a word with its sound, without typing it */
+.keys .key { position: relative; padding-bottom: 22px; height: clamp(64px, 9.6vh, 84px); overflow: hidden; }
+.keys .key .ksnd { position: absolute; left: 0; right: 0; bottom: 0; height: 24px; border-top: 1px solid var(--line); background: rgba(255,255,255,.05); display: grid; place-items: center; color: var(--muted); }
+.keys .key .ksnd svg { width: 16px; height: 16px; } .keys .key .ksnd:active { background: rgba(255,255,255,.14); color: var(--ink); }
 </style>
 </head>
 <body>
@@ -665,7 +669,7 @@ const norm = s => String(s).toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g
 const noArticle = s => norm(s).replace(/^(a|an|the) /, '');
 function setMsg(t, kind = '') { const m = $('msg'); if (m) { m.textContent = t; m.className = 'message' + (kind ? ' ' + kind : ''); } }
 function shakeEl(el) { if (!el) return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
-const keysHtml = () => `<div class="keys" id="keys">${'abcdefghijklmnopqrstuvwxyz'.split('').map(c => `<button class="key" data-k="${c}" aria-label="${c.toUpperCase()}">${c}</button>`).join('')}</div>`;
+const keysHtml = () => `<div class="keys" id="keys">${'abcdefghijklmnopqrstuvwxyz'.split('').map(c => `<button class="key" data-k="${c}" aria-label="${c.toUpperCase()}">${c}<span class="ksnd" role="button" aria-label="Hear ${c.toUpperCase()}">${SPK}</span></button>`).join('')}</div>`;
 let onKey = null;
 /* Nov 10, 2026 (Dylan: "anything that has a keyboard in it to have the letter sound it"): each letter he taps on the on-screen
    keyboard (or types) is said out loud, by name. Not when the page is already saying something (a cheer, the word), so it never
@@ -681,7 +685,13 @@ function keySay(ch) {
     u.onend = u.onerror = () => { if (keyUtt === u) keyUtt = null; }; keyUtt = u; speechSynthesis.speak(u);
   } catch (e) { keyUtt = null; }
 }
-document.addEventListener('click', e => { const k = e.target.closest('#keys [data-k]'); if (k && onKey) { onKey(k.dataset.k, k); keySay(k.dataset.k); } });
+const KEYWORD = { a: 'apple', b: 'ball', c: 'cat', d: 'dog', e: 'egg', f: 'fish', g: 'goat', h: 'hat', i: 'igloo', j: 'jam', k: 'kite', l: 'lion', m: 'moon', n: 'nest', o: 'octopus', p: 'pig', q: 'queen', r: 'red', s: 'sun', t: 'top', u: 'umbrella', v: 'van', w: 'web', x: 'fox', y: 'yo-yo', z: 'zebra' };
+const hearKey = ch => { keyUtt = null; say(`${letterName(ch)}. ${KEYWORD[ch] ? `Like ${KEYWORD[ch]}.` : ''}`, 0.8); };   // the 🔊 strip: hear it, don't type it
+document.addEventListener('click', e => {
+  const k = e.target.closest('#keys [data-k]'); if (!k) return;
+  if (e.target.closest('.ksnd')) { e.preventDefault(); hearKey(k.dataset.k); return; }
+  if (onKey) { onKey(k.dataset.k, k); keySay(k.dataset.k); }
+});
 document.addEventListener('keydown', e => {
   if (!$('confirm').hidden || e.ctrlKey || e.metaKey || e.altKey) return;
   if (/^[a-z]$/i.test(e.key) && onKey) { onKey(e.key.toLowerCase()); keySay(e.key.toLowerCase()); }

@@ -2168,7 +2168,8 @@ function readyForCheck() {
 }
 $('checkGo').onclick = () => { $('checkReady').hidden = true; $('checkRun').hidden = false; buildCheckKeys(); checkWord(); };
 function buildCheckKeys() {
-  $('ckeys').innerHTML = 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<div class="key" data-k="${ch}"><button class="kpick" aria-label="${ch.toUpperCase()}">${ch}</button></div>`).join('');
+  const SPKS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>`;
+  $('ckeys').innerHTML = 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<div class="key" data-k="${ch}"><button class="kpick" aria-label="${ch.toUpperCase()}">${ch}</button><button class="ksnd" aria-label="Hear ${ch.toUpperCase()}">${SPKS}</button></div>`).join('');   // 🔊 strip on the quiz keys too (Nov 10)
   $('spaceBtn').hidden = !daily.words.some(w => w.includes(' '));
 }
 const sentenceFor = w => { const x = SENTENCES[w.toLowerCase()]; return x && x[0].includes('___') ? x[0].replace('___', spoken(w)) : ''; };
@@ -2202,7 +2203,7 @@ function keySay(ch) {
   } catch (e) { keyUtt = null; }
 }
 function typeLetter(ch) { if (!$('confirm').hidden) return; if (typed.length < 24) { typed += ch; renderAnswer(); keySay(ch); } }
-$('ckeys').addEventListener('click', e => { const k = e.target.closest('[data-k]'); if (k) typeLetter(k.dataset.k); });
+$('ckeys').addEventListener('click', e => { const k = e.target.closest('[data-k]'); if (!k) return; if (e.target.closest('.ksnd')) { keyUtt = null; letterSound(k.dataset.k); return; } typeLetter(k.dataset.k); });
 $('spaceBtn').onclick = () => { if (typed && !typed.endsWith(' ')) typeLetter(' '); };
 $('backBtn').onclick = () => { typed = typed.slice(0, -1); renderAnswer(); };
 $('cHearWord').onclick = () => sayCheckWord(false);
