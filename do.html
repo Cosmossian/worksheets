@@ -667,10 +667,24 @@ function setMsg(t, kind = '') { const m = $('msg'); if (m) { m.textContent = t; 
 function shakeEl(el) { if (!el) return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
 const keysHtml = () => `<div class="keys" id="keys">${'abcdefghijklmnopqrstuvwxyz'.split('').map(c => `<button class="key" data-k="${c}" aria-label="${c.toUpperCase()}">${c}</button>`).join('')}</div>`;
 let onKey = null;
-document.addEventListener('click', e => { const k = e.target.closest('#keys [data-k]'); if (k && onKey) onKey(k.dataset.k, k); });
+/* Nov 10, 2026 (Dylan: "anything that has a keyboard in it to have the letter sound it"): each letter he taps on the on-screen
+   keyboard (or types) is said out loud, by name. Not when the page is already saying something (a cheer, the word), so it never
+   talks over a prompt; quick taps cut off the last letter. Not logged in Replay's "What the page said". */
+let keyUtt = null;
+function keySay(ch) {
+  if (!canTalk || !/^[a-z]$/.test(ch)) return;
+  const busy = speechSynthesis.speaking || speechSynthesis.pending;
+  if (busy && !keyUtt) return;
+  try {
+    if (busy) speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(letterName(ch)); if (voice) u.voice = voice; u.lang = (voice && voice.lang) || 'en-US'; u.rate = 1; u.pitch = 1.05;
+    u.onend = u.onerror = () => { if (keyUtt === u) keyUtt = null; }; keyUtt = u; speechSynthesis.speak(u);
+  } catch (e) { keyUtt = null; }
+}
+document.addEventListener('click', e => { const k = e.target.closest('#keys [data-k]'); if (k && onKey) { onKey(k.dataset.k, k); keySay(k.dataset.k); } });
 document.addEventListener('keydown', e => {
   if (!$('confirm').hidden || e.ctrlKey || e.metaKey || e.altKey) return;
-  if (/^[a-z]$/i.test(e.key) && onKey) onKey(e.key.toLowerCase());
+  if (/^[a-z]$/i.test(e.key) && onKey) { onKey(e.key.toLowerCase()); keySay(e.key.toLowerCase()); }
   else if (e.key === 'Backspace' && $('backBtn')) { e.preventDefault(); $('backBtn').click(); }
   else if (e.key === 'Enter' && $('doneBtn')) { e.preventDefault(); if (!$('doneBtn').disabled) $('doneBtn').click(); }
 });

@@ -1291,13 +1291,14 @@ async function openDay(ds) {
     // (spell.html autoFixit; same rules here, from the results in the Study database). Not when one was assigned for that day.
     if (!future && !((S.sheets && S.sheets.list) || []).some(a => a.tool === 'fixit' && onList(a, ds, doneDays))) {
       const dl = L.filter(x => x.kind === 'sheet' && today(x)), fixes = dl.filter(x => x.tool === 'fixit'), miss = new Map();
-      dl.filter(x => x.tool !== 'fixit' && x.tool !== 'mtest').sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
+      dl.filter(x => x.tool !== 'fixit' && x.tool !== 'mtest' && !String(x.aid || '').startsWith('daily-')).sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
         const w = String(m.word || '').trim().toLowerCase(); if (!/[a-z]/.test(w)) return;
         const his = String(m.typed || '').trim().toLowerCase();
         miss.set(w, { w, his: his && his !== w ? his : (miss.get(w) || {}).his || '', t: r.t, from: r.title || '' });
       }));
       // fixed = his latest try at spelling it in a Fix-it (after the miss) was right the first time (Nov 10: a wrong try kept it on, Dylan)
-  const fixedAfter = (w, t) => { const tries = fixes.filter(f => f.t > t).sort((a, b) => a.t - b.t).flatMap(f => (f.items || []).filter(x => x.part === 'Spell It' && x.word === w)); return tries.length > 0 && !!tries.at(-1).ok; };
+  const fxLog = L.filter(x => x.kind === 'fixup' && today(x)).map(f => ({ t: f.t, items: (f.test || []).map(x => ({ part: 'Spell It', word: String(x.word || '').toLowerCase(), ok: x.ok })) }));   // Spelling Fix-Up Practice Test counts too
+  const fixedAfter = (w, t) => { const tries = [...fixes, ...fxLog].filter(f => f.t > t).sort((a, b) => a.t - b.t).flatMap(f => (f.items || []).filter(x => x.part === 'Spell It' && x.word === w)); return tries.length > 0 && !!tries.at(-1).ok; };
       const all = [...miss.values()], pending = all.filter(m => !fixedAfter(m.w, m.t));
       const autoF = fixes.filter(f => String(f.aid || '').startsWith('fixit-auto-')).sort((a, b) => b.t - a.t), last = autoF[0];
       if (all.length || last) {
