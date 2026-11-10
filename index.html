@@ -41,7 +41,6 @@ body.framefull { overflow: hidden; }
 .daywrap { position: fixed; inset: 0; background: rgba(5, 9, 14, .78); z-index: 80; display: grid; place-items: start center; padding: 40px 16px; overflow: auto; }
 .daywrap[hidden] { display: none; }
 .daybox { background: var(--surface); border: 2px solid var(--study); border-radius: 22px; padding: 20px 22px; width: 100%; max-width: 640px; }
-.aopen { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; } .aopen:hover span { text-decoration: underline; } .aopen:focus-visible { outline: 2px solid var(--study); border-radius: 6px; }
 .assign-day { display: flex; align-items: center; gap: 8px; font-weight: 700; margin: 0 0 8px; } .assign-day select { flex: 1; }
 .daynav { display: flex; align-items: center; gap: 8px; margin: 2px 0 2px; } .daytoday { text-align: center; margin: 0 0 6px; } .daytoday .btn { font-size: 13px; padding: 4px 12px; } .daynav b { flex: 1; text-align: center; font: 700 18px Fredoka, sans-serif; } .daynav button:disabled { opacity: .35; }
 .dayhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
@@ -93,6 +92,13 @@ body.authwait .tabs, body.authwait .classes, body.authwait .workspace, body.auth
 .assign-msg { font-size: 14px; margin-top: 8px; min-height: 18px; }
 .assigned { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
 .assigned div { display: flex; gap: 8px; align-items: center; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; font-size: 14px; }
+.assigned .arow { background: none; border: 0; padding: 0; margin-top: 8px; align-items: stretch; }
+.assigned .aopen { all: unset; box-sizing: border-box; flex: 1; min-width: 0; cursor: pointer; display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: "t s i" "w s i"; gap: 2px 10px; align-items: center; background: #1B2A40; border: 2px solid #2F4A6E; border-radius: 12px; padding: 10px 12px; }
+.assigned .aopen:hover { border-color: var(--study); background: #20344F; } .assigned .aopen:active { transform: translateY(1px); } .assigned .aopen:focus-visible { outline: 3px solid var(--study); }
+.assigned .aopen .at { grid-area: t; font: 700 16px Fredoka, sans-serif; color: var(--ink); } .assigned .aopen small { grid-area: w; color: var(--muted); font-size: 12px; }
+.assigned .aopen em { grid-area: s; font-style: normal; font: 700 14px Fredoka, sans-serif; color: var(--muted); white-space: nowrap; } .assigned .aopen em.ok { color: #34D399; }
+.assigned .aopen i { grid-area: i; font-style: normal; font-size: 26px; color: #93C5FD; line-height: 1; }
+.assigned .arow > .btn { align-self: center; }
 .assigned div span { flex: 1; } .assigned .ok { color: #34D399; font-weight: 700; white-space: nowrap; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .note { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.4; }
@@ -1554,11 +1560,15 @@ async function renderAssigned() {
     const ds = (document.getElementById('assignDay') || {}).value || td;
     const doneFor = a => (logs || []).map(r => r.data).filter(d => (d.aid || d.cid) === a.id && (!['steps', 'weather'].includes(a.tool) ? dayOf(d.t) <= ds : dayOf(d.t) === ds)).sort((x, y) => y.t - x.t)[0];
     const doneDays = a => (logs || []).map(r => r.data).filter(d => (d.aid || d.cid) === a.id).map(d => dayOf(d.t));
-    const shown = list.filter(a => onList(a, ds, doneDays)).sort((x, y) => (OPTIONAL.includes(x.tool) - OPTIONAL.includes(y.tool)) || x.at - y.at);
+    // Only what belongs here (Nov 9, Dylan): School Assigned = this subject's school worksheets (every subject's with All subjects on);
+    // Templates = this subject's templates and extras.
+    const clsId = state.cls || classOf(state.tool), inSchool = folderOf(clsId) === 'school', subj = a => classOf(a.tool === 'mtest' ? 'master' : a.tool) === clsId;
+    const shown = list.filter(a => onList(a, ds, doneDays) && (inSchool ? !!schoolDayOf(a) && (state.schoolAll || subj(a)) : !schoolDayOf(a) && subj(a))).sort((x, y) => (OPTIONAL.includes(x.tool) - OPTIONAL.includes(y.tool)) || x.at - y.at);
+    const what = inSchool ? (state.schoolAll ? 'school worksheets' : `${CLASSES.find(c => c.id === clsId).name} school worksheets`) : `${CLASSES.find(c => c.id === clsId).name} templates`;
     if (!document.getElementById('assignedList')) return;
-    document.getElementById('assignedList').innerHTML = `<b style="font-size:14px">On his device ${ds === td ? 'today' : esc(dayName(ds))}:</b>` + (shown.length ? shown.map(a => {
+    document.getElementById('assignedList').innerHTML = `<b style="font-size:14px">On his device ${ds === td ? 'today' : esc(dayName(ds))} · ${esc(what)}:</b>` + (shown.length ? shown.map(a => {
       const d = doneFor(a), g = d && d.grade, sd = sheetDay(a), when = (OPTIONAL.includes(a.tool) ? 'extra' : a.data && a.data.exact ? '📄 school' : '🧩 template') + (a.auto ? ' · put on his day by itself' : ` · assigned ${checkDate(a.at)}`);
-      return `<div><button class="aopen" data-aopen="${esc(a.id)}" title="Open this worksheet"><span>${esc(a.title)}</span><small style="color:var(--muted)">${esc(when)} · tap to open</small></button>${d ? `<span class="ok">✓ ${g ? `${g.letter} ${g.pct}%` : a.tool === 'weather' && d.extra && d.extra.day ? `day ${d.extra.day} today` : a.tool === 'steps' ? 'today' : 'done'}</span>` : ''}<button class="btn btn-small" data-unassign="${esc(a.id)}" aria-label="Remove ${esc(a.title)} from his device">Remove</button></div>`;
+      return `<div class="arow"><button class="aopen" data-aopen="${esc(a.id)}" title="Open this worksheet"><span class="at">${esc(a.title.replace(/^📄 School (copy|[\d/]+) · /, ''))}</span><small>${esc(when)}</small>${d ? `<em class="ok">✓ ${g ? `${g.letter} ${g.pct}%` : a.tool === 'weather' && d.extra && d.extra.day ? `day ${d.extra.day}` : 'done'}</em>` : '<em>not done yet</em>'}<i aria-hidden="true">›</i></button><button class="btn btn-small" data-unassign="${esc(a.id)}" aria-label="Remove ${esc(a.title)} from his device">Remove</button></div>`;
     }).join('') : `<p class="help" style="margin:6px 0 0">Nothing on his device ${ds === td ? 'today' : 'that day'} yet.</p>`);
     assignedCache = list;
   } catch (e) { el.innerHTML = ''; }
