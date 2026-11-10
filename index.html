@@ -1262,8 +1262,8 @@ async function openDay(ds) {
     const doneDays = a => L.filter(x => (x.kind === 'sheet' || x.kind === 'fixup') && (x.aid || x.cid) === a.id).map(x => dayOf(x.t));
     const items = [];
     const d = S.daily || {}, words = bankWords(S.sightbank) || parseWords(d.words || '');
-    const plog = (S.points && S.points.log) || [], ptot = plog.reduce((a, e) => a + (e.pts || 0), 0), ptoday = plog.filter(today).reduce((a, e) => a + (e.pts || 0), 0);
-    if (plog.length && !future) items.push({ title: `⭐ ${esc((S.profile && S.profile.name) || 'His')} points: ${ptot}`, sub: `${isToday ? 'Today' : 'That day'}: ${ptoday >= 0 ? '+' : ''}${ptoday}. Every point, day by day, is in Parent Review (Daily Sight Words → Parent Review).`, st: '', ok: true });
+    const plog = (S.points && S.points.log) || [], ptot = plog.filter(e => String(e.day).slice(0, 7) === ds.slice(0, 7)).reduce((a, e) => a + (e.pts || 0), 0), ptoday = plog.filter(today).reduce((a, e) => a + (e.pts || 0), 0);
+    if (plog.length && !future) items.push({ title: `⭐ ${esc((S.profile && S.profile.name) || 'His')} points in ${esc(new Date(ds + 'T12:00').toLocaleDateString(undefined, { month: 'long' }))}: ${ptot}`, sub: `${isToday ? 'Today' : 'That day'}: ${ptoday >= 0 ? '+' : ''}${ptoday}. Every point, day by day, is in Parent Review (Daily Sight Words → Parent Review).`, st: '', ok: true });
     if (words.length) {
       const steps = [d.look !== false ? `Look &amp; Listen (3 rounds${d.mic !== false ? ', with the microphone' : ''})` : '', d.practice !== false ? 'practice each word with the Spelling Helper' : '', 'the check (spoken words, letter grade)'].filter(Boolean).join(' → ');
       const chk = L.filter(x => x.kind === 'check' && today(x) && x.t > (d.resetAt || 0)).sort((a, b) => b.t - a.t)[0];

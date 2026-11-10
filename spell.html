@@ -254,6 +254,14 @@ body.kidgrown #acctCard, body.kidgrown #dailyCard { display: none !important; }
 .chip.mast { border-color: #34D399; } .chip.conf { border-color: #34D399; background: #0F2E25; }
 .chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 6px; border-radius: 999px; } .chip button:hover { color: var(--ink); background: var(--line); }
 .pts-btn { background: #3A2E0C; border-color: #F59E0B; color: #FDE68A; margin-left: auto; } .app-header .pts-btn:not([hidden]) + .review-btn { margin-left: 10px; }
+.pts-why { flex-basis: 100%; } .pts-why summary { cursor: pointer; font: 600 15px Fredoka, sans-serif; color: #FDE68A; }
+.pw-day { margin-top: 8px; } .pw-day > span { font: 700 15px Fredoka, sans-serif; color: #34D399; margin-left: 6px; } .pw-day > span.neg { color: #F87171; }
+.pts-month { width: 100%; max-width: 640px; background: var(--surface); border: 2px solid #F59E0B; border-radius: 18px; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.pm-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; } .pm-top b { font: 700 22px Fredoka, sans-serif; } .pm-n { font: 700 34px Fredoka, sans-serif; color: #FDE68A; }
+.pm-max { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 600 17px Fredoka, sans-serif; color: var(--ink); } .pm-max b { color: #FDE68A; }
+.pm-goal { display: flex; flex-direction: column; gap: 4px; font: 600 16px Fredoka, sans-serif; color: #BBF7D0; }
+.pm-bar { height: 18px; border-radius: 999px; background: #1E293B; border: 1px solid var(--line); overflow: hidden; } .pm-bar i { display: block; height: 100%; background: linear-gradient(90deg, #F59E0B, #FACC15); border-radius: 999px; }
+.pm-how { color: var(--muted); font-size: 13px; }
 .pts-big { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 .pts-big > div { background: var(--surface); border: 2px solid #F59E0B; border-radius: 20px; padding: 12px 26px; display: flex; flex-direction: column; align-items: center; min-width: 150px; }
 .pts-big small { color: var(--muted); font: 600 15px Fredoka, sans-serif; } .pts-big b { font: 700 46px Fredoka, sans-serif; color: #FDE68A; }
@@ -490,6 +498,7 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
     <div style="margin-top:8px"><b>🎤 When he reads or says something out loud</b>
       <div class="seg" id="talkSeg" role="group" aria-label="When he reads out loud" style="margin-top:6px"><button data-talk="button">Get ready → Speak now → Done</button><button data-talk="auto">The microphone listens by itself</button></div>
       <small class="note" style="margin:4px 0 0">Get ready: a 3-2-1 countdown, then 🎤 Speak now while it records, and he taps Done when he’s finished. Done unlocks once the microphone hears his voice (or after 10 seconds, so he’s never stuck). His recordings are in Parent Review either way. Used in Look &amp; Listen, Look &amp; Say and the lesson worksheets.</small></div>
+    <div class="pin-set" style="margin-top:8px"><b>⭐ Monthly points goal</b> <span id="goalState"></span><div class="row" style="align-items:center;margin-top:6px"><input id="goalIn" type="number" inputmode="numeric" min="1" step="10" placeholder="none" style="letter-spacing:0"><button class="btn" id="goalSave">Save goal</button><button class="btn" id="goalOff" hidden>No goal</button></div><small id="goalHelp">His points start over at 0 on the 1st of every month. With a goal, he sees a bar toward it on ⭐ My points; with no goal, there’s no bar.</small></div>
     <div class="pin-set" style="margin-top:8px" id="pinSet"><b>🔒 Grown-up PIN</b> <span id="pinState"></span><div class="row" style="align-items:center;margin-top:6px"><input id="pinIn" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"><button class="btn" id="pinSave">Save PIN</button><button class="btn" id="pinOff" hidden>Remove PIN</button></div><small>On his device, every grown-up button (Parent Help, Grown-up screen, Parent Review, Test day, Switch user, stop) asks for it after the hold.</small></div>
   </div>
   <div class="card" id="dailyCard">
@@ -1268,6 +1277,9 @@ function renderPin() { const on = !!settings.pin; $('pinState').textContent = on
 $('pinSave').onclick = async () => { const v = $('pinIn').value.trim(); if (!/^\d{4}$/.test(v)) { $('pinState').textContent = 'Use exactly 4 numbers.'; return; } settings.pin = await pinHash(v); store('spell-settings', settings); $('pinIn').value = ''; renderPin(); $('pinState').textContent = 'saved ✓ It’s on his device now.'; };
 $('pinOff').onclick = () => { settings.pin = ''; store('spell-settings', settings); renderPin(); };
 renderPin();
+function renderGoal() { const g = pointsGoal(), n = new Date(), X = pointsMax(n.getFullYear(), n.getMonth()); $('goalState').textContent = g ? `is ${g} ✓` : 'is off'; $('goalOff').hidden = !g; $('goalIn').placeholder = 'none'; $('goalHelp').textContent = `His points start over at 0 on the 1st of every month. With a goal, he sees a bar toward it on ⭐ My points; with no goal, there’s no bar. Max possible in ${monthName(n.getFullYear(), n.getMonth())}: ${X.max}.`; }
+$('goalSave').onclick = () => { const v = Math.round(+$('goalIn').value); if (!(v > 0)) { $('goalState').textContent = 'Type a number above 0.'; return; } settings.goal = v; store('spell-settings', settings); $('goalIn').value = ''; renderGoal(); $('goalState').textContent = `is ${v} ✓ It’s on his device now.`; };
+$('goalOff').onclick = () => { settings.goal = 0; store('spell-settings', settings); renderGoal(); };
 function holdToOpen(btn, ms, target = 'setup') {
   let t = null;
   const cancel = () => { clearTimeout(t); t = null; btn.classList.remove('holding'); };
@@ -1384,6 +1396,31 @@ function pointsSummary(log = pointsLog()) {
   const days = Object.keys(byDay).sort().reverse().map(day => ({ day, pts: byDay[day].reduce((a, e) => a + e.pts, 0), entries: byDay[day] }));
   const best = days.reduce((m, d) => d.pts > (m ? m.pts : -1e9) ? d : m, null);
   return { total: log.reduce((a, e) => a + e.pts, 0), today: (days.find(d => d.day === ymd(Date.now())) || { pts: 0 }).pts, best, days };
+}
+/* Nov 10 (Dylan): his points start over at 0 on the 1st of every month (nothing is deleted; the totals are per month).
+   Max possible = every school day (Mon–Fri) all of his words right on their first day (words × 5) + a Mastered Words Test
+   every Friday with every word remembered (6 × 5). "Still possible" = this month so far + what's left (today counts until he's done it). */
+const MT_WORDS = 6;
+const monthKey = (y, m) => `${y}-${String(m + 1).padStart(2, '0')}`;
+const monthName = (y, m) => new Date(y, m, 15).toLocaleDateString(undefined, { month: 'long' });
+function monthPoints(y, m, log = pointsLog()) { const mk = monthKey(y, m); return pointsSummary(log.filter(e => String(e.day).slice(0, 7) === mk)); }
+function pointsMax(y, m) {
+  const words = (sightBank() || {}).size || 6, perDay = words * 5, perTest = MT_WORDS * 5, td = ymd(Date.now()), log = pointsLog(), checks = store('spell-check-log') || [];
+  const days = []; for (let d = new Date(y, m, 1); d.getMonth() === m; d.setDate(d.getDate() + 1)) if (d.getDay() > 0 && d.getDay() < 6) days.push({ ds: ymd(d.getTime()), fri: d.getDay() === 5 });
+  const max = days.reduce((a, d) => a + perDay + (d.fri ? perTest : 0), 0);
+  const quizDone = ds => checks.some(r => ymd(r.t) === ds) || log.some(e => e.day === ds && e.kind === 'quiz'), testDone = ds => log.some(e => e.day === ds && e.kind === 'mtest');
+  const left = days.reduce((a, d) => a + (d.ds > td || (d.ds === td && !quizDone(d.ds)) ? perDay : 0) + (d.fri && (d.ds > td || (d.ds === td && !testDone(d.ds))) ? perTest : 0), 0);
+  return { max, left, words, schoolDays: days.length, fridays: days.filter(d => d.fri).length, perDay, perTest };
+}
+const pointsGoal = () => { const g = +((store('spell-settings') || {}).goal || 0); return g > 0 ? g : 0; };
+// the month box on My points and Parent Review: this month's total, max possible, still possible, and the goal bar (only when a goal is set)
+function monthBox(y, m, forParent) {
+  const P = monthPoints(y, m), X = pointsMax(y, m), mk = monthKey(y, m), cur = mk === ymd(Date.now()).slice(0, 7), past = mk < ymd(Date.now()).slice(0, 7);
+  const still = past ? P.total : P.total + X.left, goal = pointsGoal(), pct = goal ? Math.max(0, Math.min(100, Math.round(P.total / goal * 100))) : 0;
+  return `<div class="pts-month"><div class="pm-top"><b>${esc(monthName(y, m))} total</b><span class="pm-n">${P.total}</span></div>
+    <div class="pm-max"><span>Max possible this month: <b>${X.max}</b></span>${past ? '' : `<span>Still possible: <b>${still}</b></span>`}</div>
+    ${goal ? `<div class="pm-goal"><div class="pm-bar"><i style="width:${pct}%"></i></div><span>${P.total >= goal ? `🎉 Goal reached! ${P.total} of ${goal}` : `Goal: ${goal} · ${goal - P.total} to go`}</span></div>` : ''}
+    ${forParent ? '' : cur ? '<small class="pm-how">Your points start over at 0 on the 1st of every month.</small>' : ''}<small class="pm-how"${forParent ? '' : ' hidden'}>${X.schoolDays} school days × ${X.perDay} (${X.words} words × 5 when each is right on its first day) + ${X.fridays} Fridays × ${X.perTest} (Mastered Words Test, ${MT_WORDS} words × 5).${cur ? ' Points start over at 0 on the 1st of every month.' : ''}${forParent ? ' Days off school still count in the max.' : ''}</small></div>`;
 }
 // after the daily quiz: right words → Mastered (+points by how many school days they've been on his list), refill from the bank
 function applyMastery(results, checkId) {
@@ -2394,13 +2431,16 @@ const seeAll = (rows, extraHtml = '', key = '') => rows || extraHtml ? `<div cla
 /* ▶ Replay: his screens one at a time, rebuilt from what was recorded, with what he tapped/typed in order */
 /* ⭐ Points screen: total, today, best day, every day's points, and a Review of each gain and loss */
 function openPoints(forParent) {
-  const P = pointsSummary(), nm = kidName();
+  const nm = kidName(), cm = calMonth.pts || (calMonth.pts = [new Date().getFullYear(), new Date().getMonth()]), P = monthPoints(cm[0], cm[1]), ALL = pointsSummary();
   $('ptsTitle').textContent = forParent ? `⭐ ${nm || 'His'} points` : '⭐ My points'; $('ptsTitle').dataset.parent = forParent ? '1' : '';
   const nice = d => new Date(d + 'T12:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
-  $('ptsScreen').innerHTML = `<div class="pts-big"><div><small>Total</small><b>${P.total}</b></div><div><small>Today</small><b>${upDown(P.today)}</b></div><div><small>Best day</small><b>${P.best ? P.best.pts : 0}</b>${P.best ? `<small>${esc(nice(P.best.day))}</small>` : ''}</div></div>
-    ${(() => { const cm = calMonth.pts || (calMonth.pts = [new Date().getFullYear(), new Date().getMonth()]); const byDay = Object.fromEntries(P.days.map(d => [d.day, d.pts])); return monthCal(cm[0], cm[1], ds => ds in byDay ? { cls: byDay[ds] > 0 ? 'done' : byDay[ds] < 0 ? 'miss' : 'none', html: `<small>${byDay[ds] > 0 ? '▲' : byDay[ds] < 0 ? '▼' : ''}${Math.abs(byDay[ds])}</small>`, title: `${byDay[ds]} points` } : null, 'pts'); })()}
+  const isCur = monthKey(cm[0], cm[1]) === ymd(Date.now()).slice(0, 7);
+  $('ptsScreen').innerHTML = `<div class="pts-big"><div><small>${esc(monthName(cm[0], cm[1]))}</small><b>${P.total}</b></div>${isCur ? `<div><small>Today</small><b>${upDown(P.today)}</b></div>` : ''}<div><small>Best day</small><b>${P.best ? P.best.pts : 0}</b>${P.best ? `<small>${esc(nice(P.best.day))}</small>` : ''}</div></div>
+    ${monthBox(cm[0], cm[1], forParent)}
+    ${(() => { const byDay = Object.fromEntries(P.days.map(d => [d.day, d.pts])); return monthCal(cm[0], cm[1], ds => ds in byDay ? { cls: byDay[ds] > 0 ? 'done' : byDay[ds] < 0 ? 'miss' : 'none', html: `<small>${byDay[ds] > 0 ? '▲' : byDay[ds] < 0 ? '▼' : ''}${Math.abs(byDay[ds])}</small>`, title: `${byDay[ds]} points` } : null, 'pts'); })()}
     ${P.days.length ? `<div class="pts-days">${P.days.map((d, i) => `<div class="pts-day" id="ptsDay-${d.day}"><div class="pts-row"><b>${esc(nice(d.day))}</b><span class="${d.pts < 0 ? 'neg' : ''}">${upDown(d.pts)} points</span><button class="btn" data-ptsday="${i}">Review</button></div><div class="pts-list" id="ptsList${i}" hidden>${d.entries.map(e => `<div class="${e.pts > 0 ? 'gain' : e.pts < 0 ? 'loss' : 'zero'}"><b>${e.pts > 0 ? '+' : ''}${e.pts}</b> ${esc(e.why)}</div>`).join('')}</div></div>`).join('')}</div>`
-      : `<p class="rp-sub">No points yet. Spell a word right on the daily quiz to earn some!</p>`}
+      : `<p class="rp-sub">${isCur ? 'No points yet this month. Spell a word right on the daily quiz to earn some!' : `No points in ${esc(monthName(cm[0], cm[1]))}.`}</p>`}
+    ${forParent ? `<p class="rp-saw">All-time (only you see this): ${ALL.total} points.</p>` : ''}
     <p class="rp-saw">Daily quiz: a word spelled right earns 5 points on its first day on the list, 4 the next school day… down to 1. Mastered Words Test: +5 if he still remembers it, −3 if not.</p>`;
   $('pointsWrap').hidden = false;
 }
@@ -2485,8 +2525,10 @@ document.addEventListener('keydown', e => { if ($('replay').hidden) return; if (
 let calSel = null;   // the day picked on Parent Review's calendar (today at first)
 async function renderReview(noPull) {
   const P0 = pointsSummary();
-  $('reviewPts').innerHTML = `<div class="pts-card"><b>⭐ ${esc(kidName() || 'His')} points: ${P0.total}</b><span>today ${upDown(P0.today)} · best day ${P0.best ? P0.best.pts : 0}</span><button class="btn" id="reviewPtsBtn">See every point</button></div>`;
-  $('reviewPtsBtn').onclick = () => openPoints(true);
+  { const cmR = calMonth.review || [new Date().getFullYear(), new Date().getMonth()], PM = monthPoints(cmR[0], cmR[1]), XM = pointsMax(cmR[0], cmR[1]), g = pointsGoal();
+    $('reviewPts').innerHTML = `<div class="pts-card"><b>⭐ ${esc(kidName() || 'His')} ${esc(monthName(cmR[0], cmR[1]))} total: ${PM.total}</b><span>max ${XM.max}${g ? ` · goal ${g}` : ''} · today ${upDown(P0.today)} · all-time ${P0.total}</span><button class="btn" id="reviewPtsBtn">See every point</button>
+      <details class="pts-why"><summary>Why he got them (${esc(monthName(cmR[0], cmR[1]))}, by day)</summary>${PM.days.length ? PM.days.map(d => `<div class="pw-day"><b>${esc(new Date(d.day + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }))}</b> <span class="${d.pts < 0 ? 'neg' : ''}">${upDown(d.pts)}</span><div class="pts-list">${d.entries.map(e => `<div class="${e.pts > 0 ? 'gain' : e.pts < 0 ? 'loss' : 'zero'}"><b>${e.pts > 0 ? '+' : ''}${e.pts}</b> ${esc(e.why)}</div>`).join('')}</div></div>`).join('') : '<p class="rv-empty">No points this month yet.</p>'}</details></div>`; }
+  $('reviewPtsBtn').onclick = () => { const c = calMonth.review; if (c) calMonth.pts = [...c]; openPoints(true); };
   if (cloudMember() && !noPull) { $('reviewList').innerHTML = '<p class="rv-empty">Loading…</p>'; await cloudPullLogs(); if ($('review').hidden) return; }
   if (!calSel) {   // the Results link on the Worksheets page opens a given day: spell.html?day=YYYY-MM-DD#review
     const want = new URLSearchParams(location.search).get('day');
@@ -2702,7 +2744,7 @@ function cloudOnStore(k) {
   clearTimeout(cloud.timers[k]);
   cloud.timers[k] = setTimeout(() => {
     let data = store(k);
-    if (k === 'spell-settings' && data) data = { need: data.need, win: data.win, email: data.email === true, pin: data.pin || '' };   // sensitivity stays on this device
+    if (k === 'spell-settings' && data) data = { need: data.need, win: data.win, email: data.email === true, pin: data.pin || '', goal: data.goal || 0 };   // sensitivity stays on this device
     cloudRun('state', { key: SYNC[k], data }).then(ok => { if (ok && k === 'spell-daily') syncNote(`Saved for his device ✓ (${timeOf(Date.now())})`); });
   }, 700);
 }
@@ -2734,7 +2776,7 @@ async function cloudPull() {
       if (local === 'spell-settings') { const mine = store('spell-settings') || {}; localStorage.setItem(local, JSON.stringify({ ...mine, ...byKey[key], sens: mine.sens || 3 })); }
       else localStorage.setItem(local, JSON.stringify(byKey[key]));
     });
-    settings = Object.assign({ need: 2, win: 60, sens: 3 }, store('spell-settings') || {});
+    settings = Object.assign({ need: 2, win: 60, sens: 3 }, store('spell-settings') || {}); try { renderGoal(); } catch (e) { }
     sounds = store('spell-sounds') || {};
     if (cloud.role === 'grownup' && !('sightbank' in byKey)) { store('sight-bank', JSON.parse(JSON.stringify(BANK_SEED))); cloudOnStoreForce('sight-bank'); }   // Dylan's word lists (Nov 6)
     if (cloud.role === 'grownup' && !('profile' in byKey)) { store('study-profile', { name: 'Maverick' }); cloudOnStoreForce('study-profile'); }
@@ -2974,6 +3016,7 @@ $('kidShelf').addEventListener('click', e => { const a = e.target.closest('a.don
 renderRecent();
 renderSetup();
 renderDailySetup();
+renderGoal();
 /* Shown inside the Study page (index.html, ?embed=1): no header or top bar; tell the Study page our height,
    and to go full screen whenever he's doing the words (anything but the setup screen), and back after. */
 const EMBEDDED = new URLSearchParams(location.search).get('embed') === '1' && window.parent !== window;
