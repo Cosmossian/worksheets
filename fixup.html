@@ -506,6 +506,11 @@ const detail = [];
    finished word, localStorage fixup-progress {key, day, partIdx, word, score, detail}. ↻ Reload or opening the same Fix-Up again that
    day offers "Pick up where I left off": finished parts stay done, and the part he was in starts at the word he was on. */
 const FXKEY = params.get('cid') || WORDS.map(x => `${x.w}:${x.his}`).join('|');
+const slimRep = (k, v) => typeof v === 'string' && v.length > 1500 && v.startsWith('data:') ? undefined : v;   // see putLog in do.html (Nov 10)
+function putLog(key, arr) {
+  for (const f of [() => JSON.stringify(arr), () => JSON.stringify(arr, slimRep), () => JSON.stringify(arr.slice(-15), slimRep)]) { try { localStorage.setItem(key, f()); return true; } catch (e) { } }
+  return false;
+}
 let fxRes = null;   // {word} while a part is starting up after a reload
 function fxSave(word) { try { store('fixup-progress', { key: FXKEY, day: new Date().toDateString(), t: Date.now(), partIdx, word: word || 0, score, detail }); } catch (e) { } }
 function fxResume() { const r = fxRes; fxRes = null; return r && r.word < WORDS.length ? r.word : 0; }
@@ -915,9 +920,9 @@ function showResults() {
   rec.cid = params.get('cid') || null;
   if (!TESTDAY) {   // grown-up's Test day: nothing saved
   store('fixup-latest', rec);
-  const flog = store('fixup-log') || []; flog.push(rec); store('fixup-log', flog.slice(-30));
+  const flog = store('fixup-log') || []; flog.push(rec); putLog('fixup-log', flog.slice(-30));
   cloudSaveFixup(rec);
-  } else { const flog = store('fixup-log') || []; flog.push(rec); store('fixup-log', flog.slice(-30)); }   // test day: this device only (End test puts his real copy back), so it shows as done
+  } else { const flog = store('fixup-log') || []; flog.push(rec); putLog('fixup-log', flog.slice(-30)); }   // test day: this device only (End test puts his real copy back), so it shows as done
   rec.body = emailBody(rec);
   if (emailOn()) { const box = store('fixup-outbox') || []; box.push(rec); store('fixup-outbox', box.slice(-20)); }
   app.innerHTML = `<div class="part-title"><h2>You finished the Fix-Up!</h2><p>Practice Test</p></div>

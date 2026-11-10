@@ -2125,7 +2125,7 @@ function practiceListDone() {
   const items = d.words.map(w => { const p = d.practice[w] || {}; return { part: 'Spelling Helper', label: w, ok: !p.tricky && !p.helps, typed: '', answer: w, word: w }; });
   const rec = { id: t.toString(36), t, aid: d.qid, tool: 'spell', title: 'Spelling Helper practice', grade: null, right: items.filter(x => x.ok).length, of: items.length, items, missed: [],
     parts: d.words.map(w => { const p = d.practice[w] || {}; return [w, p.tricky || p.helps ? `${p.tricky || 0} tricky letter${p.tricky === 1 ? '' : 's'}, ${p.helps || 0} help${p.helps === 1 ? '' : 's'}` : 'spelled it with no help']; }), extra: {}, sent: false };
-  const log = store('sheet-log') || []; log.push(rec); store('sheet-log', log.slice(-40));
+  const log = store('sheet-log') || []; log.push(rec); putLog('sheet-log', log.slice(-40));
   cloudPutLog('sheet', rec.id, t, rec);
   const body = { _subject: `Spelling Helper practice: ${rec.right} of ${rec.of} with no help (${new Date(t).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })})`, 'Date': new Date(t).toLocaleString(), 'Words': d.words.join(', ') };
   rec.parts.forEach(([k, v]) => { body[k] = v; });
@@ -2150,7 +2150,7 @@ window.addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data || !e.data.studySheetDone) return;
   const f = $('sheetFrame'); if (f) f.remove(); document.body.classList.remove('sheeton');
   if (!daily) return show('kidhome');
-  if (e.data.rec) { const sl = store('sheet-log') || []; if (!sl.some(x => x.id === e.data.rec.id)) { sl.push(e.data.rec); store('sheet-log', sl.slice(-40)); } }
+  if (e.data.rec) { const sl = store('sheet-log') || []; if (!sl.some(x => x.id === e.data.rec.id)) { sl.push(e.data.rec); putLog('sheet-log', sl.slice(-40)); } }
   if (e.data.quit) { daily = null; return show(cloud.role === 'kid' && !grownMode ? 'kidhome' : 'setup'); }
   daily.sheetDone = true; readyForCheck();
 });
@@ -2814,9 +2814,9 @@ async function cloudPullLogs() {
       mine.forEach(x => { if (!ids.has(String(idOf(x)))) { out.push(x); if (kind !== 'look') cloudPutLog(kind, idOf(x), x.t, x); } });
       return out.sort((a, b) => a.t - b.t);
     };
-    localStorage.setItem('spell-check-log', JSON.stringify(merge('spell-check-log', 'check', x => x.id).slice(-30)));
-    localStorage.setItem('fixup-log', JSON.stringify(merge('fixup-log', 'fixup', x => x.id).slice(-30)));
-    localStorage.setItem('sheet-log', JSON.stringify(merge('sheet-log', 'sheet', x => x.id).slice(-40)));
+    putLog('spell-check-log', merge('spell-check-log', 'check', x => x.id).slice(-30));
+    putLog('fixup-log', merge('fixup-log', 'fixup', x => x.id).slice(-30));
+    putLog('sheet-log', merge('sheet-log', 'sheet', x => x.id).slice(-40));
     const ag = store('study-days') || {}; (data || []).filter(r => r.kind === 'day').forEach(r => { ag[r.data.day] = r.data; }); localStorage.setItem('study-days', JSON.stringify(ag));
     const localLooks = lookLog(), urlByKey = {};
     localLooks.forEach(sess => (sess.clips || []).forEach(c => { if (c.key && c.url) urlByKey[c.key] = c.url; }));
@@ -2960,7 +2960,7 @@ setInterval(() => { if (cloudMember() && !daily && (!$('kidhome').hidden || !$('
 const FIXIT_TITLE = '🛠️ Let’s fix our mistakes from earlier';
 function autoFixit(ds, assigned) {
   if (assigned.some(a => a.tool === 'fixit')) return null;
-  const day = r => ymd(r.t) === ds, log = (store('sheet-log') || []).filter(day);
+  const day = r => ymd(r.t) === ds, log = withToday('sheet-log', store('sheet-log') || []).filter(day);
   const fixes = log.filter(r => r.tool === 'fixit'), miss = new Map();
   log.filter(r => r.tool !== 'fixit' && r.tool !== 'mtest').sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
     const w = String(m.word || '').trim().toLowerCase(); if (!/[a-z]/.test(w)) return;
@@ -2978,16 +2978,47 @@ function autoFixit(ds, assigned) {
   store('study-fixit-auto', A);
   return A;
 }
+/* Nov 10, 2026: his start screen only looked at this device's copy of his results. When that copy was emptied (Test day "from scratch"
+   closed without End test, or the browser clearing site data), everything showed as not done even though Parent Review had it all.
+   Now today's results from the Study database are merged into this device's copy (missing ones only), then his screen redraws. */
+let todayPullAt = 0, todayPulling = false, cloudToday = { day: '', sheet: [], fixup: [], check: [] };   // kept in memory: works even when this device's storage is full
+/* Saving a results list on this device: whole, then without the pictures (Replay/tracing images stay in the Study database), then fewer.
+   Safari allows about 5 MB per site, and pictures filled it up, so new results silently stopped saving on his iPad (Nov 10). */
+const slimRep = (k, v) => typeof v === 'string' && v.length > 1500 && v.startsWith('data:') ? undefined : v;
+function putLog(key, arr) {
+  for (const f of [() => JSON.stringify(arr), () => JSON.stringify(arr, slimRep), () => JSON.stringify(arr.slice(-15), slimRep)]) { try { localStorage.setItem(key, f()); return true; } catch (e) { } }
+  return false;
+}
+const withToday = (key, list) => { const kind = { 'sheet-log': 'sheet', 'fixup-log': 'fixup', 'spell-check-log': 'check' }[key]; const extra = cloudToday.day === new Date().toDateString() ? cloudToday[kind] : []; const ids = new Set(list.map(x => String(x.id))); return [...list, ...extra.filter(x => !ids.has(String(x.id)))]; };
+async function pullTodayResults() {
+  if (todayPulling || Date.now() - todayPullAt < 20000 || !cloudMember() || sessionStorage.getItem('study-testday')) return;
+  todayPulling = true; todayPullAt = Date.now();
+  try {
+    const from = new Date(); from.setHours(0, 0, 0, 0);
+    const { data, error } = await cloud.sb.from('study_log').select('kind,t,data').in('kind', ['sheet', 'fixup', 'check']).gte('t', from.toISOString());
+    if (error || !data) return;
+    const before = JSON.stringify([cloudToday.day, ...['sheet', 'fixup', 'check'].map(k => cloudToday[k].map(x => x.id))]);
+    cloudToday = { day: new Date().toDateString(), sheet: [], fixup: [], check: [] };
+    data.forEach(r => { if (r.data && r.data.id != null && cloudToday[r.kind]) cloudToday[r.kind].push(r.data); });
+    [['sheet', 'sheet-log', 40], ['fixup', 'fixup-log', 30], ['check', 'spell-check-log', 30]].forEach(([kind, key, keep]) => {   // also fill in this device's copy if there's room
+      const mine = store(key) || [], ids = new Set(mine.map(x => String(x.id))), add = cloudToday[kind].filter(x => !ids.has(String(x.id)));
+      if (add.length) putLog(key, [...mine, ...add].sort((a, b) => a.t - b.t).slice(-keep));
+    });
+    const after = JSON.stringify([cloudToday.day, ...['sheet', 'fixup', 'check'].map(k => cloudToday[k].map(x => x.id))]);
+    if (before !== after && !$('kidhome').hidden) renderKidHome();
+  } catch (e) { } finally { todayPulling = false; }
+}
 function renderKidHome() {
+  pullTodayResults();
   const d = store('spell-daily') || {}, words = d.on === false || !isWeekday(ymd(Date.now())) ? [] : dailyWords();   // sight words: Monday to Friday
-  const today = (store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString() && r.t > (d.resetAt || 0));   // "Reset today" starts his day fresh
+  const today = withToday('spell-check-log', store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString() && r.t > (d.resetAt || 0));   // "Reset today" starts his day fresh
   $('kidHi').textContent = kidName() ? `Hi ${kidName()}! 👋` : 'Hi! 👋';
   const sq = store('spell-queue'), sheets = [...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq', title: `✏️ Spelling practice · ${sq.words.length} word${sq.words.length > 1 ? 's' : ''}` }] : []), ...sheetsFor(ymd(Date.now()))];
   { const fx = autoFixit(ymd(Date.now()), sheets); if (fx) sheets.push(fx); }
   $('kidMsg').textContent = words.length && sheets.length ? `First your worksheet${sheets.length > 1 ? 's' : ''}, then your ${words.length} sight word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : words.length ? `Today you have ${words.length} word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : sheets.length ? 'Here’s your work for today. Take your time and try your best!' : 'Nothing yet. Ask a grown-up to add today’s work.';
   $('kidWordsH').hidden = !(words.length && sheets.length);
   // On-screen worksheets assigned from the Worksheets page (done ones show their grade; Daily Steps counts today only)
-  const logs = [...(store('sheet-log') || []), ...(store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))];
+  const logs = [...withToday('sheet-log', store('sheet-log') || []), ...withToday('fixup-log', store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))];
   const doneFor = a => a.auto && a.pending ? null : logs.filter(l => l.aid === a.id && (!['steps', 'weather'].includes(a.tool) || new Date(l.t).toDateString() === new Date().toDateString())).sort((x, y) => y.t - x.t)[0];
   const href = a => a.tool === 'spellq' ? '#spellq' : a.tool === 'fixup' ? `fixup.html?w=${encodeURIComponent(((a.data && a.data.words) || []).map(x => `${x.w}:${x.his || ''}`).join('|'))}&from=${encodeURIComponent(a.title)}&cid=${encodeURIComponent(a.id)}` : `do.html?a=${encodeURIComponent(a.id)}`;
   // Nov 10 (Dylan: so he knows which ones he already did): to-do ones stay big and blue at the top; finished ones move to
