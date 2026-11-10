@@ -2967,7 +2967,8 @@ function autoFixit(ds, assigned) {
     const his = String(m.typed || '').trim().toLowerCase();
     miss.set(w, { w, his: his && his !== w ? his : (miss.get(w) || {}).his || '', t: r.t });
   }));
-  const fixedAfter = (w, t) => fixes.some(f => f.t > t && (f.items || []).some(x => x.part === 'Spell It' && x.word === w));
+  // fixed = his latest try at spelling it in a Fix-it (after the miss) was right the first time (Nov 10: a wrong try kept it on, Dylan)
+  const fixedAfter = (w, t) => { const tries = fixes.filter(f => f.t > t).sort((a, b) => a.t - b.t).flatMap(f => (f.items || []).filter(x => x.part === 'Spell It' && x.word === w)); return tries.length > 0 && !!tries.at(-1).ok; };
   const pending = [...miss.values()].filter(m => !fixedAfter(m.w, m.t)).map(({ w, his }) => ({ w, his }));
   const last = fixes.filter(f => String(f.aid || '').startsWith('fixit-auto-')).sort((a, b) => b.t - a.t)[0];
   if (!pending.length && !last) return null;

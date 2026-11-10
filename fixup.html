@@ -26,6 +26,7 @@ button { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
 
 .app-header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 8px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.app-header button.back { background: none; border: 0; cursor: pointer; font: 600 16px Fredoka, sans-serif; color: var(--study, #7FB0F0); padding: 6px 4px; }
 .app-header h1 { margin: 0; font: 700 24px Fredoka, sans-serif; color: var(--navy); }
 .prog { margin-left: auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .prog span { font: 600 14px Fredoka, sans-serif; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; }
@@ -170,6 +171,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <h1>Spelling Fix-Up</h1>
+  <button class="back reload" id="reloadBtn" type="button" title="Reload this page and pick up where he left off">↻ Reload</button>
   <div class="prog" id="prog"></div>
 </header>
 <main id="app"></main>
@@ -499,7 +501,16 @@ const PARTS = [
 ];
 const score = { pick: { first: 0, of: 0, misses: 0 }, chunk: { mistakes: 0 }, rainbow: { clean: 0, of: 0 }, fix: { first: 0, of: 0 }, search: { found: 0, of: 0, wrongTaps: 0 }, test: [] };
 let partIdx = 0;
-const detail = [];   // for Parent Review: what was on his screen and everything he picked or typed, in order
+const detail = [];
+/* Save his place (Nov 10, 2026, Dylan: "I need a reload button on all assignments and a save place on all assignments"): after every
+   finished word, localStorage fixup-progress {key, day, partIdx, word, score, detail}. ↻ Reload or opening the same Fix-Up again that
+   day offers "Pick up where I left off": finished parts stay done, and the part he was in starts at the word he was on. */
+const FXKEY = params.get('cid') || WORDS.map(x => `${x.w}:${x.his}`).join('|');
+let fxRes = null;   // {word} while a part is starting up after a reload
+function fxSave(word) { try { store('fixup-progress', { key: FXKEY, day: new Date().toDateString(), t: Date.now(), partIdx, word: word || 0, score, detail }); } catch (e) { } }
+function fxResume() { const r = fxRes; fxRes = null; return r && r.word < WORDS.length ? r.word : 0; }
+const fxClear = () => { try { localStorage.removeItem('fixup-progress'); } catch (e) { } };
+const fxSaved = () => { const p = store('fixup-progress'); return p && p.key === FXKEY && p.day === new Date().toDateString() && (p.partIdx > 0 || p.word > 0) ? p : null; };   // for Parent Review: what was on his screen and everything he picked or typed, in order
 const note = (part, label, ok, answer, shown, picks) => { const h = takeHeard(); detail.push({ part, label, ok, answer, shown: h ? { ...(shown || {}), heard: h } : shown, picks }); };
 function renderProg() {
   $('prog').innerHTML = PARTS.map((p, i) => `<span class="${i === partIdx ? 'now' : i < partIdx ? 'done' : ''}">${i + 1}. ${p.name}</span>`).join('');
@@ -507,7 +518,10 @@ function renderProg() {
 function startPart(i) { partGen++;
   partIdx = i; renderProg(); window.scrollTo(0, 0); document.body.classList.add('inpart');
   if (canTalk) speechSynthesis.cancel();
+  const res = fxRes, id = PARTS[i].id;
   PARTS[i].run();
+  if (res && res.score && res.score[id] != null) score[id] = res.score[id];   // the part's own counts from before the reload
+  fxSave(res ? res.word : 0);
 }
 function goNextPart() { if (document.body.classList.contains('advancing')) return; const g = $('go'); if (g) g.disabled = true; nextUp(1000, partIdx < PARTS.length - 1 ? 'Next part coming…' : 'Almost done…').then(nextPart); }   // a moment between parts, so he can't tap through
 function nextPart() { if (partIdx < PARTS.length - 1) startPart(partIdx + 1); else showResults(); }
@@ -545,7 +559,7 @@ function cool() { const k = $('keys'); if (!k) return; k.classList.add('cool'); 
 
 /* ---------- 1. Pick the Right One: tap the correct spelling (his own mistake is one of the choices) ---------- */
 function partPick() {
-  let i = 0; score.pick = { first: 0, of: WORDS.length, misses: 0 };
+  let i = fxResume(); score.pick = { first: 0, of: WORDS.length, misses: 0 };
   const show = () => {
     const { w, his } = WORDS[i];
     const wrong = [...new Set([his, ...misspellings(w.toLowerCase())].filter(x => x && x.toLowerCase() !== w.toLowerCase()))].slice(0, 3);
@@ -565,7 +579,7 @@ function partPick() {
         b.classList.add('right'); app.querySelectorAll('.opt').forEach(x => x.disabled = true);
         if (!missed) score.pick.first++;
         setMsg(missed ? 'Yes! That’s the right spelling.' : 'Yes! You got it right away!', 'good');
-        say('Yes!', 1); nextUp(1200).then(() => { i++; i < WORDS.length ? show() : partDone(`You picked ${score.pick.first} of ${WORDS.length} right on the first try.`); });
+        say('Yes!', 1); nextUp(1200).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`You picked ${score.pick.first} of ${WORDS.length} right on the first try.`); });
       } else {
         missed = true; score.pick.misses++; b.classList.add('wrong'); b.disabled = true;
         setMsg('Not that one. Look closely and try again.', 'try'); shakeEl(b);
@@ -577,7 +591,7 @@ function partPick() {
 
 /* ---------- 2. Chunk It: every chunk, in a random order. Listen to the chunk, then type just that chunk (tricky parts are purple) ---------- */
 function partChunk() {
-  let i = 0; score.chunk = { mistakes: 0 };
+  let i = fxResume(); score.chunk = { mistakes: 0 };
   const show = () => {
     const { w } = WORDS[i], dw = displayWord(w), chunks = chunksFor(dw);
     let targets = chunks.map((g, k) => g.s.trim() ? k : -1).filter(k => k >= 0);   // all of them
@@ -615,7 +629,7 @@ function partChunk() {
         pos++;
         if (pos >= p.length) {
           ti++; pos = 0;
-          if (ti >= targets.length) { note('Chunk It', w, keys.length === chunks.map(g => g.s.replace(/ /g, '')).join('').length, w, { text: `Parts in this order: ${targets.map(k => chunks[k].s).join(' → ')}` }, [keys.join(' ')]); onKey = null; draw(); $('keys').classList.remove('cool'); setMsg('You got every part!', 'good'); say(dw, 0.85); nextUp(1300).then(() => { i++; i < WORDS.length ? show() : partDone(score.chunk.mistakes ? `Only ${score.chunk.mistakes} wrong letter${score.chunk.mistakes > 1 ? 's' : ''}. Nice work!` : 'Every letter right!'); }); return; }
+          if (ti >= targets.length) { note('Chunk It', w, keys.length === chunks.map(g => g.s.replace(/ /g, '')).join('').length, w, { text: `Parts in this order: ${targets.map(k => chunks[k].s).join(' → ')}` }, [keys.join(' ')]); onKey = null; draw(); $('keys').classList.remove('cool'); setMsg('You got every part!', 'good'); say(dw, 0.85); nextUp(1300).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(score.chunk.mistakes ? `Only ${score.chunk.mistakes} wrong letter${score.chunk.mistakes > 1 ? 's' : ''}. Nice work!` : 'Every letter right!'); }); return; }
           heard = false; setMsg('Great! Now listen to the next part.', 'good');
         } else setMsg('');
         draw();
@@ -627,7 +641,7 @@ function partChunk() {
 
 /* ---------- 3. Rainbow Write: pick a color for each line. Type it twice looking at it, then once from memory (the word and the other lines disappear) ---------- */
 function partRainbow() {
-  let i = 0; score.rainbow = { clean: 0, of: WORDS.length * 3 };
+  let i = fxResume(); score.rainbow = { clean: 0, of: WORDS.length * 3 };
   const PALETTE = [['#F87171', 'red'], ['#FB923C', 'orange'], ['#FBBF24', 'yellow'], ['#34D399', 'green'], ['#38BDF8', 'light blue'], ['#7FB0F0', 'blue'], ['#C4B5FD', 'purple'], ['#F9A8D4', 'pink']];
   const show = () => {
     const { w } = WORDS[i], dw = displayWord(w), letters = [...dw].filter(c => c !== ' ');
@@ -705,7 +719,7 @@ function partRainbow() {
       note('Rainbow Write', w, lineKeys[0].length === letters.length && lineKeys[1].length === letters.length && memTries.length === 1, w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory (he typed the whole word, then double-checked it), line 4 written by hand.' + (caseFlags ? ` The capital-letter check asked about ${caseFlags.join(', ')} on line 4, and he kept it.` : ''), img: img || undefined }, [`line 1: ${lineKeys[0].join(' ')}`, `line 2: ${lineKeys[1].join(' ')}`, ...memTries.map((s, k) => `line 3${memTries.length > 1 ? `, try ${k + 1}` : ''}: ${s}`)]);
       onKey = null; $('memActs').hidden = true; $('wordShow').innerHTML = `<div class="big-word">${esc(dw)}</div>`;
       $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join('');
-      setMsg('Rainbow done!', 'good'); say(dw, 0.85); nextUp(1500).then(() => { i++; i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); });
+      setMsg('Rainbow done!', 'good'); say(dw, 0.85); nextUp(1500).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); });
     };
     $('backBtn').onclick = () => { memTyped = memTyped.slice(0, -1); draw(); };
     $('doneBtn').onclick = () => {
@@ -734,7 +748,7 @@ function partRainbow() {
           if (!rowMiss) score.rainbow.clean++;
           row++; pos = 0; rowMiss = false;
           if (row === 2) { setMsg('Now from memory! The word is hiding. Pick a color, type the whole word, then tap Done.', 'good'); say('Now try it from memory!', 0.95); }
-          else if (row > 2) { note('Rainbow Write', w, lineKeys.every(l => l.length === letters.length), w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory.' }, lineKeys.map((l, k) => `line ${k + 1}: ${l.join(' ')}`)); onKey = null; draw(); $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join(''); setMsg('Rainbow done!', 'good'); say(dw, 0.85); nextUp(1500).then(() => { i++; i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); }); return; }
+          else if (row > 2) { note('Rainbow Write', w, lineKeys.every(l => l.length === letters.length), w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory.' }, lineKeys.map((l, k) => `line ${k + 1}: ${l.join(' ')}`)); onKey = null; draw(); $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join(''); setMsg('Rainbow done!', 'good'); say(dw, 0.85); nextUp(1500).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); }); return; }
           else setMsg('Great! Again.', 'good');
         }
         draw();
@@ -749,7 +763,7 @@ function partRainbow() {
 
 /* ---------- 4. Oops! Fix the Sentence: his own misspelling is in the sentence; he types it the right way ---------- */
 function partFix() {
-  let i = 0; score.fix = { first: 0, of: WORDS.length };
+  let i = fxResume(); score.fix = { first: 0, of: WORDS.length };
   const show = () => {
     const { w, his } = WORDS[i], dw = displayWord(w);
     const bad = his && his.toLowerCase() !== w.toLowerCase() ? his : (misspellings(w.toLowerCase())[0] || w + 'e');
@@ -774,7 +788,7 @@ function partFix() {
         if (!tries) score.fix.first++;
         onKey = null; setMsg('Fixed it!', 'good');
         $('ans').innerHTML = [...dw].map(c => c === ' ' ? '<span class="lbox sp"></span>' : `<span class="lbox done">${esc(c)}</span>`).join('');
-        say('Fixed it!', 1); nextUp(1200).then(() => { i++; i < WORDS.length ? show() : partDone(`You fixed ${score.fix.first} of ${WORDS.length} on the first try.`); });
+        say('Fixed it!', 1); nextUp(1200).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`You fixed ${score.fix.first} of ${WORDS.length} on the first try.`); });
       } else {
         tries++; typed = ''; draw(); shakeEl($('ans'));
         if (tries >= 2) { setMsg(`It’s spelled: ${[...dw].join(' ')}. Now you type it.`, 'try'); say(`It's spelled ${[...dw.replace(/\s+/g, '')].map(letterName).join(', ')}.`, 0.75); }
@@ -828,7 +842,7 @@ function partSearch() {
 function partTest() {
   const order = shuffle(WORDS.map(x => x.w), seed + 9);
   if (order.length > 2 && order.every((w, k) => w === WORDS[k].w)) order.push(order.shift());
-  let i = 0, typed = ''; score.test = [];
+  let i = fxResume(), typed = ''; score.test = [];
   app.innerHTML = title('Time for the test! I’ll say each word. Spell it all by yourself.') +
     `<button class="btn big primary" id="start">Start the test</button>`;
   say('Time for the practice test! I’ll say each word. Spell it all by yourself.', 0.95);
@@ -859,7 +873,7 @@ function partTest() {
     const w = order[i];
     score.test.push({ word: w, typed: typed.trim(), ok: typed.trim().toLowerCase().replace(/\s+/g, ' ') === w.toLowerCase() });
     note('Practice Test', w, score.test.at(-1).ok, w, { text: 'He only heard the word and a sentence (the word was hidden).' }, [typed.trim()]);
-    onKey = null; i++;
+    onKey = null; i++; fxSave(i);
     if (i < order.length) { app.querySelector('.count').textContent = 'Got it!'; nextUp(1000, 'Next word coming…').then(show); }
     else showResults();
   };
@@ -892,6 +906,7 @@ function partLines() {
   ];
 }
 function showResults() {
+  fxClear();
   onKey = null; partIdx = PARTS.length; renderProg(); document.body.classList.remove('inpart');
   const byWord = Object.fromEntries(score.test.map(r => [r.word, r]));
   const test = WORDS.map(x => byWord[x.w]).filter(Boolean);
@@ -1067,7 +1082,19 @@ if (!WORDS.length) {
     <button class="btn big primary" id="begin">Let’s go →</button>`;
   $('begin').onclick = () => startPart(0);
   renderProg();
+  const sp = fxSaved();
+  if (sp) {   // he was partway through this one earlier today
+    const pi = Math.min(sp.partIdx, PARTS.length - 1);
+    app.innerHTML = `<div class="part-title"><h2>You already started this one!</h2><p>Let’s keep going from where you left off.</p></div>
+      <p class="note" style="text-align:center">Part ${pi + 1} of ${PARTS.length}: ${esc(PARTS[pi].name)}${sp.word ? ` · ${sp.word} word${sp.word > 1 ? 's' : ''} done in this part` : ''}</p>
+      <button class="btn big primary" id="resumeGo">Pick up where I left off →</button>
+      <div class="row" style="margin-top:22px"><button class="btn" id="resumeOver">↺ Start over</button></div>`;
+    say('You already started this one. Let’s keep going from where you left off!', 0.95);
+    $('resumeGo').onclick = () => { Object.assign(score, sp.score || {}); detail.push(...(sp.detail || [])); fxRes = { word: sp.word || 0, score: sp.score }; startPart(pi); };
+    $('resumeOver').onclick = () => { if (!confirm('Start this Fix-Up over from the beginning?')) return; fxClear(); startPart(0); };
+  }
 }
+$('reloadBtn').onclick = () => { if (canTalk) speechSynthesis.cancel(); location.reload(); };
 if (emailOn() && (store('fixup-outbox') || []).length) sendOutbox();
 </script>
 <script src="/nav.js" defer></script>

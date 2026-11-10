@@ -1577,7 +1577,7 @@ LT.fixit.run = () => {
       app.innerHTML = head(`Trace the word <b>${L_esc(w)}</b>. Say each letter as you trace it.`) + L_count(i, W.length, 'Word') + (n > 1 ? L_count(k, n, 'Time') : '') + '<div id="lsPad"></div>';
       playWord(w);
       const r = await L_pad({ text: w, guide: true });
-      mark('Trace It', `${w}${n > 1 ? ` (${k + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `Tracing “${w}”.${L_padNote(r, true)}` }, []); L_free(); stepDone();
+      mark('Trace It', `${w}${n > 1 ? ` (${k + 1})` : ''}`, true, '', '', null, { img: r.img, text: `Tracing “${w}”.${L_padNote(r, true)}` }, []); L_free(); stepDone();
     }
     partDone('All traced!');
   };

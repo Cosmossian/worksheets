@@ -579,7 +579,7 @@ const seedOf = words => words.join('').split('').reduce((a, c) => a + c.charCode
 const COLORS = ['#3C7DD9', '#0F9F8F', '#8B5CF6', '#EA580C', '#DB2777', '#16A34A', '#6366F1', '#D97706'];
 </script>
 <script src="handcheck.js?v=2"></script>
-<script src="lessons.js?v=9"></script>
+<script src="lessons.js?v=10"></script>
 <script src="science.js?v=3"></script>
 <script>
 /* ============ Talking, keys, little helpers (same as the Fix-Up page) ============ */
@@ -903,7 +903,7 @@ let extra = {};         // anything else worth keeping (coin marks, step times)
    step, items, partSum, extra, seed}. ↻ Reload (top bar) or opening the same worksheet again later that day offers "Pick up where you
    left off": earlier parts stay done, and the part he was in skips the screens he already finished (the screen he was on starts fresh).
    Each part's shuffles come from seed + part number, so after a reload the words come in the same order. */
-const RESUMABLE = a => a && !['weather', 'mtest', 'steps'].includes(a.tool);
+const RESUMABLE = a => a && !['weather', 'steps'].includes(a.tool);   // those two keep their own progress for the day
 let progSeed = Math.floor(Math.random() * 2 ** 31), stepNo = 0, resumeSteps = 0, stepDepth = 0;   // stepDepth: only the outermost loop of a part counts screens
 const nativeRandom = Math.random;
 function seedRandom(n) { let t = n >>> 0; Math.random = () => { t += 0x6D2B79F5; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; }; }
@@ -1989,7 +1989,7 @@ const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet
   if (sp && sp.seed != null) progSeed = sp.seed;
   seedRandom(progSeed);
   const info = SHEETS[A.tool]();
-  if (RESUMABLE(A)) { $('reloadBtn').hidden = false; $('reloadBtn').onclick = () => { if (canTalk) speechSynthesis.cancel(); location.reload(); }; }
+  { $('reloadBtn').hidden = false; $('reloadBtn').onclick = () => { if (canTalk) speechSynthesis.cancel(); location.reload(); }; }
   const resume = () => { items.push(...(sp.items || [])); partSum.push(...(sp.partSum || [])); extra = sp.extra || {}; resumeSteps = sp.step || 0; startPart(Math.min(sp.partIdx || 0, PARTS.length - 1)); };
   if (info.skipIntro) return sp ? resume() : startPart(0);
   if (sp) {
