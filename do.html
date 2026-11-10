@@ -664,8 +664,10 @@ function playClip(url) {
   if (canTalk) speechSynthesis.cancel();
   return new Promise(res => { const a = new Audio(url); a.onended = a.onerror = () => res(); a.play().catch(() => res()); setTimeout(res, 5000); });
 }
-const playWord = (w, rate = 0.85) => { const k = w.toLowerCase(), f = (store('study-wordfix') || {})[k]; if (f && f.rec) { heardLog('', 0, w); return playClip(f.rec); } if (voices['w:' + k]) { heardLog('', 0, w); return playClip(voices['w:' + k]); } return say(f && f.say ? f.say : w, rate); };
-const sayBlank = s => say(s.replace('___', ' blank '), 0.85);   // a sentence with the missing word read as "blank"
+// Nov 10 (Dylan: the word/sentence fix "for every place"): every spoken word greys out the keyboard until it's been said
+const playWord = (w, rate = 0.85) => lockKeysFor(playWord0(w, rate));
+const playWord0 = (w, rate = 0.85) => { const k = w.toLowerCase(), f = (store('study-wordfix') || {})[k]; if (f && f.rec) { heardLog('', 0, w); return playClip(f.rec); } if (voices['w:' + k]) { heardLog('', 0, w); return playClip(voices['w:' + k]); } return say(f && f.say ? f.say : w, rate); };
+const sayBlank = s => lockKeysFor(say(s.replace('___', ' blank '), 0.85));   // a sentence with the missing word read as "blank"
 const SPK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>`;
 const $ = id => document.getElementById(id);
 const app = $('app');

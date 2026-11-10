@@ -2550,7 +2550,7 @@ function drawReplay() {
   $('rpBack').disabled = rp.i === 0; $('rpNext').textContent = rp.i < rp.steps.length - 1 ? 'Next →' : 'Done ✓';
   $('rpScreen').querySelectorAll('[data-rpclip]').forEach(b => b.onclick = async () => { b.disabled = true; const d = await cloudGetAudio(b.dataset.rpclip); b.disabled = false; if (d) playClip(d); else b.textContent = 'Not saved'; });
   $('rpScreen').querySelectorAll('[data-rpsay]').forEach(b => b.onclick = () => { const h = sh.heard[+b.dataset.rpsay]; h.w ? playWord(h.w) : say(h.t, h.r || 0.9); });
-  if ($('rpHear')) $('rpHear').onclick = () => { const s = typeof sentenceFor === 'function' ? sentenceFor(st.answer) : ''; playWord(st.answer).then(() => s && say(s, 0.85)); };
+  if ($('rpHear')) $('rpHear').onclick = () => { const s = typeof sentenceFor === 'function' ? sentenceFor(st.answer) : ''; playWord(st.answer).then(() => s && wait(800).then(() => say(s, 0.85))); };
 }
 $('rpBack').onclick = () => { if (rp && rp.i > 0) { rp.i--; drawReplay(); } };
 $('rpNext').onclick = () => { if (!rp) return; if (rp.i < rp.steps.length - 1) { rp.i++; drawReplay(); } else $('rpClose').click(); };

@@ -460,7 +460,9 @@ function playClip(url) {
   if (canTalk) speechSynthesis.cancel();
   return new Promise(res => { const a = new Audio(url); a.onended = a.onerror = () => res(); a.play().catch(() => res()); setTimeout(res, 5000); });
 }
-const playWord = (w, rate = 0.85) => { const k = w.toLowerCase(), f = (store('study-wordfix') || {})[k]; if (f && f.rec) { heardLog('', 0, w); return playClip(f.rec); } if (voices['w:' + k]) { heardLog('', 0, w); return playClip(voices['w:' + k]); } return say(f && f.say ? f.say : w, rate); };
+// Nov 10 (Dylan: the word/sentence fix "for every place"): every spoken word greys out the keyboard until it's been said
+const playWord = (w, rate = 0.85) => lockKeysFor(playWord0(w, rate));
+const playWord0 = (w, rate = 0.85) => { const k = w.toLowerCase(), f = (store('study-wordfix') || {})[k]; if (f && f.rec) { heardLog('', 0, w); return playClip(f.rec); } if (voices['w:' + k]) { heardLog('', 0, w); return playClip(voices['w:' + k]); } return say(f && f.say ? f.say : w, rate); };
 const sentenceFor = w => { const x = SENTENCES[w.toLowerCase()]; return x && x[0].includes('___') ? x[0] : ''; };
 let sayEpoch = 0;   // goes up when something new starts talking (the double-check, the next word), so an older word + sentence stops part way
 function sayWordAndSentence(w) {
@@ -740,14 +742,15 @@ function partRainbow() {
       g.forEach(c => { if (left[c] > 0) left[c]--; });
       return Object.entries(left).flatMap(([c, n]) => Array(n).fill(c)).sort();
     };
-    /* Nov 10 (Dylan): the keyboard shows the same colors. Each key gets the best color that letter has earned in his hinted tries
-       (green > yellow > red), so a letter only goes red, and can't be tapped, when it isn't in the word at all; an extra copy that showed
-       red (two e's when the word has one) keeps its green or yellow key. On try 4 the letters he's missing get a blue outline. */
+    /* Nov 10 (Dylan): on the keyboard, letters that aren't in the word at all go red and can't be tapped (the best result a letter has
+       earned in his hinted tries decides, so an extra copy that showed red, like a 2nd e when the word has one, never locks a letter he
+       needs). Green/yellow stay on the tiles only (Dylan picked "red only": a green key could look used up). On try 4 the letters he's
+       missing get a blue outline. */
     const keyBest = {};
     const paintKeys = () => {
       document.querySelectorAll('#keys .key').forEach(k => {
         const c = k.dataset.k, m = keyBest[c];
-        k.classList.toggle('wd-ok', m === 3); k.classList.toggle('wd-near', m === 2); k.classList.toggle('wd-no', m === 1);
+        k.classList.toggle('wd-no', m === 1);   // Dylan chose red only on the keyboard: a green key could look "used up" (whether has 2 h's)
         k.classList.toggle('wd-need', !!(memHint && memHint.missing && memHint.missing.includes(c)));
         if (m === 1) k.setAttribute('aria-disabled', 'true'); else k.removeAttribute('aria-disabled');
       });
@@ -882,7 +885,7 @@ function partFix() {
       <div class="row"><button class="btn" id="hear">${SPK}Hear the sentence</button></div>
       <div class="boxes" id="ans"></div><div class="message" id="msg"></div>${keysHtml()}
       <div class="row acts"><button class="btn big" id="backBtn">⌫ Back</button><button class="btn big primary" id="doneBtn" disabled>Check ✓</button></div>`;
-    const hear = () => s ? say(s.replace('___', w), 0.85) : playWord(w);
+    const hear = () => lockKeysFor(s ? say(s.replace('___', w), 0.85) : playWord(w));   // keys wait until the sentence is read (Nov 10)
     $('hear').onclick = hear; hear();
     draw();
     onKey = c => { if (typed.length < 20) { typed += c; draw(); } };

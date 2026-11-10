@@ -1219,7 +1219,7 @@ LT.chains.run = () => {
       if (s.k === 0 || s.k % 2 === 0) {   // spelling
         const sub = s.k === 0 ? `Make the word you hear.` : `Change ${L_esc(s.prev)} to the word you hear.`;
         app.innerHTML = L_exactTag() + head(sub) + `<div class="count">${L_esc(label.split(':')[0])} · step ${s.k + 1} of ${s.ch.length}</div>` + (s.prev ? `<div id="prevT">${L_tiles(s.prev)}</div>` : '') + `<div class="row" style="justify-content:center"><button class="btn" id="hearW">${SPK}Hear the word</button>${s.prev ? '<button class="btn" id="chHelp">🆘 Help me</button>' : ''}</div><div id="chBox"></div><div id="io"></div>`;
-        const sp = () => say(s.k === 0 ? `Make the word ${s.w}.` : `Change ${s.prev} to ${s.w}.`, 0.85); $('hearW').onclick = sp; sp();
+        const sp = () => (typeof lockKeysFor === 'function' ? lockKeysFor : x => x)(say(s.k === 0 ? `Make the word ${s.w}.` : `Change ${s.prev} to ${s.w}.`, 0.85)); $('hearW').onclick = sp; sp();
         const helps = s.prev ? L_chainHelp(s.prev, s.w) : null;
         const hint = t => { const m = L_soundAlike(t, s.w); return m ? `Good listening, ${t} sounds right! But ${s.w} is spelled with ${m.want}, not ${m.got}. ${m.sound[0].toUpperCase() + m.sound.slice(1)} can be spelled ${m.want} or ${m.got}.` : 'Not quite. Say it slowly and listen for each sound.'; };
         const r = await freeType({ answer: s.w, hint });
