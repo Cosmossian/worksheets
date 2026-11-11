@@ -163,7 +163,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 .pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 10px; } .pin-pad button { height: 64px; border-radius: 16px; border: 2px solid #334155; background: #1E293B; color: #fff; font: 700 26px Fredoka, sans-serif; cursor: pointer; } .pin-pad .pin-sm { font-size: 16px; }
 .pin-box.shake { animation: pinshake .3s; } @keyframes pinshake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 .skip-part { position: fixed; left: 14px; bottom: 14px; z-index: 70; display: none; font: 600 15px Fredoka, sans-serif; background: #33270C; color: #FBBF24; border: 2px solid #FBBF24; border-radius: 999px; padding: 8px 16px; cursor: pointer; } body.inpart .skip-part { display: block; }
-.rw-hint { margin: 0 auto 8px; } .rw-hint .rw-row .n { color: var(--muted); }
+.rw-hint { margin: 0 auto 8px; } .rw-hint .rw-row .n { color: var(--muted); } .rw-hint .rw-row { margin-bottom: 4px; } .rw-hint .rw-row .lbox { width: 40px; height: 44px; font-size: 26px; }
 .lbox.wd-ok { background: #166534; border-color: #4ADE80; color: #fff; } .lbox.wd-near { background: #854D0E; border-color: #FACC15; color: #fff; } .lbox.wd-no { background: #7F1D1D; border-color: #F87171; color: #fff; }
 .wd-key { font: 600 15px Fredoka, sans-serif; color: var(--muted); text-align: center; margin-top: 4px; } .wd-key span { display: inline-block; padding: 1px 8px; border-radius: 8px; margin: 2px 3px; color: #fff; }
 .wd-miss { font: 700 17px Fredoka, sans-serif; color: #FDE68A; text-align: center; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; } .wd-miss small { font: 600 14px Fredoka, sans-serif; color: var(--muted); }
@@ -759,7 +759,8 @@ function partRainbow() {
       const v = !target.includes(c) ? 1 : marks[k] === 'ok' ? 3 : marks[k] === 'near' ? 2 : 0;
       if (v > (keyBest[c] || 0)) keyBest[c] = v;
     });
-    const hintHtml = () => !memHint ? '' : `<div class="rw-hint"><div class="rw-row"><span class="n">↺</span>${[...memHint.guess].map((c, k) => `<span class="lbox wd-${memHint.marks[k]}">${esc(c)}</span>`).join('')}</div>
+    // Nov 10 (Dylan: "keep his mistakes on the screen… like how wordle does"): every try he's made at this word, oldest on top
+    const hintHtml = () => !memHint ? '' : `<div class="rw-hint">${memTries.map((g, t) => `<div class="rw-row"><span class="n">${t + 1}</span>${[...g].map((c, k) => `<span class="lbox wd-${wordleMarks(g)[k]}">${esc(c)}</span>`).join('')}</div>`).join('')}
       <div class="wd-key"><span class="wd-ok">right spot</span><span class="wd-near">in the word, wrong spot</span><span class="wd-no">not in the word</span> · the word has ${target.length} letters</div>
       ${memHint.missing ? (memHint.missing.length ? `<div class="wd-miss">Letters you’re missing: ${memHint.missing.map(c => `<span class="lbox wd-need">${esc(c)}</span>`).join('')}<small>Where do they go?</small></div>` : `<div class="wd-miss">You have all the letters! Just the order is mixed up.</div>`) : ''}</div>`;
     /* Line 4: he writes the word himself with his pencil or finger, no guide letters (the word is shown), to practice the motion */
@@ -826,12 +827,12 @@ function partRainbow() {
         const n = memTries.length, last = memTyped;
         shakeEl($('rw')); memTyped = '';
         if (n >= 5) {   // enough guessing: the word stays up, he copies it
-          memHint = null; memCopy = true; draw();
+          memHint = { missing: null }; memCopy = true; draw(); paintKeys();
           setMsg('Look at the word and type it. You can see it this time.', 'try'); say('Look at the word, and type it.', 0.95); return;
         }
         if (n >= 2) {   // color hints from his last try
-          memHint = { guess: last, marks: wordleMarks(last), missing: n === 4 ? missingLetters(last) : null }; memShow = false; learnKeys(last, memHint.marks); draw(); paintKeys();
-          if (n === 4) { const ms = memHint.missing; setMsg(ms.length ? `Here are the letters you’re missing: ${ms.join(', ')}. Where do they go? The colors show your last try.` : 'You have all the letters! Just the order is mixed up. Look at the colors.', 'try');
+          memHint = { marks: wordleMarks(last), missing: n === 4 ? missingLetters(last) : null }; memShow = false; memTries.forEach(g => learnKeys(g, wordleMarks(g))); draw(); paintKeys();
+          if (n === 4) { const ms = memHint.missing; setMsg(ms.length ? `Here are the letters you’re missing: ${ms.join(', ')}. Where do they go? The colors show your tries.` : 'You have all the letters! Just the order is mixed up. Look at the colors.', 'try');
             say(ms.length ? `Here are the letters you’re missing. ${ms.map(c => letterName(c)).join(', ')}. Where do they go?` : 'You have all the letters. Just the order is mixed up.', 0.9); return; }
           const g = memHint.marks.filter(m => m === 'ok').length;
           setMsg(`Not quite. Look at the colors: green letters are in the right spot${g ? ` (you have ${g})` : ''}, yellow ones go somewhere else, red ones aren’t in the word.`, 'try');
