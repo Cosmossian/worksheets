@@ -2733,13 +2733,13 @@ holdToOpen($('kidSwitch'), 2000, 'signout');   // back to the Parent / Child scr
 /* Test day (grown-up, hold): do his day exactly as he sees it, without saving anything as him.
    This device's copy is put aside first and put back at "End test"; nothing goes to the database, no emails, no recordings. */
 const TEST_SKIP = k => k === 'spell-voice' || k === 'study-cloud-queue' || k === 'study-role' || /auth|^sb-/.test(k);
-function askTestKind() {   // fresh = his day as if he hasn't done anything yet today
+function askTestKind(onCancel) {   // fresh = his day as if he hasn't done anything yet today
   const w = document.createElement('div'); w.className = 'ph-wrap';
   w.innerHTML = `<div class="ph-box"><h3>🧪 Test day</h3><p>Nothing you do will be saved. How do you want to start?</p>
     <button class="btn big primary" data-k="fresh">Start his day from scratch<br><small>as if he hasn’t done anything today</small></button>
     <button class="btn big" data-k="now">Start from where his day is now</button><button class="btn" data-k="no">Cancel</button></div>`;
   document.body.appendChild(w);
-  w.onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; w.remove(); if (b.dataset.k !== 'no') startTestDay(b.dataset.k === 'fresh'); };
+  w.onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; w.remove(); if (b.dataset.k !== 'no') startTestDay(b.dataset.k === 'fresh'); else if (onCancel) onCancel(); };
 }
 function startTestDay(fresh) {
   const snap = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!TEST_SKIP(k)) snap[k] = localStorage.getItem(k); }
@@ -2759,7 +2759,19 @@ async function endTestDay() {
   keys.forEach(k => { if (!TEST_SKIP(k) && !(k in snap)) localStorage.removeItem(k); });
   Object.entries(snap).forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch (e) { } });
   sessionStorage.removeItem('study-testday'); sessionStorage.removeItem('study-testday-snap');
-  daily = null; renderTestBar(); await cloudPull(); show('kidhome'); window.scrollTo(0, 0);
+  daily = null; renderTestBar(); await cloudPull();
+  if (cloud.role === 'grownup') { location.href = 'index.html'; return; }   // started from Review Child's Day: back there
+  show('kidhome'); window.scrollTo(0, 0);
+}
+/* Nov 11, 2026 (Dylan): "🧪 Test day" on Review Child's Day (index.html → spell.html#testday), the same as holding Test day on his
+   start screen, from a grown-up's login (no PIN: the grown-up is already signed in). His start screen is drawn on this device from
+   today's results in the Study database. While it's on, coming back from a worksheet opens his start screen again; End test goes back
+   to the main Study page. */
+async function parentTestDay() {
+  if (location.hash === '#testday') history.replaceState(null, '', location.pathname + location.search);
+  if (TESTDAY()) { renderTestBar(); show('kidhome'); return; }
+  todayPullAt = 0; await pullTodayResults();   // his results from today, so "from where his day is now" matches his iPad
+  show('kidhome'); askTestKind(() => { location.href = 'index.html'; });
 }
 /* Test day: "Skip this part" in his daily routine (Look & Listen → practice → Sight Word Practice → quiz) */
 function skipDailyPart() {
@@ -3198,7 +3210,9 @@ onlyCard(); window.addEventListener('hashchange', onlyCard);
   if (!sb) { document.body.classList.remove('authwait'); return; }
   try { const { data } = await sb.auth.getSession(); await cloudSetUser(data.session && data.session.user); } catch (e) { }
   document.body.classList.remove('authwait');
-  if (!cloud.user) show('gate'); else show(location.hash === '#review' && cloud.role !== 'kid' ? 'review' : 'setup');
+  if (!cloud.user) show('gate');
+  else if (cloud.role === 'grownup' && (TESTDAY() || location.hash === '#testday')) parentTestDay();   // Nov 11: Test day from Review Child's Day
+  else show(location.hash === '#review' && cloud.role !== 'kid' ? 'review' : 'setup');
   sb.auth.onAuthStateChange((ev, sess) => { if (ev === 'SIGNED_OUT') { cloudSetUser(null); show('gate'); } });
 })();
 if (location.hash === '#review') show('review');
