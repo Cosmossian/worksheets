@@ -436,8 +436,8 @@ async function doubleCheck() {
   for (const s of spans) {
     if (my !== dcToken || $('confirm').hidden) return;
     spans.forEach(x => x.classList.remove('chk')); s.classList.add('chk');
-    const nm = letterName(s.textContent.trim().toLowerCase());
-    await Promise.race([say(nm, 0.9), wait(500 + 110 * nm.length)]); await wait(150);   // long enough for "double you", short enough not to feel stuck
+    const lc = s.textContent.trim().toLowerCase(), nm = letterName(lc);
+    await Promise.race([sayLetter(lc, 0.9), wait(voices['l:' + lc] ? 1500 : 500 + 110 * nm.length)]); await wait(150);   // long enough for "double you", short enough not to feel stuck
   }
   if (my !== dcToken || $('confirm').hidden) return;
   spans.forEach(x => x.classList.remove('chk')); yes.disabled = false;
@@ -460,6 +460,15 @@ function playClip(url) {
   if (canTalk) speechSynthesis.cancel();
   return new Promise(res => { const a = new Audio(url); a.onended = a.onerror = () => res(); a.play().catch(() => res()); setTimeout(res, 5000); });
 }
+/* Nov 10, 2026 (Dylan: "the option for me to record my voice for a letter and it use that moving forward"): Parent Settings → 🔤 Letter
+   voices. voices['l:<ch>'] = his recording of the letter's name, voices['ls:<ch>'] = the 🔊 strip (sound + word). Used instead of the
+   computer voice wherever a single letter is said (key taps, the 🔊 strip, double-check, the Fix-it's Hear It). Synced like the others. */
+let letterAudio = null;
+function letterClip(url) {
+  if (canTalk) speechSynthesis.cancel(); if (letterAudio) { try { letterAudio.pause(); } catch (e) { } }
+  return new Promise(res => { const a = new Audio(url); letterAudio = a; a.onended = a.onerror = () => res(); a.play().catch(() => res()); setTimeout(res, 3000); });
+}
+const sayLetter = (ch, rate = 0.9) => voices['l:' + ch] ? letterClip(voices['l:' + ch]) : say(letterName(ch), rate);
 // Nov 10 (Dylan: the word/sentence fix "for every place"): every spoken word greys out the keyboard until it's been said
 const playWord = (w, rate = 0.85) => lockKeysFor(playWord0(w, rate));
 const playWord0 = (w, rate = 0.85) => { const k = w.toLowerCase(), f = (store('study-wordfix') || {})[k]; if (f && f.rec) { heardLog('', 0, w); return playClip(f.rec); } if (voices['w:' + k]) { heardLog('', 0, w); return playClip(voices['w:' + k]); } return say(f && f.say ? f.say : w, rate); };
@@ -588,6 +597,7 @@ let keyUtt = null;
 function keySay(ch) {
   if (!canTalk || !/^[a-z]$/.test(ch)) return;
   const busy = speechSynthesis.speaking || speechSynthesis.pending;
+  if (voices['l:' + ch]) { if (busy && !keyUtt) return; keyUtt = 'clip'; letterClip(voices['l:' + ch]).then(() => { if (keyUtt === 'clip') keyUtt = null; }); return; }   // his recording
   if (busy && !keyUtt) return;
   try {
     if (busy) speechSynthesis.cancel();
@@ -596,7 +606,7 @@ function keySay(ch) {
   } catch (e) { keyUtt = null; }
 }
 const KEYWORD = { a: 'apple', b: 'ball', c: 'cat', d: 'dog', e: 'egg', f: 'fish', g: 'goat', h: 'hat', i: 'igloo', j: 'jam', k: 'kite', l: 'lion', m: 'moon', n: 'nest', o: 'octopus', p: 'pig', q: 'queen', r: 'red', s: 'sun', t: 'top', u: 'umbrella', v: 'van', w: 'web', x: 'fox', y: 'yo-yo', z: 'zebra' };
-const hearKey = ch => { keyUtt = null; say(`${letterName(ch)}. ${KEYWORD[ch] ? `Like ${KEYWORD[ch]}.` : ''}`, 0.8); };   // the 🔊 strip: hear it, don't type it
+const hearKey = ch => { keyUtt = null; voices['ls:' + ch] ? letterClip(voices['ls:' + ch]) : say(`${letterName(ch)}. ${KEYWORD[ch] ? `Like ${KEYWORD[ch]}.` : ''}`, 0.8); };   // the 🔊 strip: hear it, don't type it
 document.addEventListener('click', e => {
   const k = e.target.closest('#keys [data-k]'); if (!k || keysLocked()) return;
   if (e.target.closest('.ksnd')) { e.preventDefault(); hearKey(k.dataset.k); return; }

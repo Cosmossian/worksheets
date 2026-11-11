@@ -1551,7 +1551,7 @@ LT.fixit.run = () => {
     for (const [i, ch] of [...w].entries()) {
       if (!isLetter(ch)) continue; if (my !== spellGen) return;
       el().forEach(x => x.classList.toggle('now', +x.dataset.i === i));
-      const nm = letterName(ch); await Promise.race([say(nm, 0.85), wait(550 + 110 * nm.length)]); await wait(150);
+      const nm = letterName(ch), mine = typeof voices !== 'undefined' && voices['l:' + ch]; await Promise.race([typeof sayLetter === 'function' ? sayLetter(ch, 0.85) : say(nm, 0.85), wait(mine ? 1500 : 550 + 110 * nm.length)]); await wait(150);
     }
     if (my !== spellGen) return; el().forEach(x => x.classList.remove('now'));
     await Promise.race([playWord(w), wait(2500)]);
@@ -1562,7 +1562,7 @@ LT.fixit.run = () => {
       app.innerHTML = head('Listen to how it’s spelled. Tap a letter to hear it again.') + L_count(i, W.length, 'Word')
         + (x.his ? `<div class="fx-was">Earlier you wrote <s>${L_esc(x.his)}</s>. It’s spelled:</div>` : '')
         + tiles(x.w) + `<div class="message" id="msg"></div><div class="row acts"><button class="btn big" id="fxAgain">${SPK}Hear it again</button><button class="btn big primary" id="fxNext" disabled>I heard it →</button></div>`;
-      $('fxT').onclick = e => { const b = e.target.closest('[data-i]'); if (!b) return; spellGen++; document.querySelectorAll('#fxT .t').forEach(t => t.classList.toggle('now', t === b)); say(letterName(x.w[+b.dataset.i]), 0.85); };
+      $('fxT').onclick = e => { const b = e.target.closest('[data-i]'); if (!b) return; spellGen++; document.querySelectorAll('#fxT .t').forEach(t => t.classList.toggle('now', t === b)); const lc = x.w[+b.dataset.i]; typeof sayLetter === 'function' ? sayLetter(lc, 0.85) : say(letterName(lc), 0.85); };
       $('fxAgain').onclick = () => spellOut(x.w);
       await spellOut(x.w); $('fxNext').disabled = false;
       $('fxNext').onclick = () => { spellGen++; mark('Hear It', `Hear “${x.w}” spelled`, true, '', '', null, { text: `He heard “${x.w}” spelled out loud${x.his ? ` (earlier he wrote “${x.his}”)` : ''}.` }, ['heard it']); L_free(); done(); };

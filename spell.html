@@ -225,8 +225,8 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .sendbox { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); display: flex; flex-direction: column; gap: 8px; }
 .sendbox textarea { width: 100%; }
 body.only-daily #helperCard, body.only-helper #dailyCard { display: none; }
-body.only-daily #acctCard, body.only-daily #settingsCard, body.only-helper #acctCard, body.only-helper #settingsCard, body.only-settings #dailyCard, body.only-settings #helperCard { display: none; }
-body.kidgrown #settingsCard, body.kid #settingsLink { display: none !important; }
+body.only-daily #acctCard, body.only-daily #settingsCard, body.only-helper #acctCard, body.only-helper #settingsCard, body.only-daily #letterCard, body.only-helper #letterCard, body:not(.only-settings) #letterCard, body.only-settings #dailyCard, body.only-settings #helperCard { display: none; }
+body.kidgrown #settingsCard, body.kidgrown #letterCard, body.kid #settingsLink { display: none !important; }
 body.onreview #reviewBtn, body.only-settings #settingsLink, body.only-settings #reviewBtn { display: none !important; } body.onreview #settingsLink { margin-left: auto !important; }
 body.only-settings .app-header .back { margin-left: auto; }   /* the buttons that normally push it right are hidden here */
 body.embed #tod-nav, body.embed .app-header { display: none !important; }
@@ -449,6 +449,12 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 .rv-asg-row .ok { color: #34D399; font-weight: 700; white-space: nowrap; } .rv-asg-row .no { color: #F87171; font-weight: 700; white-space: nowrap; } .rv-asg-row .wait { color: var(--muted); white-space: nowrap; }
 .keyswait #keys .key, .keyswait #ckeys .key { pointer-events: none; opacity: .4; }
 .keyswait #keys::before, .keyswait #ckeys::before { content: '👂 Listen first…'; grid-column: 1 / -1; text-align: center; font: 700 18px Fredoka, sans-serif; color: var(--muted); }
+.lv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 8px; }
+.lv { display: grid; grid-template-columns: 44px 1fr 1fr; gap: 8px; align-items: start; border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: var(--surface-2); }
+.lv-l { font: 700 34px Andika, sans-serif; text-align: center; line-height: 1.1; }
+.lv-c small { display: block; color: var(--muted); font-size: 12px; } .lv-c small.ok { color: #6EE7B7; font-weight: 700; }
+.lv-b { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin: 3px 0; } .lv-b .btn { padding: 4px 9px; min-height: 0; font-size: 14px; } .lv-b .btn.rec { background: #7F1D1D; border-color: #F87171; color: #fff; }
+.lv-b .linkbtn { font-size: 12px; }
 </style>
 </head>
 <body class="authwait">
@@ -507,6 +513,12 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
       <small class="note" style="margin:4px 0 0">Get ready: a 3-2-1 countdown, then 🎤 Speak now while it records, and he taps Done when he’s finished. Done unlocks once the microphone hears his voice (or after 10 seconds, so he’s never stuck). His recordings are in Parent Review either way. Used in Look &amp; Listen, Look &amp; Say and the lesson worksheets.</small></div>
     <div class="pin-set" style="margin-top:8px"><b>⭐ Monthly points goal</b> <span id="goalState"></span><div class="row" style="align-items:center;margin-top:6px"><input id="goalIn" type="number" inputmode="numeric" min="1" step="10" placeholder="none" style="letter-spacing:0"><button class="btn" id="goalSave">Save goal</button><button class="btn" id="goalOff" hidden>No goal</button></div><small id="goalHelp">His points start over at 0 on the 1st of every month. With a goal, he sees a bar toward it on ⭐ My points; with no goal, there’s no bar.</small></div>
     <div class="pin-set" style="margin-top:8px" id="pinSet"><b>🔒 Grown-up PIN</b> <span id="pinState"></span><div class="row" style="align-items:center;margin-top:6px"><input id="pinIn" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"><button class="btn" id="pinSave">Save PIN</button><button class="btn" id="pinOff" hidden>Remove PIN</button></div><small>On his device, every grown-up button (Parent Help, Grown-up screen, Parent Review, Test day, Switch user, stop) asks for it after the hold.</small></div>
+  </div>
+  <div class="card" id="letterCard">
+    <h2>🔤 Letter voices</h2>
+    <p class="help" style="margin:0 0 6px">How each letter sounds everywhere in the Study. Record your own voice for any letter and it’s used from then on, on his device too. <b>Name</b> is what he hears when he taps a letter key or a letter is read out. <b>🔊 Sound strip</b> is the speaker under each key (for example “a… like apple”). Recordings stop by themselves after 4 seconds.</p>
+    <small class="note" id="lvNote" style="display:block;min-height:1.2em"></small>
+    <div class="lv-grid" id="lvGrid"></div>
   </div>
   <div class="card" id="dailyCard">
     <h2>Daily sight words</h2>
@@ -814,8 +826,8 @@ async function doubleCheck() {
   for (const s of spans) {
     if (my !== dcToken || $('confirm').hidden) return;
     spans.forEach(x => x.classList.remove('chk')); s.classList.add('chk');
-    const nm = letterName(s.textContent.trim().toLowerCase());
-    await Promise.race([say(nm, 0.9), wait(500 + 110 * nm.length)]); await wait(150);   // long enough for "double you", short enough not to feel stuck
+    const lc = s.textContent.trim().toLowerCase(), nm = letterName(lc);
+    await Promise.race([sayLetter(lc, 0.9), wait(voices['l:' + lc] ? 1500 : 500 + 110 * nm.length)]); await wait(150);   // long enough for "double you", short enough not to feel stuck
   }
   if (my !== dcToken || $('confirm').hidden) return;
   spans.forEach(x => x.classList.remove('chk')); yes.disabled = false;
@@ -997,7 +1009,7 @@ const CONFUSE = { a: 'eu', b: 'dp', c: 'ks', d: 'bt', e: 'ia', f: 'vp', g: 'jk',
 
 /* "V, like van": each letter's usual first sound, with a picture-able word (short vowels). */
 const KEYWORD = { a: 'apple', b: 'ball', c: 'cat', d: 'dog', e: 'egg', f: 'fish', g: 'goat', h: 'hat', i: 'igloo', j: 'jam', k: 'kite', l: 'lion', m: 'moon', n: 'nest', o: 'octopus', p: 'pig', q: 'queen', r: 'red', s: 'sun', t: 'top', u: 'umbrella', v: 'van', w: 'web', x: 'fox', y: 'yo-yo', z: 'zebra' };
-const letterSound = ch => say(`${letterName(ch)}. ${KEYWORD[ch] ? `Like ${KEYWORD[ch]}.` : ''}`, 0.8);
+const letterSound = ch => voices['ls:' + ch] ? letterClip(voices['ls:' + ch]) : say(`${letterName(ch)}. ${KEYWORD[ch] ? `Like ${KEYWORD[ch]}.` : ''}`, 0.8);   // his recording if he made one (Letter voices)
 
 /* ============ State ============ */
 const $ = id => document.getElementById(id);
@@ -1079,6 +1091,15 @@ function playClip(url) {
     setTimeout(res, 5000);
   });
 }
+/* Nov 10, 2026 (Dylan: "the option for me to record my voice for a letter and it use that moving forward"): Parent Settings → 🔤 Letter
+   voices. voices['l:<ch>'] = his recording of the letter's name, voices['ls:<ch>'] = the 🔊 strip (sound + word). Used instead of the
+   computer voice wherever a single letter is said (key taps, the 🔊 strip, double-check, the Fix-it's Hear It). Synced like the others. */
+let letterAudio = null;
+function letterClip(url) {
+  if (canTalk) speechSynthesis.cancel(); if (letterAudio) { try { letterAudio.pause(); } catch (e) { } }
+  return new Promise(res => { const a = new Audio(url); letterAudio = a; a.onended = a.onerror = () => res(); a.play().catch(() => res()); setTimeout(res, 3000); });
+}
+const sayLetter = (ch, rate = 0.9) => voices['l:' + ch] ? letterClip(voices['l:' + ch]) : say(letterName(ch), rate);
 function playPart(p, rate) {
   if (voices[p.key]) return playClip(voices[p.key]);
   return say(partSay(p), rate ?? (p.unit ? 0.8 : 0.55));
@@ -1180,6 +1201,7 @@ function openParentHelp(word) {
 document.addEventListener('keydown', e => { if (document.querySelector('.ph-wrap, .pin-wrap')) e.stopImmediatePropagation(); }, true);   // Parent Help open: keys go to its box, not his answer
 /* ============ Grown-up setup ============ */
 function renderSetup() {
+  renderLetters();   // the Letter voices card (Parent Settings) shows recording state too
   const v = $('wordIn').value;
   const ok = /[a-z]/i.test(v);
   $('startBtn').disabled = !ok; $('testWord').disabled = !ok;
@@ -1233,7 +1255,7 @@ $('testWord').onclick = () => playWord(buildPlan($('wordIn').value).text);
 /* ---------- Recording a grown-up's voice ---------- */
 let rec = null;   // { key, mr, stream, timer }
 const REC_MAX_MS = 4000;
-function recNote(t) { $('recNote').hidden = !t; $('recNote').textContent = t || ''; }
+function recNote(t) { $('recNote').hidden = !t; $('recNote').textContent = t || ''; if ($('lvNote')) $('lvNote').textContent = t || ''; }
 function saveVoices() {
   try { localStorage.setItem('spell-voice', JSON.stringify(voices)); if (typeof cloudSyncVoices === 'function') cloudSyncVoices(); return true; }
   catch (e) { recNote('This device is out of room for recordings. Remove a few “your voice” recordings and try again.'); return false; }
@@ -1269,6 +1291,21 @@ async function toggleRecord(key) {
   recNote('Recording… say it now. It stops by itself after 4 seconds, or tap Stop.');
   renderSetup();
 }
+function renderLetters() {
+  const g = $('lvGrid'); if (!g) return;
+  const cell = (key, label, def) => {
+    const mine = !!voices[key], now = !!(rec && rec.key === key);
+    return `<div class="lv-c"><small>${label}</small><div class="lv-b"><button class="btn btn-small" data-lvplay="${key}" aria-label="Hear it">▶</button><button class="btn btn-small${now ? ' rec' : ''}" data-lvrec="${key}">${now ? '■ Stop' : mine ? '● Re-record' : '● Record'}</button>${mine ? `<button class="linkbtn" data-lvdel="${key}">use the computer</button>` : ''}</div><small class="${mine ? 'ok' : ''}">${mine ? '✓ your voice' : esc(def)}</small></div>`;
+  };
+  g.innerHTML = 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<div class="lv"><b class="lv-l">${ch}</b>${cell('l:' + ch, 'Name', `computer says “${letterName(ch)}”`)}${cell('ls:' + ch, '🔊 Sound strip', `computer says “${letterName(ch)}. Like ${KEYWORD[ch]}.”`)}</div>`).join('');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('#lvGrid [data-lvplay], #lvGrid [data-lvrec], #lvGrid [data-lvdel]'); if (!b) return;
+  const key = b.dataset.lvplay || b.dataset.lvrec || b.dataset.lvdel, ch = key.split(':')[1];
+  if (b.dataset.lvplay) { if (voices[key]) letterClip(voices[key]); else if (key.startsWith('ls:')) letterSound(ch); else say(letterName(ch), 1); }
+  else if (b.dataset.lvrec) toggleRecord(key);
+  else { delete voices[key]; saveVoices(); recNote(''); renderLetters(); }
+});
 function stopRecord() {
   if (!rec) return;
   clearTimeout(rec.timer);
@@ -1568,7 +1605,7 @@ function press(ch, keyEl) {
     const hardNext = remember && remember.hard.has(pos) ? ' ★ This next one was tricky last time. Think hard!' : '';
     setMsg(m + (hardNext || (nextPart ? ' Listen to the next part.' : ' What comes next?')), 'good');
     const np = plan.letters[pos].partIdx, atPos = pos;
-    say(letterName(ch), 1).then(async () => { if (nextPart && !$('play').hidden && pos === atPos) { await wait(200); playPart(plan.parts[np]); } });
+    sayLetter(ch, 1).then(async () => { if (nextPart && !$('play').hidden && pos === atPos) { await wait(200); playPart(plan.parts[np]); } });
   } else {
     if (keyEl) { keyEl.classList.add('no', 'shake'); setTimeout(() => keyEl.classList.remove('no', 'shake'), 500); }
     const box = document.querySelector('.lbox.cur'); if (box) { box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake'); }
@@ -2200,6 +2237,7 @@ let keyUtt = null;
 function keySay(ch) {
   if (!canTalk || !/^[a-z]$/.test(ch)) return;
   const busy = speechSynthesis.speaking || speechSynthesis.pending;
+  if (voices['l:' + ch]) { if (busy && !keyUtt) return; keyUtt = 'clip'; letterClip(voices['l:' + ch]).then(() => { if (keyUtt === 'clip') keyUtt = null; }); return; }   // his recording
   if (busy && !keyUtt) return;
   try {
     if (busy) speechSynthesis.cancel();
