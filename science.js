@@ -278,8 +278,8 @@ LT.seacycle.run = () => {
       await new Promise(rr => {
         $('here').onclick = () => {
           const now = showing(); seen.push(S_NAME[now]);
-          if (now === k) { setMsg(`Yes! ${S_NAME[k]}!`, 'good'); say(`Yes! ${S_NAME[k]}!`, 1); $('here').disabled = true; return nextUp(1100).then(rr); }
-          tries++; setMsg(`That window shows ${S_NAME[now].toLowerCase()}. Keep turning!`, 'try'); say(`That's ${now}. Keep turning!`, 1);
+          if (now === k) { setMsg(`Yes! ${S_NAME[k]}!`, 'good'); fb(`Yes! ${S_NAME[k]}!`, 1); $('here').disabled = true; return nextUp(1100).then(rr); }
+          tries++; setMsg(`That window shows ${S_NAME[now].toLowerCase()}. Keep turning!`, 'try'); fb(`That's ${now}. Keep turning!`, 1);
         };
       });
       mark('Spin the Wheel', q, tries === 0, seen[0], S_NAME[k], null, { text: q }, seen); res();
@@ -315,7 +315,7 @@ LT.quiz.run = () => {
       if (!ok) first.b.classList.add('wrong'); else stars++;
       setMsg(ok ? 'Yes! You got it! ⭐' : `The answer is: ${q.answer}.`, ok ? 'good' : 'try');
       if (q.why) $('io').insertAdjacentHTML('beforeend', `<div class="s-why">💡 ${L_esc(q.why)}</div>`);
-      say((ok ? 'Yes! ' : `The answer is ${q.answer}. `) + (q.why || ''), 0.9);
+      fb((ok ? 'Yes! ' : `The answer is ${q.answer}. `) + (q.why || ''), 0.9);
       mark('Quiz', q.q, ok, first.c, q.answer, null, { text: q.q, choices: q.choices, choiceHtml: Object.fromEntries(q.choices.map(c => [c, S_choicePic(c) ? S_art(S_choicePic(c), 60) : ''])) }, [first.c]);
       $('io').insertAdjacentHTML('beforeend', `<div class="row acts"><button class="btn big primary" id="nx">${i < d.qs.length - 1 ? 'Next question →' : 'See my stars →'}</button></div>`);
       await new Promise(rr => { $('nx').onclick = rr; });
@@ -323,7 +323,7 @@ LT.quiz.run = () => {
     }));
     app.innerHTML = L_exactTag() + head('Quiz done!') + `<div class="s-stars" style="font-size:44px">${d.qs.map((_, j) => `<span class="${j < stars ? 'on' : ''}">⭐</span>`).join('')}</div><div class="s-card"><h3>${stars} of ${d.qs.length} right the first time!</h3></div>`;
     if (stars === d.qs.length) confetti();
-    say(`You got ${stars} of ${d.qs.length} stars!`, 0.95); await wait(1800);
+    fb(`You got ${stars} of ${d.qs.length} stars!`, 0.95); await wait(1800);
     partDone(`${stars} of ${d.qs.length} right the first time.`);
   };
   PARTS = [{ name: 'Quiz', run: ask }];

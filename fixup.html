@@ -397,12 +397,17 @@ function pickVoice() {
 }
 if (canTalk) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 /* What he heard on each screen (saved with his answer, so Parent Review can play it back) */
-let heard = [];
-function heardLog(text, rate, word) { if (!document.getElementById('confirm').hidden) return; const e = word ? { w: word } : { t: text, r: rate }; const last = heard[heard.length - 1]; if (!last || JSON.stringify(last) !== JSON.stringify(e)) heard.push(e); if (heard.length > 14) heard.shift(); }
-const takeHeard = () => { const h = heard; heard = []; return h.length ? h : undefined; };
-function say(text, rate = 0.9) {
+/* Nov 11, 2026 (Dylan: "why am I seeing what the robot is saying other than the word and the sentence"): only the word and its
+   sentence (and prompts) are logged; cheers, hints and "done!" lines use fb(), which isn't. The list starts fresh on every screen (each())
+   and closes once an answer is saved, until the next screen comes up (nextUp), so a "Yes!" never lands on the next word. His 🔊 key-strip
+   taps are kept apart (shown.keys) so Parent Review can say "He tapped 🔊 on: w, e". */
+let heard = [], heardKeys = [], heardShut = false;
+const heardReset = () => { heard = []; heardKeys = []; heardShut = false; };
+function heardLog(text, rate, word) { if (heardShut || !document.getElementById('confirm').hidden) return; const e = word ? { w: word } : { t: text, r: rate }; const last = heard[heard.length - 1]; if (!last || JSON.stringify(last) !== JSON.stringify(e)) heard.push(e); if (heard.length > 14) heard.shift(); }
+const takeHeard = () => { const h = heard, k = heardKeys; heard = []; heardKeys = []; heardShut = true; return h.length || k.length ? { ...(h.length ? { heard: h } : {}), ...(k.length ? { keys: k } : {}) } : undefined; };
+function say(text, rate = 0.9, log = true) {
   if (!canTalk || !text) return Promise.resolve();
-  heardLog(text, rate);
+  if (log) heardLog(text, rate);
   const busy = speechSynthesis.speaking || speechSynthesis.pending; speechSynthesis.cancel();
   return new Promise(res => {
     let started = false, finished = false, tries = 0;
@@ -426,13 +431,14 @@ function say(text, rate = 0.9) {
     setTimeout(guard, Math.min(7500, 2600 + text.length * 80));
   });
 }
+const fb = (text, rate = 0.9) => say(text, rate, false);   // feedback (cheers, hints): said, not logged for Replay
 const wait = ms => new Promise(r => setTimeout(r, ms));
 /* Double-check: before an answer is locked in, each letter he typed lights up and is read out loud, and "Yes" waits until it's done */
 let dcToken = 0;
 async function doubleCheck() {
   sayEpoch++; const my = ++dcToken, yes = $('confirmYes'), spans = [...$('confirmWord').querySelectorAll('.lbox:not(.sp)')];
   $('confirmQ').textContent = 'Double-check your work!'; yes.disabled = true;
-  await Promise.race([say('Double-check your work. Look at every letter.', 0.95), wait(2500)]);   // never wait on a voice that's slow to say it's done
+  await Promise.race([fb('Double-check your work. Look at every letter.', 0.95), wait(2500)]);   // never wait on a voice that's slow to say it's done
   for (const s of spans) {
     if (my !== dcToken || $('confirm').hidden) return;
     spans.forEach(x => x.classList.remove('chk')); s.classList.add('chk');
@@ -441,7 +447,7 @@ async function doubleCheck() {
   }
   if (my !== dcToken || $('confirm').hidden) return;
   spans.forEach(x => x.classList.remove('chk')); yes.disabled = false;
-  say('Is every letter right?', 0.95);
+  fb('Is every letter right?', 0.95);
 }
 /* Between screens: a bar that fills up so he can see the next one is coming (taps and keys pause meanwhile). Never waits on the voice. */
 let partGen = 0;   // goes up when a part starts (or is skipped), so a skipped part can't carry on
@@ -450,7 +456,7 @@ async function nextUp(ms = 1200, label = 'Next one coming…') {
   const g = partGen; onKey = null; document.body.classList.add('advancing');
   const bar = document.createElement('div'); bar.className = 'nextbar'; bar.setAttribute('role', 'status');
   bar.innerHTML = `<span>${esc(label)}</span><i><b style="animation-duration:${ms}ms"></b></i>`;
-  document.body.appendChild(bar); await wait(ms); bar.remove(); document.body.classList.remove('advancing');
+  document.body.appendChild(bar); await wait(ms); bar.remove(); document.body.classList.remove('advancing'); heardShut = false;
   if (g !== partGen) return stale(g);
 }
 const letterName = ch => ({ a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye', j: 'jay', k: 'kay', l: 'el', m: 'em', n: 'en', o: 'oh', p: 'pee', q: 'cue', r: 'ar', s: 'ess', t: 'tee', u: 'you', v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zee' }[String(ch).toLowerCase()] || ch);   // spoken letter names (a capital letter makes iPads say "capital F")
@@ -545,7 +551,7 @@ function fxSave(word) { try { store('fixup-progress', { key: FXKEY, day: new Dat
 function fxResume() { const r = fxRes; fxRes = null; return r && r.word < WORDS.length ? r.word : 0; }
 const fxClear = () => { try { localStorage.removeItem('fixup-progress'); } catch (e) { } };
 const fxSaved = () => { const p = store('fixup-progress'); return p && p.key === FXKEY && p.day === new Date().toDateString() && (p.partIdx > 0 || p.word > 0) ? p : null; };   // for Parent Review: what was on his screen and everything he picked or typed, in order
-const note = (part, label, ok, answer, shown, picks) => { const h = takeHeard(); detail.push({ part, label, ok, answer, shown: h ? { ...(shown || {}), heard: h } : shown, picks }); };
+const note = (part, label, ok, answer, shown, picks) => { const h = takeHeard(); detail.push({ part, label, ok, answer, shown: h ? { ...(shown || {}), ...h } : shown, picks }); };
 function renderProg() {
   $('prog').innerHTML = PARTS.map((p, i) => `<span class="${i === partIdx ? 'now' : i < partIdx ? 'done' : ''}">${i + 1}. ${p.name}</span>`).join('');
 }
@@ -574,7 +580,7 @@ function addSkipButton() {
 function partDone(msg) {
   app.innerHTML = `<div class="part-title"><h2>${esc(PARTS[partIdx].name)}: done!</h2><p>${esc(msg)}</p></div>
     <button class="btn big primary" id="go">${partIdx < PARTS.length - 1 ? `Next: ${esc(PARTS[partIdx + 1].name)} →` : 'See how I did →'}</button>`;
-  say(`${PARTS[partIdx].name}, done! ${msg}`, 0.95);
+  fb(`${PARTS[partIdx].name}, done! ${msg}`, 0.95);
   $('go').onclick = goNextPart;
 }
 const title = (sub) => `<div class="part-title"><h2>${partIdx + 1}. ${esc(PARTS[partIdx].name)}</h2><p>${sub}</p></div>`;
@@ -606,7 +612,7 @@ function keySay(ch) {
   } catch (e) { keyUtt = null; }
 }
 const KEYWORD = { a: 'apple', b: 'ball', c: 'cat', d: 'dog', e: 'egg', f: 'fish', g: 'goat', h: 'hat', i: 'igloo', j: 'jam', k: 'kite', l: 'lion', m: 'moon', n: 'nest', o: 'octopus', p: 'pig', q: 'queen', r: 'red', s: 'sun', t: 'top', u: 'umbrella', v: 'van', w: 'web', x: 'fox', y: 'yo-yo', z: 'zebra' };
-const hearKey = ch => { keyUtt = null; voices['ls:' + ch] ? letterClip(voices['ls:' + ch]) : say(`${letterName(ch)}. ${KEYWORD[ch] ? `Like ${KEYWORD[ch]}.` : ''}`, 0.8); };   // the 🔊 strip: hear it, don't type it
+const hearKey = ch => { keyUtt = null; if (!heardShut && $('confirm').hidden) heardKeys.push(ch); voices['ls:' + ch] ? letterClip(voices['ls:' + ch]) : say(`${letterName(ch)}. ${KEYWORD[ch] ? `Like ${KEYWORD[ch]}.` : ''}`, 0.8, false); };   // the 🔊 strip: hear it, don't type it
 document.addEventListener('click', e => {
   const k = e.target.closest('#keys [data-k]'); if (!k || keysLocked()) return;
   if (e.target.closest('.ksnd')) { e.preventDefault(); hearKey(k.dataset.k); return; }
@@ -643,7 +649,7 @@ function partPick() {
         b.classList.add('right'); app.querySelectorAll('.opt').forEach(x => x.disabled = true);
         if (!missed) score.pick.first++;
         setMsg(missed ? 'Yes! That’s the right spelling.' : 'Yes! You got it right away!', 'good');
-        say('Yes!', 1); nextUp(1200).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`You picked ${score.pick.first} of ${WORDS.length} right on the first try.`); });
+        fb('Yes!', 1); nextUp(1200).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`You picked ${score.pick.first} of ${WORDS.length} right on the first try.`); });
       } else {
         missed = true; score.pick.misses++; b.classList.add('wrong'); b.disabled = true;
         setMsg('Not that one. Look closely and try again.', 'try'); shakeEl(b);
@@ -781,7 +787,7 @@ function partRainbow() {
       const PAL = [['#F87171', 'red'], ['#FB923C', 'orange'], ['#FBBF24', 'yellow'], ['#34D399', 'green'], ['#38BDF8', 'light blue'], ['#7FB0F0', 'blue'], ['#C4B5FD', 'purple'], ['#F9A8D4', 'pink']];
       $('pal').innerHTML = `<div class="count">Line 4: pick a color, then write “${esc(dw)}” with your pencil or finger</div><div class="palette">${PAL.map(([c, name]) => `<button class="swatch" data-c4="${c}" style="background:${c}" aria-label="${name}"></button>`).join('')}</div>
         <div class="wl-wrap" id="wlWrap" hidden><canvas id="wl" class="wl"></canvas><div class="row acts"><button class="btn big" id="wlUndo">↶ Undo</button><button class="btn big" id="wlErase" aria-pressed="false">🧽 Eraser</button><button class="btn big" id="wlClear">↺ Start over</button><button class="btn big primary" id="wlDone">Done ✓</button></div></div>`;
-      setMsg('Last line: write it yourself, no dotted letters this time!', 'good'); say('Last line! Write the word yourself with your pencil.', 0.95);
+      setMsg('Last line: write it yourself, no dotted letters this time!', 'good'); fb('Last line! Write the word yourself with your pencil.', 0.95);
       let col = null, usedPen = false, penId = null, cur = null, strokes = [], caseAsked = '', flagged = null, caseFlags = null;
       $('pal').onclick = e => { const b = e.target.closest('[data-c4]'); if (!b) return; col = b.dataset.c4; $('wlWrap').hidden = false; setup(); };
       const setup = () => {
@@ -823,7 +829,7 @@ function partRainbow() {
       note('Rainbow Write', w, lineKeys[0].length === letters.length && lineKeys[1].length === letters.length && memTries.length === 1, w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory (he typed the whole word, then double-checked it), line 4 written by hand.' + (memTries.length >= 3 ? ` After his 2nd wrong try he got color hints (green right spot, yellow wrong spot, red not in the word)${memTries.length >= 5 ? '; after the 4th he was shown the letters he was missing' : ''}${memTries.length >= 6 ? '; after the 5th the word stayed up to copy' : ''}.` : '') + (caseFlags ? ` The capital-letter check asked about ${caseFlags.join(', ')} on line 4, and he kept it.` : ''), img: img || undefined }, [`line 1: ${lineKeys[0].join(' ')}`, `line 2: ${lineKeys[1].join(' ')}`, ...memTries.map((s, k) => `line 3${memTries.length > 1 ? `, try ${k + 1}` : ''}: ${s}`)]);
       onKey = null; $('memActs').hidden = true; $('wordShow').innerHTML = `<div class="big-word">${esc(dw)}</div>`;
       $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join('');
-      setMsg('Rainbow done!', 'good'); say(dw, 0.85); nextUp(1500).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); });
+      setMsg('Rainbow done!', 'good'); fb(dw, 0.85); nextUp(1500).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); });
     };
     $('backBtn').onclick = () => { memTyped = memTyped.slice(0, -1); draw(); };
     $('doneBtn').onclick = () => {
@@ -838,19 +844,19 @@ function partRainbow() {
         shakeEl($('rw')); memTyped = '';
         if (n >= 5) {   // enough guessing: the word stays up, he copies it
           memHint = { missing: null }; memCopy = true; draw(); paintKeys();
-          setMsg('Look at the word and type it. You can see it this time.', 'try'); say('Look at the word, and type it.', 0.95); return;
+          setMsg('Look at the word and type it. You can see it this time.', 'try'); fb('Look at the word, and type it.', 0.95); return;
         }
         if (n >= 2) {   // color hints from his last try
           memHint = { marks: wordleMarks(last), missing: n === 4 ? missingLetters(last) : null }; memShow = false; memTries.forEach(g => learnKeys(g, wordleMarks(g))); draw(); paintKeys();
           if (n === 4) { const ms = memHint.missing; setMsg(ms.length ? `Here are the letters you’re missing: ${ms.join(', ')}. Where do they go? The colors show your tries.` : 'You have all the letters! Just the order is mixed up. Look at the colors.', 'try');
-            say(ms.length ? `Here are the letters you’re missing. ${ms.map(c => letterName(c)).join(', ')}. Where do they go?` : 'You have all the letters. Just the order is mixed up.', 0.9); return; }
+            fb(ms.length ? `Here are the letters you’re missing. ${ms.map(c => letterName(c)).join(', ')}. Where do they go?` : 'You have all the letters. Just the order is mixed up.', 0.9); return; }
           const g = memHint.marks.filter(m => m === 'ok').length;
           setMsg(`Not quite. Look at the colors: green letters are in the right spot${g ? ` (you have ${g})` : ''}, yellow ones go somewhere else, red ones aren’t in the word.`, 'try');
-          say(n === 2 ? 'Not quite. Look at the colors. Green is right. Yellow is in the word, but in a different spot. Red is not in the word.' : 'Not quite. Look at the colors and try again.', 0.95);
+          fb(n === 2 ? 'Not quite. Look at the colors. Green is right. Yellow is in the word, but in a different spot. Red is not in the word.' : 'Not quite. Look at the colors and try again.', 0.95);
           return;
         }
         memShow = true; draw();
-        setMsg('Not quite. Look at the word carefully. It will hide again!', 'try'); say('Not quite. Look at the word carefully.', 0.95);
+        setMsg('Not quite. Look at the word carefully. It will hide again!', 'try'); fb('Not quite. Look at the word carefully.', 0.95);
         setTimeout(() => { memShow = false; if (row === 2) { draw(); setMsg('Now type it from memory again.'); } }, 3500);
       };
     };
@@ -867,8 +873,8 @@ function partRainbow() {
         if (pos >= letters.length) {
           if (!rowMiss) score.rainbow.clean++;
           row++; pos = 0; rowMiss = false;
-          if (row === 2) { setMsg('Now from memory! The word is hiding. Pick a color, type the whole word, then tap Done.', 'good'); say('Now try it from memory!', 0.95); }
-          else if (row > 2) { note('Rainbow Write', w, lineKeys.every(l => l.length === letters.length), w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory.' }, lineKeys.map((l, k) => `line ${k + 1}: ${l.join(' ')}`)); onKey = null; draw(); $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join(''); setMsg('Rainbow done!', 'good'); say(dw, 0.85); nextUp(1500).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); }); return; }
+          if (row === 2) { setMsg('Now from memory! The word is hiding. Pick a color, type the whole word, then tap Done.', 'good'); fb('Now try it from memory!', 0.95); }
+          else if (row > 2) { note('Rainbow Write', w, lineKeys.every(l => l.length === letters.length), w, { text: 'Lines 1 and 2 looking at the word, line 3 from memory.' }, lineKeys.map((l, k) => `line ${k + 1}: ${l.join(' ')}`)); onKey = null; draw(); $('rw').innerHTML = [0, 1, 2].map(r => `<div class="rw-row"><span class="n" style="color:${cols[r]}">${r + 1}</span>${letters.map(ch => `<span class="lbox done" style="border-color:${cols[r]};color:${cols[r]};background:var(--surface-2)">${esc(ch)}</span>`).join('')}</div>`).join(''); setMsg('Rainbow done!', 'good'); fb(dw, 0.85); nextUp(1500).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`${score.rainbow.clean} of ${score.rainbow.of} written with no mistakes (the last one from memory).`); }); return; }
           else setMsg('Great! Again.', 'good');
         }
         draw();
@@ -908,10 +914,10 @@ function partFix() {
         if (!tries) score.fix.first++;
         onKey = null; setMsg('Fixed it!', 'good');
         $('ans').innerHTML = [...dw].map(c => c === ' ' ? '<span class="lbox sp"></span>' : `<span class="lbox done">${esc(c)}</span>`).join('');
-        say('Fixed it!', 1); nextUp(1200).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`You fixed ${score.fix.first} of ${WORDS.length} on the first try.`); });
+        fb('Fixed it!', 1); nextUp(1200).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`You fixed ${score.fix.first} of ${WORDS.length} on the first try.`); });
       } else {
         tries++; typed = ''; draw(); shakeEl($('ans'));
-        if (tries >= 2) { setMsg(`It’s spelled: ${[...dw].join(' ')}. Now you type it.`, 'try'); say(`It's spelled ${[...dw.replace(/\s+/g, '')].map(letterName).join(', ')}.`, 0.75); }
+        if (tries >= 2) { setMsg(`It’s spelled: ${[...dw].join(' ')}. Now you type it.`, 'try'); fb(`It's spelled ${[...dw.replace(/\s+/g, '')].map(letterName).join(', ')}.`, 0.75); }
         else { setMsg('Not quite. Think about the tricky part and try again.', 'try'); }
       }
     };
@@ -955,7 +961,7 @@ function partSearch() {
       if (found.size === targets.length) setTimeout(() => partDone(score.search.wrongTaps ? `You found all ${targets.length}!` : `You found all ${targets.length} with no wrong taps!`), 1200);
     } else { score.search.wrongTaps++; draw(); setMsg('That’s not one of the words. Try again!', 'try'); }
   };
-  say('Find each word. Tap its first letter, then its last letter.', 0.95);
+  fb('Find each word. Tap its first letter, then its last letter.', 0.95);
 }
 
 /* ---------- 6. Practice Test: the words are hidden; he hears each one and spells it. Are you sure? Then a grade. ---------- */
@@ -965,7 +971,7 @@ function partTest() {
   let i = fxResume(), typed = ''; score.test = [];
   app.innerHTML = title('Time for the test! I’ll say each word. Spell it all by yourself.') +
     `<button class="btn big primary" id="start">Start the test</button>`;
-  say('Time for the practice test! I’ll say each word. Spell it all by yourself.', 0.95);
+  fb('Time for the practice test! I’ll say each word. Spell it all by yourself.', 0.95);
   $('start').onclick = () => show();
   const draw = () => { $('ans').innerHTML = [...typed].map(c => c === ' ' ? '<span class="lbox sp"></span>' : `<span class="lbox typed">${esc(c)}</span>`).join('') + '<span class="lbox cur"></span>'; $('doneBtn').disabled = !typed.trim(); };
   const show = () => {
@@ -1209,7 +1215,7 @@ if (!WORDS.length) {
       <p class="note" style="text-align:center">Part ${pi + 1} of ${PARTS.length}: ${esc(PARTS[pi].name)}${sp.word ? ` · ${sp.word} word${sp.word > 1 ? 's' : ''} done in this part` : ''}</p>
       <button class="btn big primary" id="resumeGo">Pick up where I left off →</button>
       <div class="row" style="margin-top:22px"><button class="btn" id="resumeOver">↺ Start over</button></div>`;
-    say('You already started this one. Let’s keep going from where you left off!', 0.95);
+    fb('You already started this one. Let’s keep going from where you left off!', 0.95);
     $('resumeGo').onclick = () => { Object.assign(score, sp.score || {}); detail.push(...(sp.detail || [])); fxRes = { word: sp.word || 0, score: sp.score }; startPart(pi); };
     $('resumeOver').onclick = () => { if (!confirm('Start this Fix-Up over from the beginning?')) return; fxClear(); startPart(0); };
   }

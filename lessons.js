@@ -639,11 +639,11 @@ function L_numpad(answer) {
       if (first === null) first = typed; attempts.push(typed);
       if (+typed === +answer) {
         live = false; document.removeEventListener('keydown', kd); draw('ok'); $('nDone').disabled = $('nBack').disabled = true;
-        setMsg(tries ? 'You got it!' : 'Yes! Right the first time!', 'good'); say(`Yes! ${answer}!`, 0.95);
+        setMsg(tries ? 'You got it!' : 'Yes! Right the first time!', 'good'); fb(`Yes! ${answer}!`, 0.95);
         nextUp(1200).then(() => res({ typed: first, ok: tries === 0, tries, attempts }));
       } else {
         tries++; typed = ''; draw(); shakeEl($('nshow'));
-        if (tries >= 2) { setMsg(`It’s ${answer}. Now you type it.`, 'try'); say(`It's ${answer}. Now you type it.`, 0.9); }
+        if (tries >= 2) { setMsg(`It’s ${answer}. Now you type it.`, 'try'); fb(`It's ${answer}. Now you type it.`, 0.9); }
         else setMsg('Not quite. Count again and try again.', 'try');
       }
     };
@@ -660,7 +660,7 @@ function L_choose(choices, answer, { hint = 'Not quite. Look again.', row = fals
       if (sayIt) say(c, 0.9);
       if (c === answer) {
         b.classList.add('right'); $('ch').querySelectorAll('button').forEach(x => x.disabled = true);
-        setMsg(picks.length === 1 ? 'Yes! Right the first time!' : 'You got it!', 'good'); if (!sayIt) say('Yes!', 1);
+        setMsg(picks.length === 1 ? 'Yes! Right the first time!' : 'You got it!', 'good'); if (!sayIt) fb('Yes!', 1);
         nextUp(1200).then(() => res({ typed: picks[0], ok: picks.length === 1, picks }));
       } else { b.classList.add('wrong'); b.disabled = true; shakeEl(b); setMsg(hint, 'try'); }
     };
@@ -777,7 +777,7 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
     }
     const snap = () => { try { const sm = document.createElement('canvas'); sm.width = 420; sm.height = Math.round(420 * Ht / Wd); sm.getContext('2d').drawImage(cv, 0, 0, sm.width, sm.height); return sm.toDataURL('image/png'); } catch (er) { return ''; } };
     const finishPad = extra => {
-      setMsg(guide ? 'Beautiful tracing!' : 'Nice writing!', 'good'); say(guide ? 'Beautiful!' : 'Nice writing!', 0.95);
+      setMsg(guide ? 'Beautiful tracing!' : 'Nice writing!', 'good'); fb(guide ? 'Beautiful!' : 'Nice writing!', 0.95);
       flagged = null; draw();
       tools.setMode(false); flagged = null; draw();
       const img = snap(); ['lsDone', 'lsClear', 'lsUndo', 'lsMore', 'lsErase'].forEach(id => { if ($(id)) $(id).disabled = true; });
@@ -797,8 +797,8 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
         } }
         const missed = spans.filter((s, k) => per[k][1] && per[k][0] / per[k][1] < need);
         orange = new Set(missed);
-        if ((all ? out / all : 1) > 0.4) { redo++; why.off++; draw(); setMsg('Stay on the gray letters. Tap ↶ Undo or Start over and trace them carefully.', 'try'); say('Stay on the gray letters.', 0.95); return; }
-        if (missed.length) { redo++; why.missed++; draw(); setMsg(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 'try'); say(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 0.95); return; }
+        if ((all ? out / all : 1) > 0.4) { redo++; why.off++; draw(); setMsg('Stay on the gray letters. Tap ↶ Undo or Start over and trace them carefully.', 'try'); fb('Stay on the gray letters.', 0.95); return; }
+        if (missed.length) { redo++; why.missed++; draw(); setMsg(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 'try'); fb(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 0.95); return; }
         return finishPad({});
       }
       // free writing: (1) on the lines, (2) all of it, (3) capital or small letters
@@ -806,18 +806,18 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
       const inBand = ([, y]) => { const g = geo(rowOf(y)), xh = g.base - g.mid; return y >= g.top - xh * 0.45 && y <= g.base + xh * 1.1; };
       offLines = new Set(strokes.filter(st => st.filter(p => !inBand(p)).length > st.length * 0.5));
       const outFrac = pts.filter(p => !inBand(p)).length / pts.length;
-      if (outFrac > 0.25) { redo++; why.lines++; draw(); setMsg('Keep your letters on the lines: tall letters touch the top line, and every letter sits on the bottom line. Tap ↶ Undo to fix the orange ones.', 'try'); say('Keep your letters on the lines.', 0.95); return; }
+      if (outFrac > 0.25) { redo++; why.lines++; draw(); setMsg('Keep your letters on the lines: tall letters touch the top line, and every letter sits on the bottom line. Tap ↶ Undo to fix the orange ones.', 'try'); fb('Keep your letters on the lines.', 0.95); return; }
       offLines.clear();
       let width = 0, n = pts.length;
       for (let r = 0; r < nRows; r++) { const xs = pts.filter(p => rowOf(p[1]) === r).map(p => p[0]); if (xs.length > 2) width += Math.max(...xs) - Math.min(...xs); }
       const want = Math.min(tw, (Wd - 48) * nRows) * (multi ? 0.35 : 0.45);
-      if (width < want || n < 40) { redo++; why.short++; draw(); setMsg(label ? `Write ${label}. Keep going!` : `Write all of “${text}”. Keep going!${multi && nRows < maxRows ? ' Tap ➕ Need more space if you run out of room.' : ''}`, 'try'); say('Write all of it.', 0.95); return; }
+      if (width < want || n < 40) { redo++; why.short++; draw(); setMsg(label ? `Write ${label}. Keep going!` : `Write all of “${text}”. Keep going!${multi && nRows < maxRows ? ' Tap ➕ Need more space if you run out of room.' : ''}`, 'try'); fb('Write all of it.', 0.95); return; }
       if (check && typeof hcCheck === 'function') {
         const dense = hcDense(strokes), rows = Array.from({ length: nRows }, (_, r) => ({ ...geo(r), pts: dense.filter(p => rowOf(p[1]) === r) }));
         const flags = hcCheck(rows, text), key = flags.map(f => f.ch + f.row + Math.round(f.x0)).join();
         if (flags.length && caseAsked !== key) {   // ask once; Done again means "it's right" (the check can be wrong)
           caseAsked = key; flagged = flags; draw();
-          const m = hcMessage(flags); setMsg(`${m} Fix it with ↶ Undo, or tap Done again if it’s right.`, 'try'); say(m, 0.95); return;
+          const m = hcMessage(flags); setMsg(`${m} Fix it with ↶ Undo, or tap Done again if it’s right.`, 'try'); fb(m, 0.95); return;
         }
         if (flags.length) return finishPad({ caseFlags: flags.map(f => `${f.ch} in “${f.word}” (${f.want === 'small' ? 'looked like a capital' : 'looked small'})`) });
       }
@@ -851,7 +851,7 @@ function L_drawPad() {
     $('lsDone').onclick = () => {
       if (inked < 300) return setMsg('Draw a little more of the story first.', 'try');
       let img = ''; try { const sm = document.createElement('canvas'); sm.width = 480; sm.height = Math.round(480 * Ht / Wd); sm.getContext('2d').drawImage(cv, 0, 0, sm.width, sm.height); img = sm.toDataURL('image/jpeg', 0.8); } catch (er) { }
-      setMsg('What a great picture!', 'good'); say('What a great picture!', 0.95); $('lsDone').disabled = true;
+      setMsg('What a great picture!', 'good'); fb('What a great picture!', 0.95); $('lsDone').disabled = true;
       nextUp(1100).then(() => done({ img }));
     };
   });
@@ -871,11 +871,11 @@ LT.tenmore.run = () => {
         draw(`This shows ${d.blocks}. Add a ten stick to make 10 more.`, false);
         $('lsBtn').innerHTML = '<button class="btn big primary" id="addTen">+ Add a ten stick</button>';
         say(`This shows ${d.blocks}. Add a ten stick to make 10 more.`, 0.95);
-        $('addTen').onclick = () => { n += 10; $('blk').innerHTML = L_blocks(n, { unit: 20 }); $('lsBtn').innerHTML = ''; say('One more ten!', 1); r(); };
+        $('addTen').onclick = () => { n += 10; $('blk').innerHTML = L_blocks(n, { unit: 20 }); $('lsBtn').innerHTML = ''; fb('One more ten!', 1); r(); };
       } else {
         draw(`This shows ${d.blocks}. Tap a ten stick to take it away.`, true);
         say(`This shows ${d.blocks}. Tap a ten stick to take it away. That makes 10 less.`, 0.95);
-        $('blk').onclick = e => { if (!e.target.closest('[data-stick]')) return; n -= 10; $('blk').innerHTML = L_blocks(n, { unit: 20 }); $('blk').onclick = null; say('One less ten!', 1); r(); };
+        $('blk').onclick = e => { if (!e.target.closest('[data-stick]')) return; n -= 10; $('blk').innerHTML = L_blocks(n, { unit: 20 }); $('blk').onclick = null; fb('One less ten!', 1); r(); };
       }
     });
     setMsg('Count the tens and ones. What number is it now?'); say('What number is it now?', 0.95);
@@ -897,7 +897,7 @@ LT.tenmore.run = () => {
       $('ch').onclick = e => {
         const b = e.target.closest('[data-n]'); if (!b || b.disabled || +b.dataset.n === d.chart) return;
         const n = +b.dataset.n; picks.push(String(n));
-        if (n === target) { b.classList.add('right'); $('ch').onclick = null; setMsg(`Yes! 10 ${word} than ${d.chart} is ${target}. It’s right ${more ? 'below' : 'above'} it!`, 'good'); say(`Yes! ${target}!`, 0.95); nextUp(1600).then(r); return; }
+        if (n === target) { b.classList.add('right'); $('ch').onclick = null; setMsg(`Yes! 10 ${word} than ${d.chart} is ${target}. It’s right ${more ? 'below' : 'above'} it!`, 'good'); fb(`Yes! ${target}!`, 0.95); nextUp(1600).then(r); return; }
         tries++; b.classList.add('wrong'); b.disabled = true; shakeEl(b);
         if (tries === 1) setMsg(`Not quite. 10 ${word} is in the same column, one row ${more ? 'down' : 'up'}.`, 'try');
         else { setMsg(`Look in the yellow column, right ${more ? 'below' : 'above'} ${d.chart}.`, 'try'); $('ch').querySelectorAll('button').forEach(x => { if ((+x.dataset.n - d.chart) % 10 === 0) x.classList.add('col'); }); }
@@ -1094,7 +1094,7 @@ LT.story.run = () => {
       $('allFound').onclick = () => {
         if (found.size === targets.length) return res();
         dones++;
-        if (dones === 1) { setMsg(`There ${targets.length - found.size === 1 ? 'is 1 more' : `are ${targets.length - found.size} more`}. Keep looking!`, 'try'); say('Keep looking!', 1); return; }
+        if (dones === 1) { setMsg(`There ${targets.length - found.size === 1 ? 'is 1 more' : `are ${targets.length - found.size} more`}. Keep looking!`, 'try'); fb('Keep looking!', 1); return; }
         app.querySelectorAll('[data-w]').forEach(x => { const t = L_letters(x.textContent); if (targets.includes(t) && !found.has(t)) x.classList.add('miss'); });
         setMsg('Here are the ones you missed, in orange.', 'try'); $('allFound').textContent = 'Next →'; $('allFound').onclick = res;
       };
@@ -1164,8 +1164,8 @@ function L_chainHelp(prev, w) {
       box.innerHTML = `<div class="ls-help-box"><b>Say both words slowly. Which sound is different?</b><div class="ls-choices row2" id="chPl">${['first', 'middle', 'last'].map(p => `<button data-p="${p}">${p} sound</button>`).join('')}</div><button class="btn" id="chAgain">${SPK}Hear both again</button></div>`;
       const both = () => say(`${prev}. ${w}. Which sound is different?`, 0.7); $('chAgain').onclick = both; both();
       $('chPl').onclick = e => { const b = e.target.closest('[data-p]'); if (!b || b.disabled) return;
-        if (b.dataset.p === place) { b.classList.add('right'); $('chPl').querySelectorAll('button').forEach(x => x.disabled = true); light(); say(`Yes! The ${place} sound changes.`, 0.95); btn.textContent = '🆘 More help'; }
-        else { b.classList.add('wrong'); b.disabled = true; say('Listen again.', 0.95); both(); } };
+        if (b.dataset.p === place) { b.classList.add('right'); $('chPl').querySelectorAll('button').forEach(x => x.disabled = true); light(); fb(`Yes! The ${place} sound changes.`, 0.95); btn.textContent = '🆘 More help'; }
+        else { b.classList.add('wrong'); b.disabled = true; fb('Listen again.', 0.95); both(); } };
     } else if (step === 2) {
       used.push('which letter');
       light();
@@ -1176,8 +1176,8 @@ function L_chainHelp(prev, w) {
       say(`Which letter makes the new ${place} sound in ${w}?`, 0.9);
       $('chLt').onclick = e => { const b = e.target.closest('[data-l]'); if (!b || b.disabled) return; const l = b.dataset.l, m = alike.includes(l) ? [want, l, al.sound] : null;
         say(l, 1);
-        if (l === want) { b.classList.add('right'); $('chLt').querySelectorAll('button').forEach(x => x.disabled = true); const tip = alike.length ? ` ${al.sound[0].toUpperCase() + al.sound.slice(1)} can be spelled ${[want, ...alike].join(' or ')}. In ${w}, it’s ${want}.` : ''; $('chMsg').className = 'message good'; $('chMsg').textContent = `Yes! Change the ${prev[i]} to ${want}.${tip}`; say(`Yes! Change the ${letterName(prev[i])} to ${letterName(want)}.`, 0.9); btn.textContent = '🆘 Show me'; }
-        else if (m) { b.classList.add('wrong'); b.disabled = true; $('chMsg').className = 'message try'; $('chMsg').textContent = `${l} makes that sound too! But ${w} is spelled with ${want}. ${m[2][0].toUpperCase() + m[2].slice(1)} can be spelled ${want} or ${l}.`; say(`${l} makes that sound too! But ${w} is spelled with ${letterName(want)}.`, 0.9); }
+        if (l === want) { b.classList.add('right'); $('chLt').querySelectorAll('button').forEach(x => x.disabled = true); const tip = alike.length ? ` ${al.sound[0].toUpperCase() + al.sound.slice(1)} can be spelled ${[want, ...alike].join(' or ')}. In ${w}, it’s ${want}.` : ''; $('chMsg').className = 'message good'; $('chMsg').textContent = `Yes! Change the ${prev[i]} to ${want}.${tip}`; fb(`Yes! Change the ${letterName(prev[i])} to ${letterName(want)}.`, 0.9); btn.textContent = '🆘 Show me'; }
+        else if (m) { b.classList.add('wrong'); b.disabled = true; $('chMsg').className = 'message try'; $('chMsg').textContent = `${l} makes that sound too! But ${w} is spelled with ${want}. ${m[2][0].toUpperCase() + m[2].slice(1)} can be spelled ${want} or ${l}.`; fb(`${l} makes that sound too! But ${w} is spelled with ${letterName(want)}.`, 0.9); }
         else { b.classList.add('wrong'); b.disabled = true; $('chMsg').className = 'message try'; $('chMsg').textContent = 'Say the sound and listen. Try another letter.'; } };
     } else {
       used.push('showed the letter');
@@ -1251,7 +1251,7 @@ LT.chains.run = () => {
       await new Promise(res => {
         $('story').onclick = e => {
           const el = e.target.closest('[data-w]'); if (!el) return; const t = L_letters(el.textContent); if (!t || found.has(t)) return; picks.push(t);
-          if (targets.includes(t)) { found.add(t); el.classList.add('found'); if (found.size === targets.length) { setMsg('Yes! You found them!', 'good'); say('Yes!', 1); nextUp(1200).then(res); } else setMsg('Yes! Is there another one?', 'good'); }
+          if (targets.includes(t)) { found.add(t); el.classList.add('found'); if (found.size === targets.length) { setMsg('Yes! You found them!', 'good'); fb('Yes!', 1); nextUp(1200).then(res); } else setMsg('Yes! Is there another one?', 'good'); }
           else { wrongs++; el.classList.add('no'); shakeEl(el); setTimeout(() => el.classList.remove('no'), 900); setMsg(`“${t}” doesn’t have ${pat.label}. Look again.`, 'try'); }
         };
       });
@@ -1288,7 +1288,7 @@ LT.heart.run = () => {
     await new Promise(res => {
       $('chk').onclick = () => {
         const mine = [...on].sort((a, b) => a - b), pick = L.map((c, i) => (on.has(i) ? '|' : '') + c).join(''); picks.push(pick);
-        if (mine.join() === ends.join()) { setMsg('Yes! Those are the sounds!', 'good'); say('Yes!', 1); $('chk').disabled = true; $('sp').onclick = null; nextUp(1200).then(res); return; }
+        if (mine.join() === ends.join()) { setMsg('Yes! Those are the sounds!', 'good'); fb('Yes!', 1); $('chk').disabled = true; $('sp').onclick = null; nextUp(1200).then(res); return; }
         tries++; shakeEl($('sp'));
         if (tries >= 2) { on = new Set(ends); draw(); setMsg(`It’s ${parts.map(p => p.t).join(' | ')}. Look, then tap Check.`, 'try'); slow(); }
         else setMsg(mine.length + 1 !== parts.length ? `It needs ${parts.length} boxes. Say it slowly and try again.` : 'Not quite. Say it slowly. Where does each sound stop?', 'try');
@@ -1303,7 +1303,7 @@ LT.heart.run = () => {
       await new Promise(res => {
         $('hp').onclick = e => {
           const b = e.target.closest('[data-p]'); if (!b) return; const i = +b.dataset.p; if (sel.has(i)) return; hp.push(parts[i].t);
-          if (hearts.includes(i)) { sel.add(i); b.classList.add('pick'); b.insertAdjacentHTML('beforeend', `<i class="hrt">${L_HEART(30)}</i>`); if (hearts.every(h => sel.has(h))) { setMsg('Yes! That’s the heart part.', 'good'); say('Yes!', 1); $('hp').onclick = null; nextUp(1200).then(res); } }
+          if (hearts.includes(i)) { sel.add(i); b.classList.add('pick'); b.insertAdjacentHTML('beforeend', `<i class="hrt">${L_HEART(30)}</i>`); if (hearts.every(h => sel.has(h))) { setMsg('Yes! That’s the heart part.', 'good'); fb('Yes!', 1); $('hp').onclick = null; nextUp(1200).then(res); } }
           else { t2++; shakeEl(b); setMsg(`“${parts[i].t}” sounds the way it looks. Which part is tricky?`, 'try'); }
         };
       });
@@ -1338,7 +1338,7 @@ LT.heart.run = () => {
     await new Promise(res => {
       $('row').onclick = e => {
         const b = e.target.closest('[data-i]'); if (!b || b.classList.contains('found')) return; const x = row[+b.dataset.i];
-        if (x.toLowerCase() === target) { b.classList.add('found'); got++; $('fc').textContent = `Found ${got} of ${need}`; if (got === need) { setMsg('You found them all!', 'good'); say('You found them all!', 1); $('row').onclick = null; nextUp(1300).then(res); } else setMsg('Yes!', 'good'); }
+        if (x.toLowerCase() === target) { b.classList.add('found'); got++; $('fc').textContent = `Found ${got} of ${need}`; if (got === need) { setMsg('You found them all!', 'good'); fb('You found them all!', 1); $('row').onclick = null; nextUp(1300).then(res); } else setMsg('Yes!', 'good'); }
         else { wrong.push(x); b.classList.add('no'); shakeEl(b); setTimeout(() => b.classList.remove('no'), 900); setMsg(`That says “${x}”. Look at every letter.`, 'try'); say(x, 0.9); }
       };
     });
@@ -1392,8 +1392,8 @@ function L_dragTo(word, sel, right, hint, { names = null, prompt = null, sayIt =
     const drop = c => {
       if (!live || !c) return back();
       const hi = +c.dataset.h; picks.push(nm(hi)); back();
-      if (hi === right) { live = false; c.classList.add('good'); bub.remove(); document.removeEventListener('click', onT, true); setMsg(picks.length === 1 ? 'Yes! It goes there!' : 'You got it!', 'good'); say('Yes!', 1); return setTimeout(() => res(picks), 500); }
-      shakeEl(c); setMsg(`Not that one. ${hint}`, 'try'); say('Not that one.', 0.95);
+      if (hi === right) { live = false; c.classList.add('good'); bub.remove(); document.removeEventListener('click', onT, true); setMsg(picks.length === 1 ? 'Yes! It goes there!' : 'You got it!', 'good'); fb('Yes!', 1); return setTimeout(() => res(picks), 500); }
+      shakeEl(c); setMsg(`Not that one. ${hint}`, 'try'); fb('Not that one.', 0.95);
     };
     bub.onpointerdown = e => {
       if (!live) return; e.preventDefault(); const r = bub.getBoundingClientRect();
@@ -1464,8 +1464,8 @@ LT.sort.run = () => {
         else { if (!wrong.includes(toks[k])) wrong.push(L_letters(toks[k])); el.classList.add('nope'); shakeEl(el); setTimeout(() => el.classList.remove('nope'), 700); setMsg(`${L_letters(toks[k])} doesn’t end with ${H.join(', ')}. Look at the last letters.`, 'try'); } };
       $('huntDone').onclick = () => {
         const left = targets.filter(k => !found.has(k)); checks++;
-        if (!left.length) { setMsg('You found them all!', 'good'); say('You found them all!', 1); return nextUp(1200).then(res); }
-        if (checks < 2) { setMsg(`${left.length} more to find! Read each word to the very end.`, 'try'); say(`${left.length} more to find!`, 1); return; }
+        if (!left.length) { setMsg('You found them all!', 'good'); fb('You found them all!', 1); return nextUp(1200).then(res); }
+        if (checks < 2) { setMsg(`${left.length} more to find! Read each word to the very end.`, 'try'); fb(`${left.length} more to find!`, 1); return; }
         left.forEach(k => app.querySelector(`[data-k="${k}"]`).classList.add('missed')); setMsg(`These were hiding: ${left.map(k => L_letters(toks[k])).join(', ')}.`, 'try'); $('huntDone').textContent = 'Next →'; $('huntDone').onclick = res;
       };
     });
@@ -1596,3 +1596,94 @@ LT.fixit.run = () => {
   PARTS = [{ name: 'Hear It', run: hearP }, { name: 'Trace It', run: traceP }, { name: 'Spell It', run: spellP }];
   return { intro: `Extra help! Let’s fix ${W.length === 1 ? 'a word' : `${W.length} words`} from earlier. First you’ll hear ${W.length === 1 ? 'it' : 'each one'} spelled, then trace ${W.length === 1 ? 'it' : 'them'}, then spell ${W.length === 1 ? 'it' : 'them'} by yourself.` };
 };
+
+/* ================= 🔥 Warm-up before the daily quiz (Nov 11, 2026) =================
+   Dylan: "if more than half of the practice required additional help… flag for additional practice before he gets to the quiz. We don't
+   want too much and burden him." spell.html picks the words (a word that needed deep help in at least half of the spelling parts it went
+   through; at most half of today's words) and runs this in the daily Sight Word Practice frame. No points, no grade, runs once, never loops:
+   Look at It (the word, each letter lit up and said; what he wrote wrong earlier, crossed out) → Trace It (once) → Spell It (from memory;
+   wrong → Wordle colors and red keys for one more try; still wrong → the word shows and he copies it). Data { words: [{ w, his }] }. */
+function L_warmup() {
+  const W = (SD.words || []).filter(x => x && x.w);
+  const tiles = w => `<div class="ls-tiles fx-tiles" id="fxT">${[...w].map((ch, i) => isLetter(ch) ? `<button class="t" data-i="${i}" aria-label="${L_esc(letterName(ch))}">${L_esc(ch)}</button>` : `<span class="t" style="border-color:transparent;background:transparent"></span>`).join('')}</div>`;
+  let spellGen = 0;
+  const spellOut = async w => {
+    const my = ++spellGen, el = () => [...document.querySelectorAll('#fxT .t')];
+    await Promise.race([playWord(w), wait(2500)]); if (my !== spellGen) return;
+    for (const [i, ch] of [...w].entries()) {
+      if (!isLetter(ch)) continue; if (my !== spellGen) return;
+      el().forEach(x => x.classList.toggle('now', +x.dataset.i === i));
+      const nm = letterName(ch), mine = typeof voices !== 'undefined' && voices['l:' + ch]; await Promise.race([sayLetter(ch, 0.85), wait(mine ? 1500 : 550 + 110 * nm.length)]); await wait(150);
+    }
+    if (my !== spellGen) return; el().forEach(x => x.classList.remove('now'));
+    await Promise.race([playWord(w), wait(2500)]);
+  };
+  const lookP = async () => {
+    await each(W.length, i => new Promise(async done => {
+      const x = W[i];
+      app.innerHTML = head('Look at the word and listen to how it’s spelled. Tap a letter to hear it again.') + L_count(i, W.length, 'Word')
+        + (x.his ? `<div class="fx-was">Earlier you wrote <s>${L_esc(x.his)}</s>. It’s spelled:</div>` : '')
+        + tiles(x.w) + `<div class="message" id="msg"></div><div class="row acts"><button class="btn big" id="fxAgain">${SPK}Hear it again</button><button class="btn big primary" id="fxNext" disabled>I looked at it →</button></div>`;
+      $('fxT').onclick = e => { const b = e.target.closest('[data-i]'); if (!b) return; spellGen++; document.querySelectorAll('#fxT .t').forEach(t => t.classList.toggle('now', t === b)); sayLetter(x.w[+b.dataset.i], 0.85); };
+      $('fxAgain').onclick = () => spellOut(x.w);
+      await spellOut(x.w); $('fxNext').disabled = false;
+      $('fxNext').onclick = () => { spellGen++; mark('Look at It', `Look at “${x.w}”`, true, '', '', null, { text: `He saw “${x.w}” and heard it spelled out loud${x.his ? ` (earlier he wrote “${x.his}”)` : ''}.` }, ['looked at it']); L_free(); done(); };
+    }));
+    partDone('You looked at every word!');
+  };
+  const traceP = async () => {
+    for (let i = 0; i < W.length; i++) {
+      if (stepSkip()) continue;
+      const w = W[i].w;
+      heardReset();
+      app.innerHTML = head(`Trace the word <b>${L_esc(w)}</b>. Say each letter as you trace it.`) + L_count(i, W.length, 'Word') + '<div id="lsPad"></div>';
+      playWord(w);
+      const r = await L_pad({ text: w, guide: true });
+      mark('Trace It', w, true, '', '', null, { img: r.img, text: `Tracing “${w}”.${L_padNote(r, true)}` }, []); L_free(); stepDone();
+    }
+    partDone('All traced!');
+  };
+  const how = {};
+  const spellP = async () => {
+    await each(W.length, i => new Promise(done => {
+      const x = W[i], tgt = x.w.toLowerCase().replace(/[^a-z]/g, ''); const tries = [];
+      const screen = () => {
+        const copy = tries.length >= 2, hints = tries.length === 1;
+        let typed = '';
+        app.innerHTML = head(copy ? 'Look at the word and type it. You can see it this time.' : hints ? 'One more try! Use the colors.' : 'Spell it from memory! The word is hiding.') + L_count(i, W.length, 'Word')
+          + (copy ? `<div class="big-word">${L_esc(x.w)}</div>` : `<div class="hidden-word">The word is hiding 🙈</div>`)
+          + `<div class="row"><button class="btn" id="hearW">${SPK}Hear the word</button></div>` + (hints ? wordleHtml(tries, tgt) : '') + '<div id="io"></div>';
+        $('io').innerHTML = `<div class="boxes" id="ans"></div><div class="message" id="msg"></div>${keysHtml()}
+          <div class="row acts"><button class="btn big" id="backBtn">⌫ Back</button><button class="btn big primary" id="doneBtn" disabled>Check ✓</button></div>`;
+        if (tries.length) tries.forEach(t => redOut(t, tgt));
+        $('hearW').onclick = () => playWord(x.w);
+        const draw = () => { $('ans').innerHTML = boxes(typed, 'typed') + '<span class="lbox cur"></span>'; $('doneBtn').disabled = !typed; };
+        draw();
+        onKey = c => { if (redKeys.has(c)) return setMsg(`${c} isn’t in the word. Try a different letter.`, 'try'); if (typed.length < 24) { typed += c; draw(); } };
+        $('backBtn').onclick = () => { typed = typed.slice(0, -1); draw(); };
+        $('doneBtn').onclick = () => {
+          const t = typed.toLowerCase(); if (!t) return; onKey = null; tries.push(t);
+          $('backBtn').disabled = $('doneBtn').disabled = true;
+          if (t === tgt) {
+            how[x.w] = tries.length === 1 ? 'right from memory' : tries.length === 2 ? 'right on the second try (with the colors)' : 'copied it';
+            $('ans').innerHTML = boxes(t, 'done');
+            mark('Spell It', x.w, tries.length === 1, tries[0], x.w, null, { text: `Warm-up: he spelled “${x.w}” from memory${tries.length === 2 ? ' (second try, with the Wordle colors)' : tries.length > 2 ? ' (then the word showed and he copied it)' : ''}.` }, tries);
+            L_free();
+            setMsg(tries.length === 1 ? 'Yes! Right from memory!' : 'You got it!', 'good'); fb(tries.length === 1 ? 'Yes!' : 'You got it!', 1); nextUp(1300).then(done);
+            return;
+          }
+          shakeEl($('ans'));
+          if (tries.length === 1) { setMsg('Not quite. Look at the colors: green is in the right spot, yellow goes somewhere else, red isn’t in the word.', 'try'); fb('Not quite. Look at the colors, and try one more time.', 0.95); }
+          else if (tries.length === 2) { setMsg('Here’s the word. Look at it and type it.', 'try'); fb('Here is the word. Look at it, and type it.', 0.95); }
+          else { setMsg('Look closely at every letter, and type it again.', 'try'); fb('Look closely at every letter.', 0.95); }
+          nextUp(1600, 'Get ready…').then(screen);
+        };
+        if (!copy) playWord(x.w);
+      };
+      heardReset(); screen();
+    }));
+    partDone(W.map(x => `${x.w}: ${how[x.w] || 'done'}`).join(' · '));
+  };
+  PARTS = [{ name: 'Look at It', run: lookP }, { name: 'Trace It', run: traceP }, { name: 'Spell It', run: spellP }];
+  return { intro: `Quick warm-up! ${W.length === 1 ? 'One tricky word' : `${W.length} tricky words`} before the quiz: look at ${W.length === 1 ? 'it' : 'each one'}, trace ${W.length === 1 ? 'it' : 'it once'}, then spell ${W.length === 1 ? 'it' : 'them'} from memory.` };
+}

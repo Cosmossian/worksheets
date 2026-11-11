@@ -1016,7 +1016,7 @@ const $ = id => document.getElementById(id);
 let plan = null;        // { text, parts: [{ text, say, start, end, word }], letters: [{ ch, partIdx, quiet, fixed }] }
 let pos = 0, tries = 0, level = 0, helpedAt = new Set();
 let mustHear = new Set();   // gold Help letters he still has to listen to
-let triedSet = new Set(), lastTry = 0, triesAtHelp = 0, stats = { tries: 0, helps: 0, letters: 0 };
+let triedSet = new Set(), lastTry = 0, triesAtHelp = 0, stats = { tries: 0, helps: 0, letters: 0, ghost: 0 };
 const TESTDAY = () => { try { return sessionStorage.getItem('study-testday') === '1'; } catch (e) { return false; } };   // grown-up's test day: nothing saved
 const emailOn = () => { if (TESTDAY()) return false; try { return (JSON.parse(localStorage.getItem('spell-settings') || '{}') || {}).email === true; } catch (e) { return false; } };   // results emails are off unless turned on (Parent Review always has them)
 let settings = Object.assign({ need: 2, win: 60, sens: 3 }, store('spell-settings') || {});
@@ -1512,7 +1512,7 @@ function begin() {
   talkGen++;
   document.querySelectorAll('.confetti').forEach(c => c.remove());
   plan = buildPlan($('wordIn').value);
-  pos = 0; helpedAt = new Set(); helpUsedAt = new Set(); stats = { tries: 0, helps: 0, letters: 0 }; skipFixed();
+  pos = 0; helpedAt = new Set(); helpUsedAt = new Set(); stats = { tries: 0, helps: 0, letters: 0, ghost: 0 }; skipFixed();
   const last = (loadHist()[plan.text.toLowerCase()] || []).at(-1);
   remember = last && Date.now() - last.t <= settings.win * 60000 ? { last, ago: agoText(Date.now() - last.t), hard: new Set(last.hard) } : null;
   resetLetterHelp();
@@ -1651,6 +1651,7 @@ function help() {
   }
   level = remember && level === 0 ? 2 : Math.min(level + 1, 3);   // Remember-it mode skips the slow replay: he's heard it before
   triesAtHelp = tries; stats.helps++; helpUsedAt.add(pos); updateHelpBtn();
+  if (level >= 3) stats.ghost++;   // Nov 11: needed the faint letter to copy = deep help (warm-up before the quiz)
   highlightPart(L.partIdx);
   if (level === 1) {
     if (L.quiet) { setMsg('This letter is quiet. You can’t hear it! Tap Help me again for a hint.', 'part'); return; }
@@ -2145,7 +2146,7 @@ function dailyAfterWord() {
   $('again').hidden = $('newWord').hidden = !!inDaily;
   $('nextWord').hidden = !inDaily;
   if (!inDaily) return;
-  if (daily.phase === 'practice') daily.practice[daily.words[daily.i]] = { tricky: helpedAt.size, helps: stats.helps };
+  if (daily.phase === 'practice') daily.practice[daily.words[daily.i]] = { tricky: helpedAt.size, helps: stats.helps, ghost: stats.ghost };
   const last = daily.i >= daily.words.length - 1;
   $('nextWord').textContent = !last ? 'Next word →' : daily.phase === 'practice' && !daily.only ? 'On to the check →' : 'All done →';
 }
@@ -2184,8 +2185,11 @@ function dailySheet() {
   const words = daily.words.map(w => w.toLowerCase()), day = ymd(Date.now());
   store('study-sheet-daily', { id: 'daily-' + day, tool: 'sight', title: 'Sight Word Practice · today’s words', at: Date.now(),
     data: { words, label: 'today’s words', noSay: !!daily.looked3, sentences: Object.fromEntries(words.map(w => [w, SENTENCES[w] && SENTENCES[w][0].includes('___') ? SENTENCES[w][0] : ''])) } });
-  daily.phase = 'sheet'; stopMic(); renderDailyBar(); $('dailyBar').hidden = true;
-  const f = document.createElement('iframe'); f.className = 'sheet-frame'; f.id = 'sheetFrame'; f.title = 'Sight Word Practice'; f.allow = 'microphone; autoplay';
+  daily.phase = 'sheet'; openSheetFrame('Sight Word Practice');
+}
+function openSheetFrame(title) {
+  stopMic(); renderDailyBar(); $('dailyBar').hidden = true;
+  const f = document.createElement('iframe'); f.className = 'sheet-frame'; f.id = 'sheetFrame'; f.title = title; f.allow = 'microphone; autoplay';
   f.src = 'do.html?daily=1&embed=1'; document.body.appendChild(f); document.body.classList.add('sheeton');
 }
 window.addEventListener('message', e => {
@@ -2194,10 +2198,34 @@ window.addEventListener('message', e => {
   if (!daily) return show('kidhome');
   if (e.data.rec) { const sl = store('sheet-log') || []; if (!sl.some(x => x.id === e.data.rec.id)) { sl.push(e.data.rec); putLog('sheet-log', sl.slice(-40)); } }
   if (e.data.quit) { daily = null; return show(cloud.role === 'kid' && !grownMode ? 'kidhome' : 'setup'); }
-  daily.sheetDone = true; readyForCheck();
+  if (daily.phase === 'warmup') { daily.warmDone = true; return readyForCheck(); }
+  daily.sheetDone = true; daily.sheetRec = e.data.rec || null; readyForCheck();
 });
+/* Nov 11, 2026 (Dylan: "if more than half of the practice required additional help… flag for additional practice before he gets to
+   the quiz"): a word needs the warm-up when it needed deep help in at least half of the spelling parts it went through today:
+   Spelling Helper (the faint letter to copy), Cover & Write (the Wordle colors), Missing Letters (3+ wrong on one blank, faint letter),
+   Finish the Sentence (spelled out for him). At most half of today's words (at least 1), the hardest first. Once a day, no points. */
+function warmupWords() {
+  if ((store('sheet-log') || []).some(x => x.aid === 'warmup-' + ymd(Date.now()))) return [];   // once a day
+  const rec = daily.sheetRec, ex = (rec && rec.extra) || {}, deep = ex.deep || {}, dp = ex.deepParts || {};
+  const ws = daily.words.map(w0 => {
+    const w = w0.toLowerCase(), p = daily.practiced ? daily.practice[w0] : null;
+    const parts = [...(p ? ['Spelling Helper'] : []), ...(dp[w] || [])], hit = [...(p && p.ghost ? ['Spelling Helper'] : []), ...(deep[w] || [])];
+    const bad = rec && (rec.items || []).find(it => it.word === w && !it.ok && it.typed && /^[a-z]+$/i.test(it.typed) && it.typed.toLowerCase() !== w);
+    return { w, his: bad ? bad.typed.toLowerCase() : '', hit, parts };
+  }).filter(x => x.hit.length && x.hit.length * 2 >= x.parts.length);
+  ws.sort((a, b) => b.hit.length / b.parts.length - a.hit.length / a.parts.length || b.hit.length - a.hit.length);
+  return ws.slice(0, Math.max(1, Math.floor(daily.words.length / 2)));
+}
+function dailyWarmup(ws) {
+  const day = ymd(Date.now());
+  store('study-sheet-daily', { id: 'warmup-' + day, tool: 'warmup', title: '🔥 Warm-up before the quiz', at: Date.now(),
+    data: { words: ws.map(x => ({ w: x.w, his: x.his, why: x.hit })) } });
+  daily.phase = 'warmup'; daily.warmWords = ws.map(x => x.w); openSheetFrame('Warm-up');
+}
 function readyForCheck() {
   if (daily.sheet && !daily.sheetDone) return dailySheet();
+  if (!daily.warmDone && !daily.only) { daily.warmDone = true; const ws = warmupWords(); if (ws.length) return dailyWarmup(ws); }
   daily.phase = 'check'; daily.i = 0; daily.results = [];
   const o = [...daily.words];   // mixed up, like a real test
   for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; }
@@ -2568,6 +2596,7 @@ function drawReplay() {
   else if (st.part === 'Circle the What words' || /What|Which|How/.test(text) && !sh.choices) saw = `<div class="rp-sent">${esc(text)}</div>`;
   const hear = sh.heard && sh.heard.length ? `<div class="rp-heard"><div class="rp-saw">What the page said to him, in order (tap to hear; this device’s voice can sound a little different from his iPad’s):</div>${sh.heard.map((h, q) => `<button class="btn btn-small" data-rpsay="${q}">🔊 ${h.w ? `“${esc(h.w)}” <small>(your recording)</small>` : `“${esc(h.t.length > 70 ? h.t.slice(0, 68) + '…' : h.t)}”`}</button>`).join('')}</div>`
     : st.hear || st.part === 'Check' ? `<button class="btn" id="rpHear">🔊 Hear what he heard</button>` : '';
+  const keysTapped = sh.keys && sh.keys.length ? `<div class="rp-saw">He tapped 🔊 to hear ${sh.keys.length > 1 ? 'these letters' : 'this letter'}: <b>${sh.keys.map(esc).join(', ')}</b></div>` : '';   // Nov 11: his key-strip taps, kept apart from what the page said
   const said = sh.clips && sh.clips.length ? `<div class="rp-saw">His voice:</div><div class="row" style="justify-content:center">${sh.clips.map((k, q) => `<button class="btn" data-rpclip="${esc(k)}">▶ Time ${q + 1}</button>`).join('')}</div>` : '';
   let pick = '';
   if (sh.choices) {
@@ -2583,7 +2612,7 @@ function drawReplay() {
       return `<div class="rp-try"><small>${picks.length > 1 ? `Try ${k + 1}` : 'He put'}</small>${cells}</div>`; }).join('');
   } else if (picks.length && st.part !== 'Look & Say') pick = `<div class="rp-keys" style="flex-direction:column">${picks.map(v => `<div>${esc(v)}</div>`).join('')}</div>`;
   const bank = sh.bank ? `<div class="rp-bank">${sh.bank.map(c => `<span class="${isRight(c) ? 'r' : ''}">${esc(c)}</span>`).join('')}</div>` : '';
-  $('rpScreen').innerHTML = `<p class="rp-part">${esc(st.part)}</p>${text && !saw.includes(esc(text)) && !saw.includes(esc(text.split('___')[0])) && !st.img ? `<p class="rp-sub">${esc(text)}</p>` : ''}${saw}${hear}${said}${bank}${pick}
+  $('rpScreen').innerHTML = `<p class="rp-part">${esc(st.part)}</p>${text && !saw.includes(esc(text)) && !saw.includes(esc(text.split('___')[0])) && !st.img ? `<p class="rp-sub">${esc(text)}</p>` : ''}${saw}${hear}${keysTapped}${said}${bank}${pick}
     <div class="rp-verdict ${st.ok ? 'ok' : 'no'}">${st.part === 'Look & Say' ? (st.ok ? '✓ Said it 3 times' : '✗ Didn’t finish all 3') : !st.answer && !st.img ? 'His pick (nothing to check against)' : st.ok ? '✓ Right the first time' : '✗ Not the first time'}${st.answer && !st.img ? ` · right answer: ${esc(st.answer)}` : ''}</div>`;
   $('rpBack').disabled = rp.i === 0; $('rpNext').textContent = rp.i < rp.steps.length - 1 ? 'Next →' : 'Done ✓';
   $('rpScreen').querySelectorAll('[data-rpclip]').forEach(b => b.onclick = async () => { b.disabled = true; const d = await cloudGetAudio(b.dataset.rpclip); b.disabled = false; if (d) playClip(d); else b.textContent = 'Not saved'; });
