@@ -458,6 +458,7 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 </style>
 </head>
 <body class="authwait">
+<script src="testclock.js?v=1"></script>
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <h1 id="appTitle">Spelling Helper</h1>
@@ -2733,24 +2734,27 @@ holdToOpen($('kidSwitch'), 2000, 'signout');   // back to the Parent / Child scr
 /* Test day (grown-up, hold): do his day exactly as he sees it, without saving anything as him.
    This device's copy is put aside first and put back at "End test"; nothing goes to the database, no emails, no recordings. */
 const TEST_SKIP = k => k === 'spell-voice' || k === 'study-cloud-queue' || k === 'study-role' || /auth|^sb-/.test(k);
-function askTestKind(onCancel) {   // fresh = his day as if he hasn't done anything yet today
+function askTestKind(onCancel, day = '') {   // fresh = his day as if he hasn't done anything yet that day
+  const td = ymd(Date.now()), other = day && day !== td, future = other && day > td;
+  const when = other ? new Date(day + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : '';
   const w = document.createElement('div'); w.className = 'ph-wrap';
-  w.innerHTML = `<div class="ph-box"><h3>🧪 Test day</h3><p>Nothing you do will be saved. How do you want to start?</p>
-    <button class="btn big primary" data-k="fresh">Start his day from scratch<br><small>as if he hasn’t done anything today</small></button>
-    <button class="btn big" data-k="now">Start from where his day is now</button><button class="btn" data-k="no">Cancel</button></div>`;
+  w.innerHTML = `<div class="ph-box"><h3>🧪 Test day${other ? ` for ${esc(when)}` : ''}</h3><p>Nothing you do will be saved.${other ? ` The page acts as if it’s ${esc(when)}.` : ''} How do you want to start?</p>
+    <button class="btn big primary" data-k="fresh">Start his day from scratch<br><small>as if he hasn’t done anything ${other ? 'that day' : 'today'}</small></button>
+    ${future ? '' : `<button class="btn big" data-k="now">Start from where his day ${other ? 'ended' : 'is now'}</button>`}<button class="btn" data-k="no">Cancel</button></div>`;
   document.body.appendChild(w);
-  w.onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; w.remove(); if (b.dataset.k !== 'no') startTestDay(b.dataset.k === 'fresh'); else if (onCancel) onCancel(); };
+  w.onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; w.remove(); if (b.dataset.k !== 'no') startTestDay(b.dataset.k === 'fresh', other ? day : ''); else if (onCancel) onCancel(); };
 }
-function startTestDay(fresh) {
+function startTestDay(fresh, day = '') {
   const snap = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!TEST_SKIP(k)) snap[k] = localStorage.getItem(k); }
   try { sessionStorage.setItem('study-testday-snap', JSON.stringify(snap)); sessionStorage.setItem('study-testday', '1'); }
   catch (e) { alert('This device doesn’t have room for a test day right now.'); return; }
   if (fresh) {   // only this device's copy, which End test puts back
-    const today = new Date().toDateString(), notToday = x => new Date(x.t).toDateString() !== today;
+    const today = day || ymd(Date.now()), notToday = x => ymd(x.t) !== today;
     ['spell-check-log', 'sheet-log', 'fixup-log'].forEach(k => { const l = store(k); if (Array.isArray(l)) store(k, l.filter(notToday)); });
     ['spell-check-latest', 'fixup-latest', 'study-day-agenda'].forEach(k => localStorage.removeItem(k));
     const wp = store('weather-progress'); if (wp && Array.isArray(wp.entries)) { wp.entries = wp.entries.filter(notToday); store('weather-progress', wp); }
   }
+  if (day) { sessionStorage.setItem('study-testday-date', day); location.reload(); return; }   // testclock.js moves the clock to that day on load
   renderTestBar(); show('kidhome'); window.scrollTo(0, 0); say('Test day. Nothing will be saved.', 1);
 }
 async function endTestDay() {
@@ -2758,9 +2762,11 @@ async function endTestDay() {
   const keys = []; for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
   keys.forEach(k => { if (!TEST_SKIP(k) && !(k in snap)) localStorage.removeItem(k); });
   Object.entries(snap).forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch (e) { } });
-  sessionStorage.removeItem('study-testday'); sessionStorage.removeItem('study-testday-snap');
-  daily = null; renderTestBar(); await cloudPull();
-  if (cloud.role === 'grownup') { location.href = 'index.html'; return; }   // started from Review Child's Day: back there
+  const fromParent = sessionStorage.getItem('study-testday-parent') || cloud.role === 'grownup';
+  ['study-testday', 'study-testday-snap', 'study-testday-date', 'study-testday-parent'].forEach(k => sessionStorage.removeItem(k));
+  daily = null; renderTestBar();
+  if (!window.TEST_CLOCK) await cloudPull();   // with the clock moved, skip it (this device's copy was just put back anyway)
+  if (fromParent) { location.href = 'index.html'; return; }   // started from Review Child's Day: back there
   show('kidhome'); window.scrollTo(0, 0);
 }
 /* Nov 11, 2026 (Dylan): "🧪 Test day" on Review Child's Day (index.html → spell.html#testday), the same as holding Test day on his
@@ -2768,10 +2774,14 @@ async function endTestDay() {
    today's results in the Study database. While it's on, coming back from a worksheet opens his start screen again; End test goes back
    to the main Study page. */
 async function parentTestDay() {
-  if (location.hash === '#testday') history.replaceState(null, '', location.pathname + location.search);
+  const m = location.hash.match(/^#testday(?:=(\d{4}-\d{2}-\d{2}))?/), day = (m && m[1]) || '';
+  if (m) history.replaceState(null, '', location.pathname + location.search);
   if (TESTDAY()) { renderTestBar(); show('kidhome'); return; }
-  todayPullAt = 0; await pullTodayResults();   // his results from today, so "from where his day is now" matches his iPad
-  show('kidhome'); askTestKind(() => { location.href = 'index.html'; });
+  const td = ymd(Date.now());
+  if (!day || day <= td) { todayPullAt = 0; await pullTodayResults(day && day < td ? day : ''); }   // his results from that day, so "from where his day is/ended" matches his iPad
+  try { sessionStorage.setItem('study-testday-parent', '1'); } catch (e) { }
+  if (!day || day === td) show('kidhome');
+  askTestKind(() => { sessionStorage.removeItem('study-testday-parent'); location.href = 'index.html'; }, day);
 }
 /* Test day: "Skip this part" in his daily routine (Look & Listen → practice → Sight Word Practice → quiz) */
 function skipDailyPart() {
@@ -2787,7 +2797,10 @@ function skipDailyPart() {
     return showResults();
   }
 }
-function renderTestBar() { $('testSkip').hidden = !TESTDAY(); $('testBar').hidden = !TESTDAY(); document.body.classList.toggle('testday', TESTDAY()); }
+function renderTestBar() {
+  $('testSkip').hidden = !TESTDAY(); $('testBar').hidden = !TESTDAY(); document.body.classList.toggle('testday', TESTDAY());
+  if (window.TEST_CLOCK) $('testBar').querySelector('span').innerHTML = `🧪 <b>Test day for ${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</b>: nothing is saved, so his real day stays the same.`;
+}
 $('kidTest').addEventListener('pointerdown', e => { e.preventDefault(); const b = $('kidTest'); b.classList.add('holding'); b._t = setTimeout(() => { b.classList.remove('holding'); askPin().then(ok => ok && askTestKind()); }, 2000); });
 ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => $('kidTest').addEventListener(ev, () => { clearTimeout($('kidTest')._t); $('kidTest').classList.remove('holding'); }));
 $('kidTest').addEventListener('contextmenu', e => e.preventDefault());
@@ -2811,7 +2824,7 @@ const cloudMember = () => !!(cloud.sb && cloud.user && cloud.role);
 function cloudClient() {
   if (cloud.sb) return cloud.sb;
   if (!window.supabase || !window.supabase.createClient) return null;
-  cloud.sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } });
+  cloud.sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: !window.TEST_CLOCK } });
   return cloud.sb;
 }
 function syncNote(t, bad) { const el = $('syncNote'); if (el) { el.textContent = t || ''; el.style.color = bad ? 'var(--try)' : ''; } }
@@ -3100,13 +3113,16 @@ function putLog(key, arr) {
   return false;
 }
 const withToday = (key, list) => { const kind = { 'sheet-log': 'sheet', 'fixup-log': 'fixup', 'spell-check-log': 'check' }[key]; const extra = cloudToday.day === new Date().toDateString() ? cloudToday[kind] : []; const ids = new Set(list.map(x => String(x.id))); return [...list, ...extra.filter(x => !ids.has(String(x.id)))]; };
-async function pullTodayResults() {
+async function pullTodayResults(day = '') {   // day (YYYY-MM-DD, for a grown-up's Test day on an earlier day): that day's results go into this device's copy
   if (todayPulling || Date.now() - todayPullAt < 20000 || !cloudMember() || sessionStorage.getItem('study-testday')) return;
   todayPulling = true; todayPullAt = Date.now();
   try {
-    const from = new Date(); from.setHours(0, 0, 0, 0);
-    const { data, error } = await cloud.sb.from('study_log').select('kind,t,data').in('kind', ['sheet', 'fixup', 'check']).gte('t', from.toISOString());
+    const from = day ? new Date(day + 'T00:00:00') : new Date(); from.setHours(0, 0, 0, 0);
+    let q = cloud.sb.from('study_log').select('kind,t,data').in('kind', ['sheet', 'fixup', 'check']).gte('t', from.toISOString());
+    if (day) { const to = new Date(from); to.setDate(to.getDate() + 1); q = q.lt('t', to.toISOString()); }
+    const { data, error } = await q;
     if (error || !data) return;
+    if (day) { data.forEach(r => { const key = { sheet: 'sheet-log', fixup: 'fixup-log', check: 'spell-check-log' }[r.kind], mine = store(key) || []; if (r.data && r.data.id != null && !mine.some(x => String(x.id) === String(r.data.id))) putLog(key, [...mine, r.data].sort((a, b) => a.t - b.t)); }); return; }
     const before = JSON.stringify([cloudToday.day, ...['sheet', 'fixup', 'check'].map(k => cloudToday[k].map(x => x.id))]);
     cloudToday = { day: new Date().toDateString(), sheet: [], fixup: [], check: [] };
     data.forEach(r => { if (r.data && r.data.id != null && cloudToday[r.kind]) cloudToday[r.kind].push(r.data); });
@@ -3211,7 +3227,7 @@ onlyCard(); window.addEventListener('hashchange', onlyCard);
   try { const { data } = await sb.auth.getSession(); await cloudSetUser(data.session && data.session.user); } catch (e) { }
   document.body.classList.remove('authwait');
   if (!cloud.user) show('gate');
-  else if (cloud.role === 'grownup' && (TESTDAY() || location.hash === '#testday')) parentTestDay();   // Nov 11: Test day from Review Child's Day
+  else if ((cloud.role === 'grownup' && (TESTDAY() || /^#testday/.test(location.hash))) || (TESTDAY() && sessionStorage.getItem('study-testday-parent'))) parentTestDay();   // Nov 11: Test day from Review Child's Day (any day)
   else show(location.hash === '#review' && cloud.role !== 'kid' ? 'review' : 'setup');
   sb.auth.onAuthStateChange((ev, sess) => { if (ev === 'SIGNED_OUT') { cloudSetUser(null); show('gate'); } });
 })();

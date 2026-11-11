@@ -330,6 +330,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 </style>
 </head>
 <body>
+<script src="testclock.js?v=1"></script>
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <a class="back" id="backLink" href="spell.html">← Back</a>
@@ -986,7 +987,7 @@ const MAILER_URL = 'https://script.google.com/macros/s/AKfycbzbr4Wpw4mrT6MbTViKI
 const SB_URL = 'https://wpgclwmssnmiidvnekml.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZ2Nsd21zc25taWlkdm5la21sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzE4NDUsImV4cCI6MjEwOTE0Nzg0NX0.o19X9l7zS1bk34DpR3id0gt6mAB42ZZb6olRr8ohzTc';
 let sbc = null;
-const sbClient = () => sbc || (window.supabase && window.supabase.createClient ? (sbc = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } })) : null);
+const sbClient = () => sbc || (window.supabase && window.supabase.createClient ? (sbc = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: !window.TEST_CLOCK } })) : null);
 async function loadAssignment() {
   if (params.get('try') === '1') return store('study-sheet-try');
   if (params.get('daily') === '1') return store('study-sheet-daily');
@@ -2124,7 +2125,7 @@ const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet
     document.addEventListener('click', e => { const a = e.target.closest('a[href]'); if (!a) return; e.preventDefault(); window.parent.postMessage({ studySheetDone: true, quit: a.id === 'backLink', rec: a.id === 'backLink' ? null : lastRec && JSON.parse(JSON.stringify(lastRec, slimRep)) }, location.origin); }, true);
   }
   if (TRY) addSkipButton();
-  if (TRY) { $('trybar').hidden = false; $('backLink').href = HOME; if (TESTDAY) $('trybar').textContent = '🧪 Test day: nothing is saved, so his real day stays the same.'; }
+  if (TRY) { $('trybar').hidden = false; $('backLink').href = HOME; if (TESTDAY) $('trybar').textContent = `🧪 Test day${window.TEST_CLOCK ? ` for ${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}` : ''}: nothing is saved, so his real day stays the same.`; }
   else {   // he has to be signed in to the Study (the sign-in screen is on the Spelling Helper page)
     try { const sb = sbClient(); if (sb) { const { data } = await sb.auth.getSession(); if (!data.session) { location.replace('spell.html'); return; } } } catch (e) { }
   }

@@ -1249,7 +1249,7 @@ async function openDay(ds) {
   document.getElementById('dayName').textContent = dayName(ds, true);
   document.getElementById('dayPrev').disabled = ds <= addDays(td, -30); document.getElementById('dayNext').disabled = ds >= addDays(td, 14);
   document.getElementById('dayToday').style.visibility = isToday ? 'hidden' : 'visible';
-  document.getElementById('dayTest').hidden = !isToday;   // Test day is always today   // keeps its space, so the arrows never move
+  document.getElementById('dayTest').href = isToday ? 'spell.html#testday' : `spell.html#testday=${ds}`;   // any day: the page acts as if it's that day   // keeps its space, so the arrows never move
   document.getElementById('dayHelp').textContent = isToday ? 'This is what his start screen shows right now, in order.' : future ? 'This is what his start screen will show that day, in order. Sight words: the list that’s on now, unless you change it before then.' : 'This is what was on his list that day, and what he finished.';
   wrap.hidden = false; list.innerHTML = '<p class="help">Loading…</p>';
   const sb = await studySession();

@@ -183,6 +183,7 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 </style>
 </head>
 <body>
+<script src="testclock.js?v=1"></script>
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <h1>Spelling Fix-Up</h1>
@@ -492,7 +493,7 @@ const app = $('app');
 /* ============ The words: from the sight word check (link), or the latest check on this device ============ */
 const TESTDAY = (() => { try { return sessionStorage.getItem('study-testday') === '1'; } catch (e) { return false; } })();
 if (TESTDAY) setTimeout(addSkipButton, 0);
-if (TESTDAY) document.body.insertAdjacentHTML('afterbegin', '<div style="background:#33270C;color:#FBBF24;text-align:center;font:600 15px Fredoka,sans-serif;padding:6px 12px">🧪 Test day: nothing is saved, so his real day stays the same.</div>');
+if (TESTDAY) document.body.insertAdjacentHTML('afterbegin', '<div style="background:#33270C;color:#FBBF24;text-align:center;font:600 15px Fredoka,sans-serif;padding:6px 12px">🧪 Test day' + (window.TEST_CLOCK ? ' for ' + new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : '') + ': nothing is saved, so his real day stays the same.</div>');
 const emailOn = () => { if (TESTDAY) return false; try { return (JSON.parse(localStorage.getItem('spell-settings') || '{}') || {}).email === true; } catch (e) { return false; } };   // results emails are off unless turned on (Parent Review always has them)
 const RESULTS_EMAIL = 'dylan.l.cosmos@gmail.com';
 const MAILER_URL = 'https://script.google.com/macros/s/AKfycbzbr4Wpw4mrT6MbTViKI3K7PxLnp1avmygg0E5_imNpjTaF_Za6smj70ay-e1tKEJQr/exec';   // Google Apps Script web app on Dylan's account (SpellingHelperMailer.gs): emails go from his Gmail to his Gmail
@@ -1102,7 +1103,7 @@ function saveWordFix(w, fix) {
   const all = wordFixes(), k = w.toLowerCase(), cur = { ...(all[k] || {}), ...fix, at: Date.now() };
   Object.keys(cur).forEach(x => { if (cur[x] === null) delete cur[x]; });
   if (cur.rec || cur.say) all[k] = cur; else delete all[k];
-  store('study-wordfix', all); (async () => { try { if (!window.supabase) return; const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } }); const { data } = await sb.auth.getSession(); if (!data.session || TESTDAY) return; await sb.from('study_state').upsert({ key: 'wordfix', data: all, updated_at: new Date().toISOString() }); } catch (e) { } })();
+  store('study-wordfix', all); (async () => { try { if (!window.supabase) return; const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: !window.TEST_CLOCK } }); const { data } = await sb.auth.getSession(); if (!data.session || TESTDAY) return; await sb.from('study_state').upsert({ key: 'wordfix', data: all, updated_at: new Date().toISOString() }); } catch (e) { } })();
 }
 
 /* ============ Grown-up PIN: on his device, every grown-up button asks for it after the hold (set on the grown-up's Daily Sight Words card).
@@ -1190,7 +1191,7 @@ async function cloudSaveFixup(rec) {
   const args = { key: `fixup:${rec.id}`, kind: 'fixup', t: rec.t, data: clean };
   try {
     if (!window.supabase) throw 0;
-    const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: true } });
+    const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: !window.TEST_CLOCK } });
     const { data } = await sb.auth.getSession(); if (!data.session) return;   // this device isn't signed in to the Study: stays on this device
     const r = await sb.from('study_log').upsert({ key: args.key, kind: 'fixup', t: new Date(rec.t).toISOString(), data: clean });
     if (r.error) throw r.error;
