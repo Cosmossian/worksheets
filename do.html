@@ -626,7 +626,7 @@ function say(text, rate = 0.9, log = true) {
   if (log) heardLog(text, rate);
   const busy = speechSynthesis.speaking || speechSynthesis.pending; speechSynthesis.cancel();
   return new Promise(res => {
-    let started = false, finished = false, tries = 0;
+    let started = false, finished = false, tries = 0, t0 = Date.now();
     const done = () => { if (!finished) { finished = true; res(); } };
     const make = () => {
       const u = new SpeechSynthesisUtterance(text);
@@ -638,13 +638,16 @@ function say(text, rate = 0.9, log = true) {
       return u;
     };
     // iPads sometimes drop the first thing said right after the microphone turns on: if it never starts, say it again once
-    const retry = () => { tries++; speechSynthesis.cancel(); setTimeout(() => { if (!finished) speechSynthesis.speak(make()); }, 150); };
+    const retry = () => { tries++; t0 = Date.now(); speechSynthesis.cancel(); setTimeout(() => { if (!finished) speechSynthesis.speak(make()); }, 150); };
     if (busy) setTimeout(() => speechSynthesis.speak(make()), 120); else speechSynthesis.speak(make());   // iPads can garble or skip a word spoken right after cutting off another
-    setTimeout(() => { if (!started && !finished && tries < 1) retry(); }, 1000);
-    // never wait forever if the voice gets stuck, but don't cut off a long sentence that's still being read (Nov 10: the old 7.5 s cap
-    // ended slow sentences early, and the next thing said cut them off); up to 15 s while the voice is still talking
-    const hardStop = Date.now() + 15000, guard = () => { if (finished) return; if (started && speechSynthesis.speaking && Date.now() < hardStop) return setTimeout(guard, 400); done(); };
-    setTimeout(guard, Math.min(7500, 2600 + text.length * 80));
+    setTimeout(() => { if (!started && !finished && tries < 1 && !speechSynthesis.speaking) retry(); }, 1000);   // Nov 12: only if nothing is playing (a late "started" signal used to restart or cut off the sentence)
+    // never wait forever if the voice gets stuck (Nov 10: the old 7.5 s cap ended slow sentences early)
+    /* Nov 12 (Dylan: on the quiz, Hear the sentence cut off part way): the iPad doesn't always say when it started or that it's still talking,
+       so this gave up early and the next thing said (the word again) cut the sentence off. Now it never moves on before the sentence has had
+       time to be said (about how long it takes at this speed), keeps waiting while the voice is talking, and gives up after 20 s at most. */
+    const est = Math.round((900 + text.length * 75) / rate), hardStop = Date.now() + Math.max(20000, est + 5000);
+    const guard = () => { if (finished) return; const now = Date.now(), talking = speechSynthesis.speaking || speechSynthesis.pending; if (now < hardStop && (talking || now < t0 + est)) return setTimeout(guard, 300); done(); };
+    setTimeout(guard, 1200);
   });
 }
 const fb = (text, rate = 0.9) => say(text, rate, false);   // feedback (cheers, hints): said, not logged for Replay
