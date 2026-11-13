@@ -507,7 +507,7 @@ LT.relearn.run = () => {
       ['rlAns', 'rlWhy', 'rlFact'].forEach(id => { const el = $(id); if (el) el.classList.remove('rl-hide'); });
       $('rlGo').disabled = false;
       $('rlGo').onclick = () => { gen++; if (canTalk) speechSynthesis.cancel();
-        mark('Learn It', q.q, true, '', q.answer, null, { text: `${q.q}${q.his ? ` Earlier he picked “${q.his}”.` : ''} The answer: ${q.answer}. ${q.why}${fact ? ` (${fact})` : ''}` }, ['learned it']); L_free(); done(); };
+        mark('Learn It', q.q, true, '', q.answer, null, { text: `${q.q}${q.his ? ` Earlier he picked “${q.his.replace(/[.!?]$/, '')}”.` : ''} The answer: ${q.answer.replace(/[.!?]$/, '')}. ${q.why}${fact ? ` (${fact})` : ''}` }, ['learned it']); L_free(); done(); };
     }));
     partDone('Now you know them!');
   };

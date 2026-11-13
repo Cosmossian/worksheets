@@ -2525,7 +2525,7 @@ function answerRows(list) {
     const letterKeys = /^[a-z]( [a-z])*$/.test(picks[0] || '') && picks.length === 1 && nrm(picks[0]).replace(/ /g, '') !== nrm(r.answer).replace(/ /g, '');   // a list of single letters (missing letters, chunks)
     const bank = r.shown && r.shown.bank ? `<div class="ans-ch">Word bank: ${r.shown.bank.map(c => `<span class="${isRight(c) ? 'r' : ''}">${esc(c)}</span>`).join('')}</div>` : '';
     const cg = chunkGroups(r.shown && r.shown.text, picks[0]);
-    const tries = cg ? `<div class="ans-picks">He typed each part (wrong letters crossed out): ${cg.map(x => `<b>${esc(x.part)}</b>: ${x.g.map(l => l.ok ? esc(l.c) : `<s class="w">${esc(l.c)}</s>`).join('')}`).join(' → ')}</div>` : picks.length ? `<div class="ans-picks">${ch ? 'He tapped' : letterKeys ? 'He typed these letters, in order' : 'He typed'}: ${picks.map((v, i) => `<span class="${letterKeys || /^line \d/.test(v) ? '' : isRight(v) ? 'r' : 'w'}">${picks.length > 1 ? `${i + 1}. ` : ''}${esc(v.replace(/^letters he typed: /, ''))}</span>`).join(' → ')}</div>` : '';
+    const tries = cg ? `<div class="ans-picks">He typed each part (wrong letters crossed out): ${cg.map(x => `<b>${esc(x.part)}</b>: ${x.g.map(l => l.ok ? esc(l.c) : `<s class="w">${esc(l.c)}</s>`).join('')}`).join(' → ')}</div>` : picks.length ? `<div class="ans-picks">${ch || r.part === 'Learn It' || r.part === 'Show Me' ? 'He tapped' : letterKeys ? 'He typed these letters, in order' : 'He typed'}: ${picks.map((v, i) => `<span class="${letterKeys || /^line \d/.test(v) ? '' : isRight(v) ? 'r' : 'w'}">${picks.length > 1 ? `${i + 1}. ` : ''}${esc(v.replace(/^letters he typed: /, ''))}</span>`).join(' → ')}</div>` : '';
     return `<div class="ans-row ${r.ok ? 'ok' : 'no'}"><div class="ans-h"><span class="mk">${r.ok ? '✓' : '✗'}</span><b>${esc(r.part)}</b><span>${esc(r.label)}</span></div>
       ${r.shown && r.shown.text ? `<div class="ans-saw">On his screen: ${esc(r.shown.text)}</div>` : ''}${r.shown && r.shown.img ? `<div class="traces"><figure><img src="${r.shown.img}" alt="What he wrote"><figcaption>written by hand</figcaption></figure></div>` : ''}${chips}${bank}${tries}
       ${r.answer ? `<div class="ans-right">Right answer: <b>${esc(r.answer)}</b></div>` : ''}</div>`;
@@ -2580,6 +2580,7 @@ function replaySteps(key) {
 function openReplay(key) { const r = replaySteps(key); if (!r || !r.steps.length) return; rp = { ...r, i: 0 }; $('replay').hidden = false; drawReplay(); }
 function drawReplay() {
   const st = rp.steps[rp.i], sh = st.shown || {}, picks = st.picks && st.picks.length ? st.picks : st.typed ? [st.typed] : [];
+  const info = st.part === 'Learn It' || st.part === 'Show Me';   // Learn It Again's teaching steps: nothing to spell or check (Nov 13)
   const n = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
   const isRight = v => n(v) === n(st.answer) || n(v).replace(/^(a|an|the) /, '') === n(st.answer).replace(/^(a|an|the) /, '');
   $('rpTitle').textContent = rp.title; $('rpCount').textContent = `Screen ${rp.i + 1} of ${rp.steps.length}`;
@@ -2610,14 +2611,14 @@ function drawReplay() {
     const cg = chunkGroups(text, picks[0]);
     if (cg) pick = `<div class="rp-saw">What he typed for each part (red = a wrong letter he fixed):</div><div class="rp-chunks">${cg.map(x => `<div class="rp-chunk"><small>${esc(x.part)}</small><div>${x.g.map(l => `<span class="rp-box ${l.ok ? 'g' : 'b'}">${esc(l.c)}</span>`).join('')}</div></div>`).join('<span class="rp-arrow">→</span>')}</div>`;
     else pick = `<div class="rp-saw">The letters he typed, in order:</div><div class="rp-keys">${picks[0].split(' ').map(c => `<span>${esc(c)}</span>`).join('')}</div>`;
-  } else if (picks.length && st.answer && !/^line \d/.test(picks[0])) {
+  } else if (picks.length && st.answer && !info && !/^line \d/.test(picks[0])) {
     const A = [...n(st.answer).replace(/ /g, '')];
     pick = picks.map((v, k) => { const L = [...String(v).toLowerCase().replace(/[^a-z0-9]/g, '')]; const cells = Array.from({ length: Math.max(L.length, A.length) }, (_, q) => L[q] ? `<span class="rp-box ${L[q] === A[q] ? 'g' : 'b'}">${esc(L[q])}</span>` : `<span class="rp-box e"></span>`).join('');
       return `<div class="rp-try"><small>${picks.length > 1 ? `Try ${k + 1}` : 'He put'}</small>${cells}</div>`; }).join('');
   } else if (picks.length && st.part !== 'Look & Say') pick = `<div class="rp-keys" style="flex-direction:column">${picks.map(v => `<div>${esc(v)}</div>`).join('')}</div>`;
   const bank = sh.bank ? `<div class="rp-bank">${sh.bank.map(c => `<span class="${isRight(c) ? 'r' : ''}">${esc(c)}</span>`).join('')}</div>` : '';
   $('rpScreen').innerHTML = `<p class="rp-part">${esc(st.part)}</p>${text && !saw.includes(esc(text)) && !saw.includes(esc(text.split('___')[0])) && !st.img ? `<p class="rp-sub">${esc(text)}</p>` : ''}${saw}${hear}${keysTapped}${said}${bank}${pick}
-    <div class="rp-verdict ${st.ok ? 'ok' : 'no'}">${st.part === 'Look & Say' ? (st.ok ? '✓ Said it 3 times' : '✗ Didn’t finish all 3') : !st.answer && !st.img ? 'His pick (nothing to check against)' : st.ok ? '✓ Right the first time' : '✗ Not the first time'}${st.answer && !st.img ? ` · right answer: ${esc(st.answer)}` : ''}</div>`;
+    <div class="rp-verdict ${st.ok ? 'ok' : 'no'}">${st.part === 'Look & Say' ? (st.ok ? '✓ Said it 3 times' : '✗ Didn’t finish all 3') : info ? `✓ Done${st.typed ? ` · ${esc(st.typed)}` : ''}` : !st.answer && !st.img ? 'His pick (nothing to check against)' : st.ok ? '✓ Right the first time' : '✗ Not the first time'}${st.answer && !st.img && !info ? ` · right answer: ${esc(st.answer)}` : ''}</div>`;
   $('rpBack').disabled = rp.i === 0; $('rpNext').textContent = rp.i < rp.steps.length - 1 ? 'Next →' : 'Done ✓';
   $('rpScreen').querySelectorAll('[data-rpclip]').forEach(b => b.onclick = async () => { b.disabled = true; const d = await cloudGetAudio(b.dataset.rpclip); b.disabled = false; if (d) playClip(d); else b.textContent = 'Not saved'; });
   $('rpScreen').querySelectorAll('[data-rpsay]').forEach(b => b.onclick = () => { const h = sh.heard[+b.dataset.rpsay]; h.w ? playWord(h.w) : say(h.t, h.r || 0.9); });
