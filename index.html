@@ -351,6 +351,7 @@ body.schoolmode .tabs { display: none; }
   <button role="tab" data-tool="seasons">Four Seasons</button>
   <button role="tab" data-tool="seacycle">Seasonal Cycle</button>
   <button role="tab" data-tool="quiz">Quiz</button>
+  <button role="tab" data-tool="relearn">🧠 Learn It Again</button>
   <button role="tab" data-tool="tenmore">10 More or Less</button>
   <button role="tab" data-tool="sound">Sound Investigator</button>
   <button role="tab" data-tool="story">Story Time</button>
@@ -934,7 +935,7 @@ function countEagles() {
 
 </script>
 <script src="lessons.js?v=12"></script>
-<script src="science.js?v=4"></script>
+<script src="science.js?v=5"></script>
 <script>
 /* First Grade Fun Worksheets — the page you use to make worksheets. */
 
@@ -1208,7 +1209,7 @@ const CLASSES = [
   { id: 'music', name: 'Music', icon: '🎵', tools: [] },
   { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['daily', 'helper', 'sight', 'master', 'fixup', 'fixit', 'sound', 'story', 'readaloud', 'chains', 'heart'] },
   { id: 'pe', name: 'PE', icon: '🏃', tools: [] },
-  { id: 'science', name: 'Science', icon: '🔬', tools: ['weather', 'seasons', 'seacycle', 'quiz'] },
+  { id: 'science', name: 'Science', icon: '🔬', tools: ['weather', 'seasons', 'seacycle', 'quiz', 'relearn'] },
   { id: 'social', name: 'Social Studies', icon: '🌎', tools: [] },
   { id: 'every', name: 'Every Day', icon: '📋', tools: ['steps', 'chores'] }
 ];
@@ -1310,6 +1311,27 @@ async function openDay(ds) {
         window.__autoFix = window.__autoFix || {}; window.__autoFix[k] = { id: 'try', tool: 'fixit', title: '🛠️ Let’s fix our mistakes from earlier', data: { words: (pending.length ? pending : all).map(({ w, his }) => ({ w, his })), trace: 2 } };
         items.push({ title: `🛠️ Extra help: Let’s fix our mistakes from earlier · ${(pending.length ? pending : all).length}`, sub: `${shownW}<br>Added by itself from ${froms.length ? esc(froms.join('; ')) : 'his worksheets'} · hear it, trace it, spell it`,
           st: pending.length ? (last ? `new words since · last time ${g ? `${g.letter} (${g.pct}%)` : 'done'}` : 'not done yet') : `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}${autoF.length > 1 ? ` · ${autoF.length} tries` : ''}`,
+          ok: !pending.length, acts: `<button class="btn btn-small" data-tryauto="${k}">Try it</button>` });
+      }
+    }
+    // 🧠 Extra help: Learn It Again puts itself on his day for quiz questions he missed (spell.html autoRelearn; same rules here)
+    if (!future && !((S.sheets && S.sheets.list) || []).some(a => a.tool === 'relearn' && onList(a, ds, doneDays))) {
+      const dl = L.filter(x => x.kind === 'sheet' && today(x)), fixes = dl.filter(x => x.tool === 'relearn'), miss = new Map();
+      const qsOf = aid => ((((S.sheets && S.sheets.list) || []).find(a => a.id === aid) || {}).data || {}).qs || [];
+      dl.filter(x => x.tool === 'quiz').sort((a, b) => a.t - b.t).forEach(r => (r.items || []).forEach(it => {
+        if (it.part !== 'Quiz' || it.ok || !it.answer) return;
+        const sh = it.shown || {}, src = qsOf(r.aid).find(x => x.q === it.label) || (typeof S_whyFor === 'function' && S_whyFor(it.label)) || {};
+        miss.set(it.label, { q: it.label, choices: sh.choices || src.choices || [], answer: it.answer, why: sh.why || src.why || '', his: it.typed || '', t: r.t, from: r.title || '' });
+      }));
+      const fixedAfter = (q, t) => { const tries = fixes.filter(f => f.t > t).sort((a, b) => a.t - b.t).flatMap(f => (f.items || []).filter(x => x.part === 'Check It' && x.label === q)); return tries.length > 0 && !!tries.at(-1).ok; };
+      const all = [...miss.values()], pending = all.filter(m => !fixedAfter(m.q, m.t));
+      const autoR = fixes.filter(f => String(f.aid || '').startsWith('relearn-auto-')).sort((a, b) => b.t - a.t), last = autoR[0];
+      if (all.length) {
+        const shown = (pending.length ? pending : all), froms = [...new Set(all.map(m => m.from).filter(Boolean))];
+        const g = last && last.grade, k = 'auto' + Date.now().toString(36) + 'q';
+        window.__autoFix = window.__autoFix || {}; window.__autoFix[k] = { id: 'try', tool: 'relearn', title: '🧠 Let’s learn it again', data: { qs: shown.map(({ t, from, ...q }) => q) } };
+        items.push({ title: `🛠️ Extra help: Let’s learn it again · ${shown.length}`, sub: `${shown.map(m => `${esc(m.q)} <b>${esc(m.answer)}</b>${m.his ? ` <s style="opacity:.7">${esc(m.his)}</s>` : ''}`).join('<br>')}<br>Added by itself from ${froms.length ? esc(froms.join('; ')) : 'his quizzes'} · learn it, show it, answer it again`,
+          st: pending.length ? (last ? `still to learn · last time ${g ? `${g.letter} (${g.pct}%)` : 'done'}` : 'not done yet') : `✓ done${autoR.length > 1 ? ` · ${autoR.length} tries` : ''}`,
           ok: !pending.length, acts: `<button class="btn btn-small" data-tryauto="${k}">Try it</button>` });
       }
     }

@@ -598,7 +598,7 @@ const COLORS = ['#3C7DD9', '#0F9F8F', '#8B5CF6', '#EA580C', '#DB2777', '#16A34A'
 </script>
 <script src="handcheck.js?v=2"></script>
 <script src="lessons.js?v=12"></script>
-<script src="science.js?v=4"></script>
+<script src="science.js?v=5"></script>
 <script>
 /* ============ Talking, keys, little helpers (same as the Fix-Up page) ============ */
 const canTalk = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
@@ -996,7 +996,8 @@ async function loadAssignment() {
   if (params.get('daily') === '1') return store('study-sheet-daily');
   const id = params.get('a'); if (!id) return null;
   let a = ((store('study-sheets') || {}).list || []).find(x => x.id === id);
-  if (!a && id.startsWith('fixit-auto-')) { const fx = store('study-fixit-auto'); if (fx && fx.id === id) a = fx; }   // 🛠️ Extra help that put itself on his day (spell.html autoFixit)
+  if (!a && id.startsWith('fixit-auto-')) { const fx = store('study-fixit-auto'); if (fx && fx.id === id) a = fx; }
+  if (!a && id.startsWith('relearn-auto-')) { const rl = store('study-relearn-auto'); if (rl && rl.id === id) a = rl; }   // 🧠 Learn It Again (spell.html autoRelearn)   // 🛠️ Extra help that put itself on his day (spell.html autoFixit)
   if (!a) {
     try {
       const sb = sbClient(); const { data: s } = await sb.auth.getSession();

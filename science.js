@@ -316,7 +316,7 @@ LT.quiz.run = () => {
       setMsg(ok ? 'Yes! You got it! ⭐' : `The answer is: ${q.answer}.`, ok ? 'good' : 'try');
       if (q.why) $('io').insertAdjacentHTML('beforeend', `<div class="s-why">💡 ${L_esc(q.why)}</div>`);
       fb((ok ? 'Yes! ' : `The answer is ${q.answer}. `) + (q.why || ''), 0.9);
-      mark('Quiz', q.q, ok, first.c, q.answer, null, { text: q.q, choices: q.choices, choiceHtml: Object.fromEntries(q.choices.map(c => [c, S_choicePic(c) ? S_art(S_choicePic(c), 60) : ''])) }, [first.c]);
+      mark('Quiz', q.q, ok, first.c, q.answer, null, { text: q.q, why: q.why, choices: q.choices, choiceHtml: Object.fromEntries(q.choices.map(c => [c, S_choicePic(c) ? S_art(S_choicePic(c), 60) : ''])) }, [first.c]);
       $('io').insertAdjacentHTML('beforeend', `<div class="row acts"><button class="btn big primary" id="nx">${i < d.qs.length - 1 ? 'Next question →' : 'See my stars →'}</button></div>`);
       await new Promise(rr => { $('nx').onclick = rr; });
       res();
@@ -328,4 +328,239 @@ LT.quiz.run = () => {
   };
   PARTS = [{ name: 'Quiz', run: ask }];
   return { intro: `${d.heading}: ${d.qs.length} questions. Listen to each one and tap your answer!` };
+};
+
+/* =====================================================================
+   🧠 Learn It Again (Nov 13, 2026). Dylan: he got "How long does it take for the Earth to spin once on its axis?" wrong on the
+   Seasons Quiz (picked one year), "need extra help developed for this". Extra help for quiz questions he missed, like Fix My Spelling
+   Mistakes is for spelling: his device adds it by itself (spell.html autoRelearn) under 🛠️ Extra help, and a grown-up can assign it.
+   Each question: Learn It (what he picked, the right answer with its picture, why, and what his pick really means), Show Me (hands-on,
+   when there is one for the idea: spin the Earth once = one day; take it around the sun = one year), then Check It (the question again,
+   new order, one try: the only graded part). A question stays on his day until his latest Check It try at it was right.
+   Data { qs: [{ q, choices, answer, why, his }] }.
+   ===================================================================== */
+// the "why" of a question from the built-in school quizzes (older results didn't save it)
+function S_whyFor(q) {
+  const k = String(q || '').trim().toLowerCase();
+  for (const sc of Object.values(LT.quiz.schools || {})) { const f = S_quizParse(sc.set().questions).find(x => x.q.toLowerCase() === k); if (f) return f; }
+  return null;
+}
+// what a (wrong) choice really means, so he learns from his pick
+function S_factFor(c) {
+  const x = String(c || '').toLowerCase();
+  if (/week/.test(x)) return 'One week is 7 days. The Earth spins 7 times in one week.';
+  if (/year|365/.test(x)) return 'One year is how long the Earth takes to go all the way around the sun. That’s 365 days, much longer than one spin!';
+  if (/month/.test(x)) return 'One month is about 30 days.';
+  if (/moon/.test(x)) return 'The moon goes around the Earth. The Earth goes around the sun.';
+  if (/mars/.test(x)) return 'Mars is another planet. It goes around the sun too.';
+  if (/closer/.test(x)) return 'The Earth isn’t closer to the sun in summer. It’s the tilt: our part of the Earth leans toward the sun.';
+  if (/bigger/.test(x)) return 'The sun stays the same size all year.';
+  if (/\bsummer\b/.test(x)) return 'Summer is the hottest season, with the most direct sunlight.';
+  if (/\bwinter\b/.test(x)) return 'Winter is the coldest season. It can be snowy.';
+  if (/\bspring\b/.test(x)) return 'Spring comes after winter. It gets warmer, it rains more, and flowers grow.';
+  if (/\b(fall|autumn)\b/.test(x)) return 'Fall comes after summer. It gets cooler and the leaves change colors.';
+  return '';
+}
+// which hands-on demos fit a question: spin (one day) and/or orbit (one year)
+function S_demosFor(q) {
+  const t = `${q.q} ${q.answer}`.toLowerCase(), his = String(q.his || '').toLowerCase(), out = [];
+  if (/spin|axis|day and night|24 hours/.test(t)) out.push('spin');
+  if (/orbit|around the sun|365|one year/.test(t) || (out.includes('spin') && /year|365/.test(his))) out.push('orbit');
+  if (out.includes('spin') && /week/.test(his)) out.push('week');
+  return out;
+}
+const S_RL_TITLE = '🧠 Let’s learn it again';
+Object.assign(LT, {
+  relearn: {
+    name: 'Learn It Again (quiz mistakes)', cls: 'science', noSchool: true,
+    help: 'Extra help for quiz questions he got wrong. Each question: he sees what he picked and the right answer with its picture, hears why, and learns what his pick really means. When there’s a hands-on part for the idea (spin the Earth once = one day, take it around the sun = one year), he does it. Then he answers the question again (the only graded part). On his device it shows under “🛠️ Extra help”. You don’t have to assign it for today’s quizzes: his device adds it by itself as soon as he misses a quiz question.',
+    schools: {},
+    own: () => ({ questions: '' }),
+    fields: () => [
+      { k: 'questions', label: 'Questions', type: 'area', rows: 6, help: 'Like the Quiz: question | choice | choice | answer // why. To show him what he picked, add it at the end after >> (… // why >> one year). The 📥 buttons fill this in from his quiz results.' }
+    ],
+    acts: () => [['today', '📥 Load his quiz mistakes from today'], ['week', '📥 From the last 7 days']],
+    act: (a, c) => S_loadQuizMisses(a === 'today' ? 0 : 6, c),
+    title: () => S_RL_TITLE,
+    data: c => ({ qs: String(c.questions || '').split('\n').map(l => { const [main, his = ''] = l.split('>>'); const q = S_quizParse(main)[0]; return q ? { q: q.q, choices: q.choices, answer: q.answer, why: q.why, his: his.trim() } : null; }).filter(Boolean).slice(0, 8) }),
+    check: d => d.qs.length ? '' : 'Type the questions, or tap 📥 to load his quiz mistakes.'
+  }
+});
+L_IDS.push('relearn');
+L_CLASS_OF.relearn = 'science';
+// the quiz questions he missed (Study database + this device), as Learn It Again lines
+async function S_loadQuizMisses(days, c) {
+  await new Promise(r => setTimeout(r));
+  const msg = t => { const el = document.getElementById('lsLoad'); if (el) el.textContent = t; };
+  msg('Looking for his quiz mistakes…');
+  const from = new Date(); from.setHours(0, 0, 0, 0); from.setDate(from.getDate() - days);
+  let recs = [];
+  try { const sb = sbClient(); if (sb) { const { data } = await sb.from('study_log').select('t,data').eq('kind', 'sheet').gte('t', from.toISOString()); recs = (data || []).map(r => r.data).filter(Boolean); } } catch (e) { }
+  try { (store('sheet-log') || []).forEach(r => { if (r && r.t >= +from && !recs.some(x => x.id === r.id)) recs.push(r); }); } catch (e) { }
+  const got = new Map();
+  recs.filter(r => r.tool === 'quiz').sort((a, b) => a.t - b.t).forEach(r => (r.items || []).forEach(it => {
+    if (it.part !== 'Quiz' || it.ok || !it.answer) return;
+    const sh = it.shown || {}, f = S_whyFor(it.label), choices = sh.choices || (f && f.choices) || [];
+    if (choices.length < 2) return;
+    got.set(it.label.toLowerCase(), `${it.label} | ${choices.join(' | ')} | ${it.answer}${sh.why || (f && f.why) ? ` // ${sh.why || f.why}` : ''}${it.typed ? ` >> ${it.typed}` : ''}`);
+  }));
+  if (!got.size) { msg(days ? 'No quiz mistakes in the last 7 days. 🎉' : 'No quiz mistakes today. 🎉 (Results show up here once he finishes a quiz.)'); return; }
+  const lines = String(c.questions || '').split('\n').filter(l => l.trim()), have = lines.map(l => l.split('|')[0].trim().toLowerCase());
+  const add = [...got].filter(([k]) => !have.includes(k));
+  c.questions = [...lines, ...add.map(([, l]) => l)].join('\n');
+  if (typeof save === 'function') save();
+  if (typeof renderPanel === 'function') renderPanel();
+  msg(add.length ? `Added ${add.length} question${add.length > 1 ? 's' : ''}.` : 'Those questions are already in the list.');
+}
+if (!L_IN_DO) LT.relearn.print = (d, exact) => L_sheetOf(nameDate() + title('Let’s learn it again', 'Read it, then circle the answer', star('#22C55E'), star('#F59E0B'))
+  + `<div style="display:flex;flex-direction:column;gap:16px;padding:6px 30px">${d.qs.map((q, i) => { const p = S_choicePic(q.answer);
+    return `<div><div style="font:600 21px Andika,sans-serif"><b>${i + 1}.</b> ${L_esc(q.q)}</div><div style="display:flex;gap:12px;align-items:center;padding:6px 0 0 26px">${p ? S_art(p, 60) : ''}<div style="font-size:18px"><b>Answer: ${L_esc(q.answer)}</b>${q.why ? `<br>${L_esc(q.why)}` : ''}</div></div><div style="display:flex;flex-wrap:wrap;gap:10px;padding:8px 0 0 26px"><span style="font-size:16px;color:#475569">Now circle it:</span>${L_shuf(q.choices).map(c => `<span style="border:2px solid #94A3B8;border-radius:999px;padding:3px 14px;font-size:18px">${L_esc(c)}</span>`).join('')}</div></div>`; }).join('')}</div>`, exact, { gap: 10 });
+
+if (L_IN_DO) { const st = document.createElement('style'); st.textContent = `
+  .rl-q { font:600 24px Andika,sans-serif; } .rl-was { font:600 22px Fredoka,sans-serif; color:#FCA5A5; display:flex; align-items:center; gap:8px; justify-content:center; }
+  .rl-was s { color:#F87171; text-decoration-thickness:3px; } .rl-was svg, .rl-ans svg { flex:none; }
+  .rl-ans { display:flex; align-items:center; gap:12px; justify-content:center; background:#0E2A1F; border:3px solid var(--good); border-radius:16px; padding:8px 16px; width:min(640px,94vw); font:700 28px Fredoka,sans-serif; color:#BBF7D0; }
+  .rl-fact { background:#2A1F0E; border:2px solid #F59E0B; border-radius:14px; padding:10px 14px; font-size:20px; width:min(640px,94vw); color:#FDE68A; }
+  .rl-hide { visibility:hidden; } .rl-demo { width:min(760px,96vw,110vh); touch-action:none; display:block; background:#0B1324; border-radius:20px; cursor:grab; }
+  .s-card .rl-big { font:700 30px Fredoka,sans-serif; } .rl-cmp { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; } .rl-cmp .s-card { width:min(300px,44vw); }
+`; document.head.appendChild(st); }
+
+LT.relearn.run = () => {
+  const d = SD, QS = (d.qs || []).map(q => { const f = !q.why || !q.choices ? S_whyFor(q.q) : null; return { ...q, why: q.why || (f && f.why) || '', choices: q.choices && q.choices.length ? q.choices : (f ? f.choices : [q.answer]) }; });
+  const pic = (c, s = 56) => { const p = S_choicePic(c); return p ? S_art(p, s) : ''; };
+  const learn = async () => {
+    await each(QS.length, i => new Promise(async done => {
+      const q = QS[i], fact = q.his && q.his.toLowerCase() !== q.answer.toLowerCase() ? S_factFor(q.his) : '';
+      app.innerHTML = L_exactTag() + head('Let’s learn this one again!') + L_count(i, QS.length, 'Question')
+        + `<div class="s-card"><div class="rl-q">${L_esc(q.q)}</div></div><button class="btn" id="hearQ">${SPK}Hear it again</button>`
+        + (q.his ? `<div class="rl-was" id="rlWas">Earlier you picked ${pic(q.his, 40)}<s>${L_esc(q.his)}</s></div>` : '')
+        + `<div class="rl-ans rl-hide" id="rlAns">${pic(q.answer, 64)}<span>${L_esc(q.answer)} ✓</span></div>`
+        + (q.why ? `<div class="s-why rl-hide" id="rlWhy">💡 ${L_esc(q.why)}</div>` : '')
+        + (fact ? `<div class="rl-fact rl-hide" id="rlFact"><b>What about ${L_esc(q.his)}?</b> ${L_esc(fact)}</div>` : '')
+        + `<div class="row acts"><button class="btn big primary" id="rlGo" disabled>I got it →</button></div>`;
+      let gen = 0;
+      const tell = async () => {
+        const my = ++gen, ok = () => my === gen, show = id => { const el = $(id); if (el) el.classList.remove('rl-hide'); };
+        await say(q.q, 0.9); if (!ok()) return;
+        if (q.his) { await say(`Earlier you picked ${q.his}.`, 0.9); if (!ok()) return; }
+        show('rlAns'); await say(`The answer is ${q.answer}.`, 0.9); if (!ok()) return;
+        if (q.why) { show('rlWhy'); await say(q.why, 0.9); if (!ok()) return; }
+        if (fact) { show('rlFact'); await say(`What about ${q.his}? ${fact}`, 0.9); }
+      };
+      $('hearQ').onclick = () => { if (canTalk) speechSynthesis.cancel(); tell(); };
+      await Promise.race([tell(), wait(30000)]);
+      ['rlAns', 'rlWhy', 'rlFact'].forEach(id => { const el = $(id); if (el) el.classList.remove('rl-hide'); });
+      $('rlGo').disabled = false;
+      $('rlGo').onclick = () => { gen++; if (canTalk) speechSynthesis.cancel();
+        mark('Learn It', q.q, true, '', q.answer, null, { text: `${q.q}${q.his ? ` Earlier he picked “${q.his}”.` : ''} The answer: ${q.answer}. ${q.why}${fact ? ` (${fact})` : ''}` }, ['learned it']); L_free(); done(); };
+    }));
+    partDone('Now you know them!');
+  };
+
+  /* ---- Show Me: the Earth spins once = one day (seen from above the North Pole, so it turns counterclockwise; the sun is on the left,
+     the night side is on the right). Our house starts at sunrise (top); 90° = noon, 180° = sunset, 270° = midnight, 360° = morning again. */
+  const turnDemo = (draw, { per = 45, label = 'Spin it ↺', speak = () => '', cx, cy }) => new Promise(res => {
+    let prog = 0, last = null, busy = false, finished = false, said = new Set();
+    const box = $('demo'), set = p => {
+      prog = Math.max(0, Math.min(360, p)); box.innerHTML = draw(prog);
+      const line = speak(prog, said); if (line) fb(line, 0.95);
+      if (prog >= 360 && !finished) { finished = true; box.onpointerdown = box.onpointermove = box.onpointerup = null; $('turn').disabled = true; res(); }
+    };
+    box.onpointerdown = e => { if (finished) return; box.setPointerCapture && box.setPointerCapture(e.pointerId); const r = box.getBoundingClientRect(), s = r.width / 640; last = Math.atan2(e.clientY - r.top - cy * s, e.clientX - r.left - cx * s) * 180 / Math.PI; };
+    box.onpointermove = e => { if (last === null || finished) return; const r = box.getBoundingClientRect(), s = r.width / 640, a = Math.atan2(e.clientY - r.top - cy * s, e.clientX - r.left - cx * s) * 180 / Math.PI; let dlt = a - last; if (dlt > 180) dlt -= 360; if (dlt < -180) dlt += 360; last = a; if (Math.abs(dlt) < 40) set(prog - dlt); };
+    box.onpointerup = box.onpointercancel = () => { last = null; };
+    $('turn').textContent = label;
+    $('turn').onclick = () => { if (busy || finished) return; busy = true; const from = prog, to = Math.min(360, prog + per), t0 = performance.now();
+      const step = now => { const k = Math.min(1, (now - t0) / 650); set(from + (to - from) * k); if (k < 1 && !finished) requestAnimationFrame(step); else busy = false; }; requestAnimationFrame(step); };
+    set(0);
+  });
+  const house = `<g><rect x="-9" y="-16" width="18" height="14" fill="#FDE68A" stroke="#1F2937" stroke-width="2"/><path d="M-12 -15 L0 -26 L12 -15Z" fill="#DC2626" stroke="#1F2937" stroke-width="2"/><rect x="-3" y="-9" width="6" height="7" fill="#7C4A1E"/></g>`;
+  const spinScene = a => {
+    const ex = 410, ey = 180, R = 105, hr = a / 15, night = a > 180 && a < 360, h = Math.round(hr);
+    const when = a < 1 ? 'Sunrise: morning! 🌅' : a < 80 ? 'Morning ☀️' : a < 100 ? 'Noon ☀️' : a < 170 ? 'Afternoon ☀️' : a < 190 ? 'Sunset 🌇' : a < 260 ? 'Night 🌙' : a < 280 ? 'Middle of the night 🌙' : a < 359 ? 'Night 🌙 (almost morning)' : 'Morning again! 🌅';
+    const clockA = (hr / 24) * 360;
+    return `<svg viewBox="0 0 640 360" style="width:100%;display:block" aria-label="Spin the Earth">${Array.from({ length: 30 }, (_, i) => `<circle cx="${(i * 97) % 640}" cy="${(i * 53) % 360}" r="1.2" fill="#E2E8F0" opacity=".5"/>`).join('')}
+      <circle cx="40" cy="180" r="70" fill="#FACC15"/><circle cx="40" cy="180" r="86" fill="#FACC15" opacity=".22"/><text x="60" y="186" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="20" font-weight="700" fill="#92400E">Sun</text>
+      ${[120, 150, 180, 210, 240].map(y => `<line x1="128" y1="${y}" x2="${ex - R - 8}" y2="${y}" stroke="#FDE68A" stroke-width="3" opacity=".4" stroke-dasharray="8 7"/>`).join('')}
+      <defs><clipPath id="rlE"><circle cx="${ex}" cy="${ey}" r="${R}"/></clipPath></defs>
+      <circle cx="${ex}" cy="${ey}" r="${R}" fill="#2563EB" stroke="#1E3A8A" stroke-width="4"/>
+      <g transform="rotate(${-a} ${ex} ${ey})"><g clip-path="url(#rlE)" fill="#22C55E"><path d="M${ex - 60} ${ey - 40} q30 -30 60 -6 q-8 34 -40 28 q-26 8 -20 -22z"/><path d="M${ex + 20} ${ey + 10} q40 -14 56 18 q-14 40 -48 26z"/><path d="M${ex - 70} ${ey + 40} q20 -6 30 10 q-10 20 -26 10z"/></g>
+        <g transform="translate(${ex} ${ey - R + 4}) scale(1.7)">${house}</g></g>
+      <path d="M${ex} ${ey - R} A${R} ${R} 0 0 1 ${ex} ${ey + R}Z" fill="#020617" opacity=".6"/>
+      <circle cx="${ex}" cy="${ey}" r="5" fill="#F8FAFC"/>
+      <path d="M${ex + 70} ${ey - R - 22} A${R + 24} ${R + 24} 0 0 0 ${ex - 70} ${ey - R - 22}" fill="none" stroke="#94A3B8" stroke-width="3" stroke-dasharray="6 6"/><path d="M${ex - 70} ${ey - R - 22} l12 -10 l-2 14z" fill="#94A3B8"/>
+      <g transform="translate(588 70)"><circle r="40" fill="#fff" stroke="#1E3A5F" stroke-width="4"/>${Array.from({ length: 24 }, (_, i) => `<line x1="0" y1="-34" x2="0" y2="${i % 6 ? -31 : -27}" stroke="#1E3A5F" stroke-width="2" transform="rotate(${i * 15})"/>`).join('')}<path d="M0 0 L0 -36 A36 36 0 ${clockA > 180 ? 1 : 0} 1 ${36 * Math.sin(clockA * Math.PI / 180)} ${-36 * Math.cos(clockA * Math.PI / 180)}Z" fill="#FACC15" opacity=".6"/><line x1="0" y1="0" x2="${30 * Math.sin(clockA * Math.PI / 180)}" y2="${-30 * Math.cos(clockA * Math.PI / 180)}" stroke="#1E3A5F" stroke-width="4" stroke-linecap="round"/></g>
+      <text x="588" y="140" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="24" font-weight="700" fill="#F8FAFC">${h} hour${h === 1 ? '' : 's'}</text>
+      <text x="410" y="345" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="24" font-weight="700" fill="${night ? '#A5B4FC' : '#FDE68A'}">${when}</text>
+      <text x="${ex - R + 30}" y="${ey + 6}" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="15" fill="#0B1324" font-weight="700">day</text><text x="${ex + R - 34}" y="${ey + 6}" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="15" fill="#CBD5E1" font-weight="700">night</text></svg>`;
+  };
+  const spinSpeak = (a, said) => { const at = [[90, 'Noon! The sun is right in front of our house.'], [180, 'Sunset! Our house is turning away from the sun.'], [270, 'Night time! Our house is on the dark side.'], [360, 'Morning again! One whole spin. That took 24 hours. That’s one day!']].find(([v]) => a >= v && !said.has(v)); if (!at) return ''; said.add(at[0]); return at[1]; };
+  // the Earth going around the sun once = one year: 365 days, and it spins once every day on the way
+  const orbitScene = a => {
+    const cx = 320, cy = 190, r = 140, th = -a * Math.PI / 180, ex = cx + r * Math.cos(th), ey = cy + r * Math.sin(th), days = Math.round(a / 360 * 365);
+    return `<svg viewBox="0 0 640 380" style="width:100%;display:block" aria-label="Take the Earth around the sun">${Array.from({ length: 34 }, (_, i) => `<circle cx="${(i * 97) % 640}" cy="${(i * 53) % 380}" r="1.2" fill="#E2E8F0" opacity=".5"/>`).join('')}
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#334155" stroke-width="3" stroke-dasharray="7 8"/>
+      ${a > 0.5 ? `<path d="M${cx + r} ${cy} A${r} ${r} 0 ${a > 180 ? 1 : 0} 0 ${ex} ${ey}" fill="none" stroke="#38BDF8" stroke-width="6" stroke-linecap="round" opacity=".7"/>` : ''}
+      <circle cx="${cx}" cy="${cy}" r="48" fill="#FACC15"/><circle cx="${cx}" cy="${cy}" r="60" fill="#FACC15" opacity=".22"/><text x="${cx}" y="${cy + 7}" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="20" font-weight="700" fill="#92400E">Sun</text>
+      <g transform="translate(${ex} ${ey})"><circle r="26" fill="#2563EB" stroke="#1E3A8A" stroke-width="3"/><g transform="rotate(${-days * 360})"><path d="M-14 -8 q8 -8 16 0 q-4 10 -12 6z M2 6 q10 -4 14 6 q-6 8 -12 4z" fill="#22C55E"/></g></g>
+      <text x="20" y="40" font-family="Fredoka, sans-serif" font-size="24" font-weight="700" fill="#F8FAFC">Days: ${days}</text><text x="20" y="70" font-family="Fredoka, sans-serif" font-size="18" fill="#CBD5E1">Spins: ${days}</text>
+      <text x="${cx}" y="370" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="20" font-weight="700" fill="#FDE68A">${a >= 360 ? 'All the way around: one year! 🎉' : 'Take the Earth around the sun ↺'}</text></svg>`;
+  };
+  const orbitSpeak = (a, said) => { const at = [[90, 'Keep going! The Earth spins once every day on the way.'], [180, 'Halfway around the sun. About 182 days!'], [360, 'All the way around the sun! That took 365 days. That’s one year!']].find(([v]) => a >= v && !said.has(v)); if (!at) return ''; said.add(at[0]); return at[1]; };
+
+  const showMe = async () => {
+    const want = new Set(QS.flatMap(S_demosFor));
+    if (want.has('spin') && !stepSkip()) {
+      app.innerHTML = L_exactTag() + head('Spin the Earth one time! Turn it with your finger, or tap the button.') + `<div class="rl-demo" id="demo"></div><div class="message" id="msg"></div><div class="row acts"><button class="btn big" id="turn"></button></div>`;
+      say('This is the Earth, and our house. The sun is shining on one side. That side has day. The other side has night. Spin the Earth one time, and watch our house!', 0.92);
+      await turnDemo(spinScene, { per: 45, label: 'Spin it ↺ (3 hours)', speak: spinSpeak, cx: 410, cy: 180 });
+      setMsg('One spin = one day = 24 hours! ⭐', 'good'); confetti();
+      mark('Show Me', 'Spin the Earth once (one day)', true, '', '', null, { text: 'He turned the Earth all the way around once: sunrise, noon, sunset, night, morning again. One spin = one day = 24 hours.' }, ['spun it']); L_free();
+      $('turn').insertAdjacentHTML('afterend', '<button class="btn big primary" id="ok">Next →</button>'); await new Promise(r => { $('ok').onclick = r; }); stepDone();
+    }
+    if (want.has('week') && !stepSkip()) {
+      app.innerHTML = L_exactTag() + head('One week is 7 days: 7 spins!') + `<div class="s-card"><div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">${Array.from({ length: 7 }, (_, i) => `<div>${S_art('earth', 64)}<div><b>Day ${i + 1}</b></div></div>`).join('')}</div><p>One spin is one day. A week is 7 spins.</p></div><div class="row acts"><button class="btn big primary" id="ok">Next →</button></div>`;
+      say('One spin is one day. A week is 7 days, so that’s 7 spins.', 0.92); await new Promise(r => { $('ok').onclick = r; }); stepDone();
+    }
+    if (want.has('orbit') && !stepSkip()) {
+      app.innerHTML = L_exactTag() + head('Now take the Earth all the way around the sun! Move it with your finger, or tap the button.') + `<div class="rl-demo" id="demo"></div><div class="message" id="msg"></div><div class="row acts"><button class="btn big" id="turn"></button></div>`;
+      say('Now take the Earth all the way around the sun. Watch the days add up!', 0.92);
+      await turnDemo(orbitScene, { per: 30, label: 'Move it ↺ (about a month)', speak: orbitSpeak, cx: 320, cy: 190 });
+      setMsg('One trip around the sun = one year = 365 days! ⭐', 'good'); confetti();
+      mark('Show Me', 'Take the Earth around the sun (one year)', true, '', '', null, { text: 'He moved the Earth all the way around the sun: 365 days, 365 spins. One trip around the sun = one year.' }, ['went around']); L_free();
+      $('turn').insertAdjacentHTML('afterend', '<button class="btn big primary" id="ok">Next →</button>'); await new Promise(r => { $('ok').onclick = r; }); stepDone();
+    }
+    if (want.has('spin') && want.has('orbit') && !stepSkip()) {
+      app.innerHTML = L_exactTag() + head('Remember the difference!') + `<div class="rl-cmp"><div class="s-card">${S_art('clock', 90)}<h3>Spin once</h3><p class="rl-big">= 1 day</p><p>24 hours</p></div><div class="s-card">${S_art('calendar', 90)}<h3>Around the sun</h3><p class="rl-big">= 1 year</p><p>365 days</p></div></div><div class="row acts"><button class="btn big primary" id="ok">I got it →</button></div>`;
+      say('Remember the difference! When the Earth spins once, that’s one day, 24 hours. When the Earth goes all the way around the sun, that’s one year, 365 days.', 0.9);
+      await new Promise(r => { $('ok').onclick = r; }); stepDone();
+    }
+    partDone('You showed it!');
+  };
+
+  const check = async () => {
+    await each(QS.length, i => new Promise(async res => {
+      const q = QS[i], choices = L_shuf(q.choices);
+      app.innerHTML = L_exactTag() + head(L_esc(q.q)) + L_count(i, QS.length, 'Question') + `<button class="btn" id="hearQ">${SPK}Hear the question</button><div class="message" id="msg"></div><div id="io"></div>`;
+      const sq = () => say(q.q + ' ' + q.choices.join(', or '), 0.9); $('hearQ').onclick = sq; sq();
+      $('io').innerHTML = `<div class="ls-choices${choices.length <= 3 && choices.every(c => c.length < 24) ? ' row2' : ''}" id="ch">${choices.map((c, j) => `<button data-c="${j}">${pic(c, 64) ? `<span class="s-cp">${pic(c, 64)}</span>` : ''}${L_esc(c)}</button>`).join('')}</div>`;
+      const first = await new Promise(rr => { $('ch').onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; $('ch').onclick = null; rr({ b, c: choices[+b.dataset.c] }); }; });
+      const ok = first.c === q.answer;
+      $('ch').querySelectorAll('button').forEach(x => { x.disabled = true; if (choices[+x.dataset.c] === q.answer) x.classList.add('right'); });
+      if (!ok) first.b.classList.add('wrong');
+      setMsg(ok ? 'Yes! You remembered! ⭐' : `The answer is: ${q.answer}. We’ll practice it again next time.`, ok ? 'good' : 'try');
+      if (!ok && q.why) $('io').insertAdjacentHTML('beforeend', `<div class="s-why">💡 ${L_esc(q.why)}</div>`);
+      if (ok) confetti();
+      fb(ok ? 'Yes! You remembered!' : `The answer is ${q.answer}. ${q.why || ''} We’ll practice it again next time.`, 0.9);
+      mark('Check It', q.q, ok, first.c, q.answer, null, { text: q.q, why: q.why, choices: q.choices, choiceHtml: Object.fromEntries(q.choices.map(c => [c, pic(c, 60)])) }, [first.c]);
+      $('io').insertAdjacentHTML('beforeend', `<div class="row acts"><button class="btn big primary" id="nx">${i < QS.length - 1 ? 'Next question →' : 'All done →'}</button></div>`);
+      await new Promise(rr => { $('nx').onclick = rr; });
+      res();
+    }));
+    partDone(firstTry('Check It') + '.');
+  };
+  PARTS = [{ name: 'Learn It', run: learn }];
+  if (QS.some(q => S_demosFor(q).length)) PARTS.push({ name: 'Show Me', run: showMe });
+  PARTS.push({ name: 'Check It', run: check });
+  return { intro: `Extra help! Let’s learn ${QS.length === 1 ? 'a quiz question' : `${QS.length} quiz questions`} again. First you’ll learn the answer${QS.some(q => S_demosFor(q).length) ? ', then you’ll show it with the Earth and the sun' : ''}, then you’ll answer it again.` };
 };
