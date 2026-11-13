@@ -1210,10 +1210,12 @@ const CLASSES = [
   { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['daily', 'helper', 'sight', 'master', 'fixup', 'fixit', 'sound', 'story', 'readaloud', 'chains', 'heart'] },
   { id: 'pe', name: 'PE', icon: '🏃', tools: [] },
   { id: 'science', name: 'Science', icon: '🔬', tools: ['weather', 'seasons', 'seacycle', 'quiz', 'relearn'] },
-  { id: 'social', name: 'Social Studies', icon: '🌎', tools: [] },
+  { id: 'social', name: 'Social Studies', icon: '🌎', tools: ['relearn'] },
   { id: 'every', name: 'Every Day', icon: '📋', tools: ['steps', 'chores'] }
 ];
 const classOf = t => (CLASSES.find(c => c.tools.includes(t)) || CLASSES[3]).id;
+// a template can sit in more than one class (🧠 Learn It Again: Science and Social Studies), so stay in the open class when it has the tool
+const inCls = (t, cls) => { const c = CLASSES.find(x => x.id === cls); return c ? c.tools.includes(t) : classOf(t) === cls; };
 /* What's on his day right now (so you don't assign the same thing twice): tags on the tabs and dots on the classes */
 let onDay = null;
 const bankWords = b => b && Array.isArray(b.current) && b.current.length ? b.current.map(c => c.w) : null;   // his 6 words from the word bank
@@ -1233,7 +1235,7 @@ function renderClasses() {
   document.getElementById('classes').innerHTML = CLASSES.map(c => `<button data-cls="${c.id}" aria-pressed="${c.id === cls}"><span aria-hidden="true">${c.icon}</span>${esc(c.name)}<small>${c.tools.length + (c.extra || 0)}</small>${hasOn(c) ? '<span class="dot" title="Something here is on his day"></span>' : ''}</button>`).join('');
   document.querySelectorAll('.tabs [data-tool]:not([data-day])').forEach(b => { const tag = b.querySelector('.onday'); if (on.tools.has(b.dataset.tool)) { if (!tag) b.insertAdjacentHTML('beforeend', '<span class="onday">✓ On his day</span>'); } else if (tag) tag.remove(); });
   document.querySelectorAll('.tabs [data-day]').forEach(a => { const tag = a.querySelector('.onday'); if (on[a.dataset.day]) { if (!tag) a.insertAdjacentHTML('beforeend', '<span class="onday">✓ On his day</span>'); } else if (tag) tag.remove(); });
-  document.querySelectorAll('.tabs [data-tool]').forEach(b => { b.hidden = classOf(b.dataset.tool) !== cls; });
+  document.querySelectorAll('.tabs [data-tool]').forEach(b => { b.hidden = !inCls(b.dataset.tool, cls); });
 }
 document.getElementById('classes').addEventListener('click', e => {
   const b = e.target.closest('[data-cls]'); if (!b) return;
@@ -1627,7 +1629,7 @@ async function renderAssigned() {
     const doneDays = a => (logs || []).map(r => r.data).filter(d => (d.aid || d.cid) === a.id).map(d => dayOf(d.t));
     // Only what belongs here (Nov 9, Dylan): School Assigned = this subject's school worksheets (every subject's with All subjects on);
     // Templates = this subject's templates and extras.
-    const clsId = state.cls || classOf(state.tool), inSchool = folderOf(clsId) === 'school', subj = a => classOf(a.tool === 'mtest' ? 'master' : a.tool) === clsId;
+    const clsId = state.cls || classOf(state.tool), inSchool = folderOf(clsId) === 'school', subj = a => inCls(a.tool === 'mtest' ? 'master' : a.tool, clsId);
     const shown = list.filter(a => onList(a, ds, doneDays) && (inSchool ? !!schoolDayOf(a) && (state.schoolAll || subj(a)) : !schoolDayOf(a) && subj(a))).sort((x, y) => (OPTIONAL.includes(x.tool) - OPTIONAL.includes(y.tool)) || x.at - y.at);
     const what = inSchool ? (state.schoolAll ? 'school worksheets' : `${CLASSES.find(c => c.id === clsId).name} school worksheets`) : `${CLASSES.find(c => c.id === clsId).name} templates`;
     if (!document.getElementById('assignedList')) return;
@@ -1714,7 +1716,7 @@ async function unassignClick(e) {
 /* ---------- events ---------- */
 document.querySelector('.tabs').addEventListener('click', e => {
   const b = e.target.closest('button[data-tool]'); if (!b) return;
-  state.tool = b.dataset.tool; state.cls = classOf(state.tool); save(); history.replaceState(null, '', '#' + state.tool); renderPanel();
+  state.tool = b.dataset.tool; if (!inCls(state.tool, state.cls)) state.cls = classOf(state.tool); save(); history.replaceState(null, '', '#' + state.tool); renderPanel();
 });
 
 let cardsTimer;

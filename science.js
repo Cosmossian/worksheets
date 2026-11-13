@@ -373,16 +373,16 @@ const S_RL_TITLE = '🧠 Let’s learn it again';
 Object.assign(LT, {
   relearn: {
     name: 'Learn It Again (quiz mistakes)', cls: 'science', noSchool: true,
-    help: 'Extra help for quiz questions he got wrong. Each question: he sees what he picked and the right answer with its picture, hears why, and learns what his pick really means. When there’s a hands-on part for the idea (spin the Earth once = one day, take it around the sun = one year), he does it. Then he answers the question again (the only graded part). On his device it shows under “🛠️ Extra help”. You don’t have to assign it for today’s quizzes: his device adds it by itself as soon as he misses a quiz question.',
+    help: 'Extra help for quiz questions he got wrong (any class: it’s under Science and Social Studies). Each question: he sees what he picked and the right answer with its picture, hears why, and learns what his pick really means. When there’s a hands-on part for the idea (spin the Earth once = one day, take it around the sun = one year), he does it. Then he answers the question again (the only graded part). On his device it shows under “🛠️ Extra help”. You don’t have to assign it for today’s quizzes: his device adds it by itself as soon as he misses a quiz question.',
     schools: {},
     own: () => ({ questions: '' }),
     fields: () => [
-      { k: 'questions', label: 'Questions', type: 'area', rows: 6, help: 'Like the Quiz: question | choice | choice | answer // why. To show him what he picked, add it at the end after >> (… // why >> one year). The 📥 buttons fill this in from his quiz results.' }
+      { k: 'questions', label: 'Questions', type: 'area', rows: 6, help: 'Like the Quiz: question | choice | choice | answer // why. To show him what he picked, add it at the end after >> (… // why >> one year). To tell him why his pick isn’t right, add // after it (… >> She fought in World War I // She didn’t fight. She helped.). The 📥 buttons fill this in from his quiz results.' }
     ],
     acts: () => [['today', '📥 Load his quiz mistakes from today'], ['week', '📥 From the last 7 days']],
     act: (a, c) => S_loadQuizMisses(a === 'today' ? 0 : 6, c),
     title: () => S_RL_TITLE,
-    data: c => ({ qs: String(c.questions || '').split('\n').map(l => { const [main, his = ''] = l.split('>>'); const q = S_quizParse(main)[0]; return q ? { q: q.q, choices: q.choices, answer: q.answer, why: q.why, his: his.trim() } : null; }).filter(Boolean).slice(0, 8) }),
+    data: c => ({ qs: String(c.questions || '').split('\n').map(l => { const [main, after = ''] = l.split('>>'), [his = '', hisWhy = ''] = after.split('//'); const q = S_quizParse(main)[0]; return q ? { q: q.q, choices: q.choices, answer: q.answer, why: q.why, his: his.trim(), ...(hisWhy.trim() ? { hisWhy: hisWhy.trim() } : {}) } : null; }).filter(Boolean).slice(0, 8) }),
     check: d => d.qs.length ? '' : 'Type the questions, or tap 📥 to load his quiz mistakes.'
   }
 });
@@ -417,7 +417,7 @@ if (!L_IN_DO) LT.relearn.print = (d, exact) => L_sheetOf(nameDate() + title('Let
     return `<div><div style="font:600 21px Andika,sans-serif"><b>${i + 1}.</b> ${L_esc(q.q)}</div><div style="display:flex;gap:12px;align-items:center;padding:6px 0 0 26px">${p ? S_art(p, 60) : ''}<div style="font-size:18px"><b>Answer: ${L_esc(q.answer)}</b>${q.why ? `<br>${L_esc(q.why)}` : ''}</div></div><div style="display:flex;flex-wrap:wrap;gap:10px;padding:8px 0 0 26px"><span style="font-size:16px;color:#475569">Now circle it:</span>${L_shuf(q.choices).map(c => `<span style="border:2px solid #94A3B8;border-radius:999px;padding:3px 14px;font-size:18px">${L_esc(c)}</span>`).join('')}</div></div>`; }).join('')}</div>`, exact, { gap: 10 });
 
 if (L_IN_DO) { const st = document.createElement('style'); st.textContent = `
-  .rl-q { font:600 24px Andika,sans-serif; } .rl-was { font:600 22px Fredoka,sans-serif; color:#FCA5A5; display:flex; align-items:center; gap:8px; justify-content:center; }
+  .rl-q { font:600 24px Andika,sans-serif; } .rl-was { font:600 22px Fredoka,sans-serif; color:#FCA5A5; display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; justify-content:center; text-align:center; width:min(640px,94vw); }
   .rl-was s { color:#F87171; text-decoration-thickness:3px; } .rl-was svg, .rl-ans svg { flex:none; }
   .rl-ans { display:flex; align-items:center; gap:12px; justify-content:center; background:#0E2A1F; border:3px solid var(--good); border-radius:16px; padding:8px 16px; width:min(640px,94vw); font:700 28px Fredoka,sans-serif; color:#BBF7D0; }
   .rl-fact { background:#2A1F0E; border:2px solid #F59E0B; border-radius:14px; padding:10px 14px; font-size:20px; width:min(640px,94vw); color:#FDE68A; }
@@ -430,22 +430,23 @@ LT.relearn.run = () => {
   const pic = (c, s = 56) => { const p = S_choicePic(c); return p ? S_art(p, s) : ''; };
   const learn = async () => {
     await each(QS.length, i => new Promise(async done => {
-      const q = QS[i], fact = q.his && q.his.toLowerCase() !== q.answer.toLowerCase() ? S_factFor(q.his) : '';
+      const q = QS[i], fact = q.his && q.his.toLowerCase() !== q.answer.toLowerCase() ? (q.hisWhy || S_factFor(q.his)) : '';
+      const aboutHis = q.his && q.his.split(/\s+/).length > 4 ? 'Why not the one you picked?' : `What about ${q.his}?`;   // a sentence-long pick (Social Studies) reads better this way
       app.innerHTML = L_exactTag() + head('Let’s learn this one again!') + L_count(i, QS.length, 'Question')
         + `<div class="s-card"><div class="rl-q">${L_esc(q.q)}</div></div><button class="btn" id="hearQ">${SPK}Hear it again</button>`
         + (q.his ? `<div class="rl-was" id="rlWas">Earlier you picked ${pic(q.his, 40)}<s>${L_esc(q.his)}</s></div>` : '')
         + `<div class="rl-ans rl-hide" id="rlAns">${pic(q.answer, 64)}<span>${L_esc(q.answer)} ✓</span></div>`
         + (q.why ? `<div class="s-why rl-hide" id="rlWhy">💡 ${L_esc(q.why)}</div>` : '')
-        + (fact ? `<div class="rl-fact rl-hide" id="rlFact"><b>What about ${L_esc(q.his)}?</b> ${L_esc(fact)}</div>` : '')
+        + (fact ? `<div class="rl-fact rl-hide" id="rlFact"><b>${L_esc(aboutHis)}</b> ${L_esc(fact)}</div>` : '')
         + `<div class="row acts"><button class="btn big primary" id="rlGo" disabled>I got it →</button></div>`;
       let gen = 0;
       const tell = async () => {
         const my = ++gen, ok = () => my === gen, show = id => { const el = $(id); if (el) el.classList.remove('rl-hide'); };
         await say(q.q, 0.9); if (!ok()) return;
         if (q.his) { await say(`Earlier you picked ${q.his}.`, 0.9); if (!ok()) return; }
-        show('rlAns'); await say(`The answer is ${q.answer}.`, 0.9); if (!ok()) return;
+        show('rlAns'); await say(`The answer is ${q.answer.replace(/[.!?]$/, '')}.`, 0.9); if (!ok()) return;
         if (q.why) { show('rlWhy'); await say(q.why, 0.9); if (!ok()) return; }
-        if (fact) { show('rlFact'); await say(`What about ${q.his}? ${fact}`, 0.9); }
+        if (fact) { show('rlFact'); await say(`${aboutHis} ${fact}`, 0.9); }
       };
       $('hearQ').onclick = () => { if (canTalk) speechSynthesis.cancel(); tell(); };
       await Promise.race([tell(), wait(30000)]);
@@ -558,10 +559,10 @@ LT.relearn.run = () => {
       const ok = first.c === q.answer;
       $('ch').querySelectorAll('button').forEach(x => { x.disabled = true; if (choices[+x.dataset.c] === q.answer) x.classList.add('right'); });
       if (!ok) first.b.classList.add('wrong');
-      setMsg(ok ? 'Yes! You remembered! ⭐' : `The answer is: ${q.answer}. We’ll practice it again next time.`, ok ? 'good' : 'try');
+      setMsg(ok ? 'Yes! You remembered! ⭐' : `The answer is: ${q.answer.replace(/[.!?]$/, '')}. We’ll practice it again next time.`, ok ? 'good' : 'try');
       if (!ok && q.why) $('io').insertAdjacentHTML('beforeend', `<div class="s-why">💡 ${L_esc(q.why)}</div>`);
       if (ok) confetti();
-      fb(ok ? 'Yes! You remembered!' : `The answer is ${q.answer}. ${q.why || ''} We’ll practice it again next time.`, 0.9);
+      fb(ok ? 'Yes! You remembered!' : `The answer is ${q.answer.replace(/[.!?]$/, '')}. ${q.why || ''} We’ll practice it again next time.`, 0.9);
       mark('Check It', q.q, ok, first.c, q.answer, null, { text: q.q, why: q.why, choices: q.choices, choiceHtml: Object.fromEntries(q.choices.map(c => [c, pic(c, 60)])) }, [first.c]);
       $('io').insertAdjacentHTML('beforeend', `<div class="row acts"><button class="btn big primary" id="nx">${i < QS.length - 1 ? 'Next question →' : 'All done →'}</button></div>`);
       await new Promise(rr => { $('nx').onclick = rr; });
