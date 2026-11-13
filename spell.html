@@ -3077,6 +3077,40 @@ $('acctMakeGrown').onclick = async () => {
 document.addEventListener('visibilitychange', () => { if (!document.hidden && cloudMember() && !daily) cloudPull(); });
 setInterval(() => { if (cloudMember() && !daily && (!$('kidhome').hidden || !$('setup').hidden)) cloudPull(); }, 60000);
 
+/* Fridays (Nov 13, 2026, Dylan: "make it update like the sight words does and automatically trigger every friday"): the Word Master
+   Challenge and the Mastered Words Test put themselves on his day every Friday, from his word bank (study_state "sightbank").
+   Same rule in spell.html and index.html (keep both copies the same). Only words he passed before today count, so his Friday quiz
+   doesn't change the list partway through the day.
+   - Word Master Challenge: the words he passed this week (Monday on), newest first, up to 6; topped up with older words he passed
+     but hasn't confirmed yet.
+   - Mastered Words Test: unconfirmed words first (newest first, so this week's words, right after he practiced them in the
+     challenge), then confirmed ones in a mixed order that stays the same all day. 6 words. */
+function fridayWords(bank, ds) {
+  const M = ((bank && bank.mastered) || []).filter(m => m && m.w && (m.at || '') < ds);
+  const g = new Date(ds + 'T12:00:00'), mon = new Date(g); mon.setDate(g.getDate() - ((g.getDay() + 6) % 7));
+  const monDs = `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, '0')}-${String(mon.getDate()).padStart(2, '0')}`;
+  const newest = [...M].sort((a, b) => (b.at || '').localeCompare(a.at || '') || a.w.localeCompare(b.w));
+  const uniq = xs => [...new Set(xs)];
+  const master = uniq([...newest.filter(m => (m.at || '') >= monDs).map(m => m.w), ...newest.filter(m => !m.confirmed).map(m => m.w)]).slice(0, 6);
+  const h = s => { let x = 2166136261; for (const c of s) { x ^= c.charCodeAt(0); x = Math.imul(x, 16777619); } return x >>> 0; };
+  const conf = newest.filter(m => m.confirmed).map(m => m.w).sort((a, b) => h(ds + a) - h(ds + b) || a.localeCompare(b));
+  const test = uniq([...newest.filter(m => !m.confirmed).map(m => m.w), ...conf]).slice(0, 6);
+  return { master, test };
+}
+const isFriday = ds => new Date(ds + 'T12:00:00').getDay() === 5;
+// his device: build them once a day (saved as study-friday-auto for do.html). Not when a grown-up assigned one for today.
+function autoFriday(ds, assigned) {
+  if (!isFriday(ds) || (store('spell-daily') || {}).on === false) return [];
+  let P = store('study-friday-auto');
+  if (!P || P.day !== ds || !(P.master.length || P.test.length)) { const f = fridayWords(store('sight-bank'), ds); P = { day: ds, master: f.master, test: f.test }; }
+  const sen = w => (SENTENCES[w] || [])[0] || '', ic = w => (SENTENCES[w] || [])[1] || '';
+  P.list = [
+    ...(P.master.length && !assigned.some(a => a.tool === 'master' && sheetDay(a) === ds) ? [{ id: `master-auto-${ds}`, tool: 'master', title: '🏆 Word Master Challenge', day: ds, at: Date.now(), auto: true, data: { words: P.master, sentences: Object.fromEntries(P.master.map(w => [w, sen(w)])), icons: Object.fromEntries(P.master.map(w => [w, ic(w)])) } }] : []),
+    ...(P.test.length && !assigned.some(a => a.tool === 'mtest') ? [{ id: `mtest-auto-${ds}`, tool: 'mtest', title: '⭐ Mastered Words Test', day: ds, at: Date.now(), auto: true, data: { words: P.test } }] : [])
+  ];
+  store('study-friday-auto', P);
+  return P.list;
+}
 /* ---- His start screen ---- */
 /* Nov 10, 2026 (Dylan: "is it auto assigned for today as well"): 🛠️ Extra help puts itself on his day. Any spelling word he missed
    on today's on-screen worksheets (this device's results) becomes a Fix My Spelling Mistakes sheet (hear it, trace it, spell it),
@@ -3168,6 +3202,7 @@ function renderKidHome() {
   const today = withToday('spell-check-log', store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString() && r.t > (d.resetAt || 0));   // "Reset today" starts his day fresh
   $('kidHi').textContent = kidName() ? `Hi ${kidName()}! 👋` : 'Hi! 👋';
   const sq = store('spell-queue'), sheets = [...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq', title: `✏️ Spelling practice · ${sq.words.length} word${sq.words.length > 1 ? 's' : ''}` }] : []), ...sheetsFor(ymd(Date.now()))];
+  sheets.push(...autoFriday(ymd(Date.now()), sheets));   // Fridays: Word Master Challenge + Mastered Words Test
   { const fx = autoFixit(ymd(Date.now()), sheets); if (fx) sheets.push(fx); }
   { const rl = autoRelearn(ymd(Date.now()), sheets); if (rl) sheets.push(rl); }
   $('kidMsg').textContent = words.length && sheets.length ? `First your worksheet${sheets.length > 1 ? 's' : ''}, then your ${words.length} sight word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : words.length ? `Today you have ${words.length} word${words.length > 1 ? 's' : ''}. Take your time and try your best!` : sheets.length ? 'Here’s your work for today. Take your time and try your best!' : 'Nothing yet. Ask a grown-up to add today’s work.';

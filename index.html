@@ -1075,12 +1075,12 @@ function panelSight() {
 }
 function panelMaster() {
   const st = state.master;
-  return `<h2>Word Master Challenge</h2><p class="help">For words he already knows. Checks they’re really mastered, with no word bank. The front has “Fix It!” and picture sentences. The back has “Spelling Detective”, so he can’t peek.</p>
+  return `<h2>Word Master Challenge</h2><p class="help">For words he already knows. Checks they’re really mastered, with no word bank. <b>Every Friday it puts itself on his day</b> with the words he passed that week (topped up to 6 with older ones he hasn’t confirmed), so you don’t need to assign it. The words below are only for printing or an extra one. The front has “Fix It!” and picture sentences. The back has “Spelling Detective”, so he can’t peek.</p>
   <div class="field"><label for="mWords">Mastered words</label><textarea id="mWords" rows="2">${esc(st.words)}</textarea><small>Separate with commas or spaces. Up to 6.</small></div>
   <div class="field"><span class="lbl">Picture sentences</span><small>Change a sentence or picture if you like. Leave a sentence blank to skip that word in this part.</small></div>
   <div id="cards">${wordCards('master')}</div>
   ${printBlock(true)}
-  <div class="onscreen mtest"><h3>⭐ Mastered Words Test</h3><p class="help" style="margin:0 0 8px">For Fridays. It stays on his day only for the day you assign it. Picks 6 random words from his <b>Mastered</b> list (Daily Sight Words). It’s harder than the daily quiz: no sentence, and he can hear each word only 2 times. Right = “Mastered, confirmed” and +5 points. Wrong = −3 points and the word goes back to the front of his word bank.</p>
+  <div class="onscreen mtest"><h3>⭐ Mastered Words Test</h3><p class="help" style="margin:0 0 8px"><b>It puts itself on his day every Friday</b>, right after the Word Master Challenge, with 6 of his <b>Mastered</b> words (ones he hasn’t confirmed yet first). Use these buttons only for an extra one: it stays on his day only for the day you assign it, and picks 6 random words from his <b>Mastered</b> list. It’s harder than the daily quiz: no sentence, and he can hear each word only 2 times. Right = “Mastered, confirmed” and +5 points. Wrong = −3 points and the word goes back to the front of his word bank.</p>
     <div class="btn-row"><button class="btn btn-assign" id="mtAssign">Assign the test to his device</button><button class="btn btn-small" id="mtTry">Try it on screen</button></div>
     <div class="assign-msg" id="mtMsg"></div></div>`;
 }
@@ -1202,6 +1202,27 @@ async function findPlace(q) {
   return { q, name: `${hit.name}${hit.admin1 ? ', ' + hit.admin1 : ''}`, lat: hit.latitude, lon: hit.longitude };
 }
 
+/* Fridays (Nov 13, 2026, Dylan: "make it update like the sight words does and automatically trigger every friday"): the Word Master
+   Challenge and the Mastered Words Test put themselves on his day every Friday, from his word bank (study_state "sightbank").
+   Same rule in spell.html and index.html (keep both copies the same). Only words he passed before today count, so his Friday quiz
+   doesn't change the list partway through the day.
+   - Word Master Challenge: the words he passed this week (Monday on), newest first, up to 6; topped up with older words he passed
+     but hasn't confirmed yet.
+   - Mastered Words Test: unconfirmed words first (newest first, so this week's words, right after he practiced them in the
+     challenge), then confirmed ones in a mixed order that stays the same all day. 6 words. */
+function fridayWords(bank, ds) {
+  const M = ((bank && bank.mastered) || []).filter(m => m && m.w && (m.at || '') < ds);
+  const g = new Date(ds + 'T12:00:00'), mon = new Date(g); mon.setDate(g.getDate() - ((g.getDay() + 6) % 7));
+  const monDs = `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, '0')}-${String(mon.getDate()).padStart(2, '0')}`;
+  const newest = [...M].sort((a, b) => (b.at || '').localeCompare(a.at || '') || a.w.localeCompare(b.w));
+  const uniq = xs => [...new Set(xs)];
+  const master = uniq([...newest.filter(m => (m.at || '') >= monDs).map(m => m.w), ...newest.filter(m => !m.confirmed).map(m => m.w)]).slice(0, 6);
+  const h = s => { let x = 2166136261; for (const c of s) { x ^= c.charCodeAt(0); x = Math.imul(x, 16777619); } return x >>> 0; };
+  const conf = newest.filter(m => m.confirmed).map(m => m.w).sort((a, b) => h(ds + a) - h(ds + b) || a.localeCompare(b));
+  const test = uniq([...newest.filter(m => !m.confirmed).map(m => m.w), ...conf]).slice(0, 6);
+  return { master, test };
+}
+const isFriday = ds => new Date(ds + 'T12:00:00').getDay() === 5;
 /* ---------- Classes: the worksheets grouped like his school subjects ---------- */
 const CLASSES = [
   { id: 'ela', name: 'ELA', icon: '📖', tools: ['question', 'letter', 'sort'] },
@@ -1292,6 +1313,20 @@ async function openDay(ds) {
       items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}${tries.length > 1 ? ` · ${tries.length} tries` : ''}` : OPTIONAL.includes(a.tool) ? 'extra (not required)' : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over && !OPTIONAL.includes(a.tool),
         acts: a.tool === 'fixup' ? '' : `<button class="btn btn-small" data-tryday="${k}">Try it</button>` });
     });
+    // Fridays: his device adds the Word Master Challenge and the Mastered Words Test by itself (spell.html autoFriday; same words here)
+    if (isFriday(ds) && d.on !== false) {
+      const list = (S.sheets && S.sheets.list) || [], f = fridayWords(S.sightbank, ds), over = ds < td;
+      [['master', '🏆 Word Master Challenge', f.master], ['mtest', '⭐ Mastered Words Test', f.test]].forEach(([tool, title, w]) => {
+        if (list.some(a => a.tool === tool && (tool === 'mtest' ? sheetDay(a) === ds : onList(a, ds, doneDays) && sheetDay(a) === ds))) return;
+        const id = `${tool}-auto-${ds}`, mine = L.filter(x => x.kind === 'sheet' && x.aid === id).sort((a, b) => b.t - a.t)[0];
+        const words = mine ? [...new Set((mine.items || []).map(x => x.word).filter(Boolean))] : w;
+        if (!words.length) return;
+        const k = 'fri-' + tool; window.__autoFix = window.__autoFix || {};
+        window.__autoFix[k] = { id: 'try', tool, title, data: tool === 'mtest' ? { words } : { words, sentences: Object.fromEntries(words.map(x => [x, (SENTENCES[x] || [])[0] || ''])), icons: Object.fromEntries(words.map(x => [x, (SENTENCES[x] || [])[1] || ''])) } };
+        items.push({ title: esc(title), sub: `${esc(words.join(', '))}<br>Added by itself every Friday from his word bank${future ? ' (the words can change before then)' : ''}`, st: mine ? `✓ done${mine.grade ? `: ${mine.grade.letter} (${mine.grade.pct}%)` : ''}` : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over,
+          acts: `<button class="btn btn-small" data-tryauto="${k}">Try it</button>` });
+      });
+    }
     // 🛠️ Extra help: his device adds Fix My Spelling Mistakes by itself for words he missed on that day's worksheets
     // (spell.html autoFixit; same rules here, from the results in the Study database). Not when one was assigned for that day.
     if (!future && !((S.sheets && S.sheets.list) || []).some(a => a.tool === 'fixit' && onList(a, ds, doneDays))) {
