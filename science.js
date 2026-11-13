@@ -367,8 +367,37 @@ function S_demosFor(q) {
   if (/spin|axis|day and night|24 hours/.test(t)) out.push('spin');
   if (/orbit|around the sun|365|one year/.test(t) || (out.includes('spin') && /year|365/.test(his))) out.push('orbit');
   if (out.includes('spin') && /week/.test(his)) out.push('week');
+  if (/clara barton/.test(t)) out.push('clara');   // Social Studies: helper, not fighter (Nov 13)
   return out;
 }
+// "Why did you pick that one?" choices for questions where we know the likely mix-ups. Each: [button, what the page says back].
+function S_whyPick(q) {
+  if (!q.his || q.his.toLowerCase() === q.answer.toLowerCase()) return null;
+  if (/clara barton/i.test(q.q)) return [
+    ['💪 She was brave', 'You’re right, she was very brave! But brave doesn’t always mean fighting. Clara was brave because she went to the battlefield to help.'],
+    ['⚔️ It said “battle”', 'Good noticing! Clara was on the battlefield. But she wasn’t there to fight. She was there to help hurt soldiers.'],
+    ['👼 “Angel of the Battlefield”', 'That’s her nickname! The soldiers called her an angel because she came to help them, not to fight.'],
+    ['🤷 I guessed', 'That’s OK! Let’s learn it together so you won’t have to guess next time.']
+  ];
+  return null;
+}
+// Clara Barton Show Me: does she do this? (for the cross-it-out step)
+function S_claraReason(c) {
+  const x = String(c || '').toLowerCase();
+  if (/nurse|helping/.test(x)) return [true, 'Yes! Clara was a nurse. She helped hurt soldiers in the Civil War.'];
+  if (/fought|fight|battle/.test(x)) return [false, 'No! Clara didn’t fight. She helped. And World War One came after she died.'];
+  if (/washington|revolutionary/.test(x)) return [false, 'No! George Washington lived long before Clara was born.'];
+  if (/general|rank|soldier/.test(x)) return [false, 'No! Clara wasn’t a soldier or a general. She was a nurse.'];
+  return [false, 'No, Clara didn’t do that.'];
+}
+const S_CLARA_SORT = [
+  ['🪖', 'A soldier', 'fighter', 'A soldier fights in a war.'],
+  ['👩‍⚕️', 'A nurse', 'helper', 'A nurse takes care of people who are hurt or sick.'],
+  ['🎖️', 'A general', 'fighter', 'A general is the boss of the soldiers. A general leads the fighting.'],
+  ['🧑‍⚕️', 'A doctor', 'helper', 'A doctor helps sick and hurt people get better.'],
+  ['🩹', 'A Red Cross volunteer', 'helper', 'Red Cross volunteers help people with health care and supplies.'],
+  ['👩‍⚕️', 'Clara Barton', 'helper', 'Clara Barton was a nurse. She helped hurt soldiers. She did not fight!']
+];
 const S_RL_TITLE = '🧠 Let’s learn it again';
 Object.assign(LT, {
   relearn: {
@@ -422,7 +451,20 @@ if (L_IN_DO) { const st = document.createElement('style'); st.textContent = `
   .rl-ans { display:flex; align-items:center; gap:12px; justify-content:center; background:#0E2A1F; border:3px solid var(--good); border-radius:16px; padding:8px 16px; width:min(640px,94vw); font:700 28px Fredoka,sans-serif; color:#BBF7D0; }
   .rl-fact { background:#2A1F0E; border:2px solid #F59E0B; border-radius:14px; padding:10px 14px; font-size:20px; width:min(640px,94vw); color:#FDE68A; }
   .rl-hide { visibility:hidden; } .rl-demo { width:min(760px,96vw,110vh); touch-action:none; display:block; background:#0B1324; border-radius:20px; cursor:grab; }
-  .s-card .rl-big { font:700 30px Fredoka,sans-serif; } .rl-cmp { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; } .rl-cmp .s-card { width:min(300px,44vw); }
+  .s-card .rl-big { font:700 30px Fredoka,sans-serif; }
+  .cb-card { display:flex; flex-direction:column; align-items:center; gap:4px; background:var(--surface-2); border:3px solid var(--line); border-radius:20px; padding:14px 30px; }
+  .cb-emo { font-size:84px; line-height:1.1; } .cb-name { font:700 30px Fredoka,sans-serif; }
+  .cb-two { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; } .cb-two button { font:700 28px Fredoka,sans-serif; min-width:220px; padding:16px 22px; border-radius:18px; border:3px solid var(--line); background:var(--surface-2); color:var(--ink); cursor:pointer; touch-action:manipulation; }
+  .cb-two button.wrong { border-color:var(--bad); background:var(--bad-bg); color:#FCA5A5; } .cb-two button.right { border-color:var(--good); background:var(--good-bg); color:var(--good); }
+  .cb-scene { display:flex; gap:18px; align-items:stretch; justify-content:center; flex-wrap:wrap; width:min(760px,96vw); }
+  .cb-sol { flex:1 1 280px; background:#3B2F1E; border:3px dashed #A16207; border-radius:20px; padding:12px; text-align:center; } .cb-sol .cb-emo { font-size:96px; } .cb-got { font-size:44px; min-height:56px; }
+  .cb-bag { flex:1 1 280px; background:var(--surface-2); border:3px solid var(--line); border-radius:20px; padding:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .cb-bag button { font:700 20px Fredoka,sans-serif; border:3px solid var(--line); background:#0F172A; color:var(--ink); border-radius:16px; padding:8px; cursor:pointer; touch-action:manipulation; } .cb-bag button span { display:block; font-size:48px; }
+  .cb-bag button.used { visibility:hidden; } .cb-bag button.no { border-color:var(--bad); text-decoration:line-through; opacity:.5; } .cb-shake { animation:cbShake .4s; }
+  @keyframes cbShake { 25% { transform:translateX(-8px); } 75% { transform:translateX(8px); } }
+  .cb-ch { font:700 24px Fredoka,sans-serif; border:3px solid var(--line); background:var(--surface-2); border-radius:16px; padding:12px 16px; width:min(640px,94vw); text-align:center; }
+  .cb-ch.no { text-decoration:line-through; text-decoration-thickness:4px; color:#94A3B8; border-color:var(--bad); } .cb-ch.yes { border-color:var(--good); background:var(--good-bg); color:var(--good); } .cb-ch.now { border-color:#F59E0B; }
+  .cb-list { display:flex; flex-direction:column; gap:10px; align-items:center; } .rl-cmp { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; } .rl-cmp .s-card { width:min(300px,44vw); }
 `; document.head.appendChild(st); }
 
 LT.relearn.run = () => {
@@ -430,6 +472,18 @@ LT.relearn.run = () => {
   const pic = (c, s = 56) => { const p = S_choicePic(c); return p ? S_art(p, s) : ''; };
   const learn = async () => {
     await each(QS.length, i => new Promise(async done => {
+      const askWhy = S_whyPick(QS[i]);
+      if (askWhy) {   // first find out why he picked it (Nov 13, Dylan: he picked the same wrong answer twice)
+        const q0 = QS[i];
+        app.innerHTML = L_exactTag() + head('First, tell me something!') + L_count(i, QS.length, 'Question') + `<div class="s-card"><div class="rl-q">${L_esc(q0.q)}</div></div><div class="rl-was">You picked <s>${L_esc(q0.his)}</s></div><h3 style="margin:6px 0 0">Why did you pick that one?</h3><div class="ls-choices" id="why">${askWhy.map(([b], j) => `<button data-w="${j}">${L_esc(b)}</button>`).join('')}</div><div class="message" id="msg"></div>`;
+        say(`${q0.q} You picked: ${q0.his.replace(/[.!?]$/, '')}. Why did you pick that one?`, 0.9);
+        const j = await new Promise(r => { $('why').onclick = e => { const b = e.target.closest('[data-w]'); if (!b) return; $('why').onclick = null; b.classList.add('right'); $('why').querySelectorAll('button').forEach(x => x.disabled = true); r(+b.dataset.w); }; });
+        if (canTalk) speechSynthesis.cancel();
+        setMsg(askWhy[j][1], 'good');
+        mark('Learn It', 'Why he picked it', true, askWhy[j][0], '', null, { text: `Why did he pick “${q0.his}”? He said: ${askWhy[j][0]}` }, [askWhy[j][0]]); L_free();
+        await Promise.race([say(askWhy[j][1], 0.9), wait(15000)]);
+        $('msg').insertAdjacentHTML('afterend', '<div class="row acts"><button class="btn big primary" id="ok">Next →</button></div>'); await new Promise(r => { $('ok').onclick = r; });
+      }
       const q = QS[i], fact = q.his && q.his.toLowerCase() !== q.answer.toLowerCase() ? (q.hisWhy || S_factFor(q.his)) : '';
       const aboutHis = q.his && q.his.split(/\s+/).length > 4 ? 'Why not the one you picked?' : `What about ${q.his}?`;   // a sentence-long pick (Social Studies) reads better this way
       app.innerHTML = L_exactTag() + head('Let’s learn this one again!') + L_count(i, QS.length, 'Question')
@@ -546,6 +600,83 @@ LT.relearn.run = () => {
       say('Remember the difference! When the Earth spins once, that’s one day, 24 hours. When the Earth goes all the way around the sun, that’s one year, 365 days.', 0.9);
       await new Promise(r => { $('ok').onclick = r; }); stepDone();
     }
+    if (want.has('clara')) {
+      const two = (a, b) => `<div class="cb-two" id="two"><button data-v="${a[0]}">${a[1]}</button><button data-v="${b[0]}">${b[1]}</button></div>`;
+      // until he taps the right one; returns whether the first tap was right
+      const pickRight = (right, wrongSay) => new Promise(r => { let first = null; $('two').onclick = async e => { const b = e.target.closest('[data-v]'); if (!b || b.disabled) return;
+        const ok = b.dataset.v === right; if (first === null) first = ok;
+        if (!ok) { b.classList.add('wrong'); b.disabled = true; setMsg('Try the other one!', 'try'); fb(wrongSay || 'Hmm, try the other one!', 0.9); return; }
+        $('two').onclick = null; b.classList.add('right'); $('two').querySelectorAll('button').forEach(x => x.disabled = true); r(first); }; });
+      const nextBtn = (label = 'Next →') => new Promise(r => { $('two') ? $('two').insertAdjacentHTML('afterend', `<div class="row acts"><button class="btn big primary" id="ok">${label}</button></div>`) : app.insertAdjacentHTML('beforeend', `<div class="row acts"><button class="btn big primary" id="ok">${label}</button></div>`); $('ok').onclick = r; });
+
+      // Practice games: always ok (Check It is the only graded part); how he did on the first try goes in typed for Parent Review.
+      // 1. Fighter or helper?
+      if (!stepSkip()) {
+        let right = 0;
+        for (let k = 0; k < S_CLARA_SORT.length; k++) {
+          const [emo, name, kind, why] = S_CLARA_SORT[k];
+          app.innerHTML = L_exactTag() + head('Fighter or helper?') + `<div class="count">${k + 1} of ${S_CLARA_SORT.length}</div><div class="cb-card"><div class="cb-emo">${emo}</div><div class="cb-name">${L_esc(name)}</div></div>` + two(['fighter', '⚔️ Fighter'], ['helper', '❤️ Helper']) + `<div class="message" id="msg"></div>`;
+          if (!k) await Promise.race([say('Some people fight. Some people help. Tap fighter or helper.', 0.92), wait(8000)]);
+          say(`${name}. Fighter, or helper?`, 0.92);
+          const first = await pickRight(kind);
+          if (first) right++;
+          setMsg(`${kind === 'helper' ? '❤️ Helper!' : '⚔️ Fighter!'} ${why}`, 'good');
+          await Promise.race([fb(`${kind === 'helper' ? 'Helper!' : 'Fighter!'} ${why}`, 0.92), wait(9000)]);
+          await nextBtn(k < S_CLARA_SORT.length - 1 ? 'Next →' : 'Done →');
+        }
+        mark('Show Me', 'Fighter or helper?', true, `${right} of ${S_CLARA_SORT.length} first try`, '', null, { text: `He sorted soldier, nurse, general, doctor, Red Cross volunteer and Clara Barton into fighters and helpers: ${right} of ${S_CLARA_SORT.length} right the first time. Clara Barton = helper.` }, ['sorted']); L_free();
+        stepDone();
+      }
+
+      // 2. Be Clara: help the hurt soldier (the sword doesn't belong in her bag)
+      if (!stepSkip()) {
+        const ITEMS = [['🩹', 'Bandage', 'Clara wraps his hurt arm with a bandage.'], ['⚔️', 'Sword', ''], ['💧', 'Water', 'Clara gives him a drink of water.'], ['🍞', 'Food', 'Clara brings him food so he gets strong again.']];
+        app.innerHTML = L_exactTag() + head('You are Clara! Help the hurt soldier. Tap what Clara brought.') + `<div class="cb-scene"><div class="cb-sol" id="sol"><div class="cb-emo" id="face">🤕</div><b>Hurt soldier</b><div class="cb-got" id="got"></div></div><div class="cb-bag" id="bag">${ITEMS.map(([e, n], j) => `<button data-i="${j}"><span>${e}</span>${n}</button>`).join('')}</div></div><div class="message" id="msg"></div>`;
+        say('You are Clara Barton! This soldier got hurt in the war. What did Clara bring to help him? Tap it!', 0.92);
+        let tappedSword = false, helped = 0;
+        await new Promise(r => { $('bag').onclick = e => { const b = e.target.closest('[data-i]'); if (!b || b.classList.contains('used') || b.classList.contains('no')) return; const [emo, , line] = ITEMS[+b.dataset.i];
+          if (!line) { tappedSword = true; b.classList.add('no', 'cb-shake'); setMsg('Clara didn’t bring a sword! She came to help, not to fight.', 'try'); fb('No sword! Clara didn’t come to fight. She came to help.', 0.92); return; }
+          b.classList.add('used'); $('got').insertAdjacentHTML('beforeend', emo); helped++; setMsg(line, 'good'); fb(line, 0.92);
+          if (helped === 3) { $('bag').onclick = null; const sw = $('bag').querySelector('[data-i="1"]'); if (sw) sw.classList.add('no'); r(); } }; });
+        await wait(1800); $('face').textContent = '😊'; confetti();
+        setMsg('“Thank you, Clara!” That’s why the soldiers called her the Angel of the Battlefield: she came to help them. ⭐', 'good');
+        await Promise.race([say('Thank you, Clara! That’s why the soldiers called her the Angel of the Battlefield. She came to help them, not to fight.', 0.9), wait(12000)]);
+        mark('Show Me', 'Be Clara: help the hurt soldier', true, tappedSword ? 'tapped the sword first' : '', '', null, { text: `He played Clara and gave the hurt soldier a bandage, water and food.${tappedSword ? ' He tapped the sword too, and heard that Clara came to help, not to fight.' : ' He left the sword alone.'}` }, ['helped']); L_free();
+        await nextBtn(); stepDone();
+      }
+
+      // 3. The Red Cross (he got that question right): Clara started it
+      if (!stepSkip()) {
+        app.innerHTML = L_exactTag() + head('You already know this!') + `<div class="cb-card"><div class="cb-emo">👩‍⚕️ 🩹</div><div class="cb-name">Clara Barton started the Red Cross.</div></div><h3 style="margin:8px 0 0">What does the Red Cross do?</h3>` + two(['help', '❤️ Helps people'], ['fight', '⚔️ Fights in wars']) + `<div class="message" id="msg"></div>`;
+        say('Clara Barton started the Red Cross. What does the Red Cross do? Does it help people, or fight in wars?', 0.92);
+        const first = await pickRight('help', 'No, the Red Cross doesn’t fight. Try the other one!');
+        setMsg('Yes! The Red Cross helps people. Clara started it because she was a helper too! ⭐', 'good'); if (first) confetti();
+        await Promise.race([fb('Yes! The Red Cross helps people. Clara started it because she was a helper too!', 0.92), wait(9000)]);
+        mark('Show Me', 'The Red Cross helps people (Clara started it)', true, first ? 'Helps people' : 'Fights in wars', 'Helps people', null, { text: 'Clara Barton started the Red Cross. What does the Red Cross do?' }, [first ? 'Helps people' : 'Fights in wars']); L_free();
+        await nextBtn(); stepDone();
+      }
+
+      // 4. Cross out what she didn't do (his pick first, the right one last)
+      for (const q of QS.filter(x => S_demosFor(x).includes('clara'))) {
+        if (stepSkip()) continue;
+        const wrong = q.choices.filter(c => c !== q.answer), order = [...wrong.filter(c => c === q.his), ...wrong.filter(c => c !== q.his), q.answer];
+        app.innerHTML = L_exactTag() + head('Did Clara do this? Cross out what she didn’t do!') + `<div class="cb-list">${q.choices.map(c => `<div class="cb-ch" data-c="${L_esc(c)}">${L_esc(c)}</div>`).join('')}</div>` + two(['yes', '👍 Yes'], ['no', '👎 No']) + `<div class="message" id="msg"></div>`;
+        let right = 0;
+        for (const c of order) {
+          const [did, why] = S_claraReason(c), el = [...app.querySelectorAll('.cb-ch')].find(x => x.dataset.c === c);
+          app.querySelectorAll('.cb-ch').forEach(x => x.classList.remove('now')); el.classList.add('now');
+          $('two').querySelectorAll('button').forEach(x => { x.disabled = false; x.classList.remove('wrong', 'right'); }); setMsg('');
+          say(`Did Clara do this? ${c.replace(/[.!?]$/, '')}?`, 0.9);
+          const first = await pickRight(did ? 'yes' : 'no'); if (first) right++;
+          el.classList.remove('now'); el.classList.add(did ? 'yes' : 'no'); setMsg(why, 'good');
+          await Promise.race([fb(why, 0.9), wait(9000)]); await wait(400);
+        }
+        confetti(); setMsg('Only one is left. That’s the answer! She was a nurse who helped soldiers. ⭐', 'good');
+        await Promise.race([fb('Only one is left. That’s the answer!', 0.9), wait(6000)]);
+        mark('Show Me', 'Cross out what Clara didn’t do', true, `${right} of ${order.length} first try`, q.answer, null, { text: `He went through each choice of “${q.q}” and crossed out what Clara didn’t do: ${right} of ${order.length} right the first time.` }, ['crossed out']); L_free();
+        $('two').remove(); await nextBtn(); stepDone();
+      }
+    }
     partDone('You showed it!');
   };
 
@@ -573,5 +704,5 @@ LT.relearn.run = () => {
   PARTS = [{ name: 'Learn It', run: learn }];
   if (QS.some(q => S_demosFor(q).length)) PARTS.push({ name: 'Show Me', run: showMe });
   PARTS.push({ name: 'Check It', run: check });
-  return { intro: `Extra help! Let’s learn ${QS.length === 1 ? 'a quiz question' : `${QS.length} quiz questions`} again. First you’ll learn the answer${QS.some(q => S_demosFor(q).length) ? ', then you’ll show it with the Earth and the sun' : ''}, then you’ll answer it again.` };
+  return { intro: `Extra help! Let’s learn ${QS.length === 1 ? 'a quiz question' : `${QS.length} quiz questions`} again. First you’ll learn the answer${QS.some(q => S_demosFor(q).some(x => x !== 'clara')) ? ', then you’ll show it with the Earth and the sun' : QS.some(q => S_demosFor(q).includes('clara')) ? ', then you’ll play some games about it' : ''}, then you’ll answer it again.` };
 };
