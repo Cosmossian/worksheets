@@ -3120,8 +3120,9 @@ function autoFixit(ds, assigned) {
   if (assigned.some(a => a.tool === 'fixit')) return null;
   const day = r => ymd(r.t) === ds, log = withToday('sheet-log', store('sheet-log') || []).filter(day);
   const fixes = log.filter(r => r.tool === 'fixit'), miss = new Map();
+  // not the Word Master Challenge (Nov 13, Dylan: it's already the practice; the Mastered Words Test right after is the check)
   // not the daily sight words (their Sight Word Practice is id daily-<date>): missed sight words already get the Spelling Fix-Up (Nov 10)
-  log.filter(r => r.tool !== 'fixit' && r.tool !== 'mtest' && !String(r.aid || '').startsWith('daily-')).sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
+  log.filter(r => r.tool !== 'fixit' && r.tool !== 'mtest' && r.tool !== 'master' && !String(r.aid || '').startsWith('daily-')).sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
     const w = String(m.word || '').trim().toLowerCase(); if (!/[a-z]/.test(w)) return;
     const his = String(m.typed || '').trim().toLowerCase();
     miss.set(w, { w, his: his && his !== w ? his : (miss.get(w) || {}).his || '', t: r.t });

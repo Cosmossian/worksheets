@@ -1331,7 +1331,7 @@ async function openDay(ds) {
     // (spell.html autoFixit; same rules here, from the results in the Study database). Not when one was assigned for that day.
     if (!future && !((S.sheets && S.sheets.list) || []).some(a => a.tool === 'fixit' && onList(a, ds, doneDays))) {
       const dl = L.filter(x => x.kind === 'sheet' && today(x)), fixes = dl.filter(x => x.tool === 'fixit'), miss = new Map();
-      dl.filter(x => x.tool !== 'fixit' && x.tool !== 'mtest' && !String(x.aid || '').startsWith('daily-')).sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
+      dl.filter(x => x.tool !== 'fixit' && x.tool !== 'mtest' && x.tool !== 'master' && !String(x.aid || '').startsWith('daily-')).sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
         const w = String(m.word || '').trim().toLowerCase(); if (!/[a-z]/.test(w)) return;
         const his = String(m.typed || '').trim().toLowerCase();
         miss.set(w, { w, his: his && his !== w ? his : (miss.get(w) || {}).his || '', t: r.t, from: r.title || '' });
