@@ -358,6 +358,8 @@ body.schoolmode .tabs { display: none; }
   <button role="tab" data-tool="readaloud">📖 Read Story for Class Recording</button>
   <button role="tab" data-tool="chains">Word Chains</button>
   <button role="tab" data-tool="heart">Heart Word</button>
+  <button role="tab" data-tool="wsearch">Word Search</button>
+  <button role="tab" data-tool="fillin">Fill in the Blank</button>
   <button role="tab" data-tool="letter">Handwriting</button>
   <button role="tab" data-tool="sort">Spelling Sort</button>
 </nav>
@@ -934,7 +936,7 @@ function countEagles() {
 }
 
 </script>
-<script src="lessons.js?v=12"></script>
+<script src="lessons.js?v=13"></script>
 <script src="science.js?v=6"></script>
 <script>
 /* First Grade Fun Worksheets — the page you use to make worksheets. */
@@ -1228,7 +1230,7 @@ const CLASSES = [
   { id: 'ela', name: 'ELA', icon: '📖', tools: ['question', 'letter', 'sort'] },
   { id: 'math', name: 'Math', icon: '🔢', tools: ['eagles', 'tenmore'] },
   { id: 'music', name: 'Music', icon: '🎵', tools: [] },
-  { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['daily', 'helper', 'sight', 'master', 'fixup', 'fixit', 'sound', 'story', 'readaloud', 'chains', 'heart'] },
+  { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['daily', 'helper', 'sight', 'master', 'fixup', 'fixit', 'sound', 'story', 'readaloud', 'chains', 'heart', 'wsearch', 'fillin'] },
   { id: 'pe', name: 'PE', icon: '🏃', tools: [] },
   { id: 'science', name: 'Science', icon: '🔬', tools: ['weather', 'seasons', 'seacycle', 'quiz', 'relearn'] },
   { id: 'social', name: 'Social Studies', icon: '🌎', tools: ['relearn'] },
@@ -1627,7 +1629,7 @@ async function autoSchool() {
     const { data: logs } = await sb.from('study_log').select('kind,data').in('kind', ['sheet', 'fixup']).gte('t', new Date(Date.now() - 30 * 864e5).toISOString());
     const started = id => (logs || []).some(r => (r.data.aid || r.data.cid) === id);
     L_IDS.forEach(t => Object.keys(LT[t].schools || {}).forEach(day => {
-      if (day <= today || skip.has(`${t}@${day}`)) return;   // upcoming days only: today's are already set (or yours to assign)
+      if (day < today || skip.has(`${t}@${day}`)) return;   // today and upcoming days (Nov 16, 2026: today's too, for sheets added the morning of)
       const snap = L_snapshotDay(t, day); if (!snap) return;
       const have = list.find(a => a.tool === t && a.data && a.data.exact && sheetDay(a) === day);
       if (!snap.ok) { if (!have) waiting.push({ t, day, need: snap.need }); return; }

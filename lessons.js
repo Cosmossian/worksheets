@@ -153,7 +153,8 @@ const LT = {
     name: 'Story Time', cls: 'phonics',
     help: 'A short decodable story. He reads it a sentence at a time (the microphone listens, and his reading is saved for Parent Review), finds the words with the lesson’s spelling, and draws the story.',
     schools: {
-      '2026-11-09': { note: 'The UFLI story isn’t built in, so type it in the Story box from the sheet. The title and lesson are already filled in.', set: () => ({ label: 'Lesson 54: a_e /ā/', heading: 'Cave in the Maze', pattern: 'a_e', text: '', questions: '', draw: true }) }
+      '2026-11-09': { note: 'The UFLI story isn’t built in, so type it in the Story box from the sheet. The title and lesson are already filled in.', set: () => ({ label: 'Lesson 54: a_e /ā/', heading: 'Cave in the Maze', pattern: 'a_e', text: '', questions: '', draw: true }) },
+      '2026-11-16': { note: 'The UFLI story “The Drive Home” (Lesson 56) isn’t built in, so type or paste it in the Story box from the sheet. The title and lesson are already filled in.', set: () => ({ label: 'Lesson 56: o_e /ō/', heading: 'The Drive Home', pattern: 'o_e', text: '', questions: '', draw: true }) }
     },
     own: () => ({ label: 'Long a: a_e', heading: 'The Snake at the Lake', pattern: 'a_e', text: 'Kate and Gabe went to the lake. They made up a game. Gabe had to name each shape in the sand. Kate got a cane to dig with. Then they saw a snake by the gate! “Let’s not wake it,” said Kate. The snake did not wake up. Gabe and Kate came home late. It was a fun day at the lake!', questions: 'Where did Kate and Gabe go? | the lake | the store | the lake\nWhat was by the gate? | a snake | a cake | a snake\nDid the snake wake up? | yes | no | no', draw: true }),
     fields: mode => [
@@ -173,14 +174,15 @@ const LT = {
     name: 'Word Chains', cls: 'phonics',
     help: 'A home-practice lesson: the new words, a heart word, word chains (change one letter to make a new word) and two sentences. On screen the chains go spell, read, spell, read, like the lesson script.',
     schools: {
-      '2026-11-09': { note: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 54”.', set: () => ({ lesson: 'Lesson 54', concept: 'a_e', words: 'make, cape, fade, plate, skate, shade', heart: 'wh*|o*', chains: 'make, lake, cake, bake\nname, same, came, game', sentences: 'Who will be at the lake?\nBlake was late to the game.' }) }
+      '2026-11-09': { note: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 54”.', set: () => ({ lesson: 'Lesson 54', concept: 'a_e', words: 'make, cape, fade, plate, skate, shade', heart: 'wh*|o*', chains: 'make, lake, cake, bake\nname, same, came, game', sentences: 'Who will be at the lake?\nBlake was late to the game.' }) },
+      '2026-11-16': { note: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 56” (no new irregular word this time).', set: () => ({ lesson: 'Lesson 56', concept: 'o_e', words: 'hope, note, bone, close, phone, those', heart: '', chains: 'rope, mope, cope, hope\nwoke, joke, poke, spoke', sentences: 'Who did you vote for?\nWe drove home at nine.' }) }
     },
     own: () => ({ lesson: 'Long a: ai', concept: 'ai', words: 'rain, tail, paint, snail, wait, chain', heart: 's|ai*|d', chains: 'rain, pain, main, mail\nsail, tail, nail, snail', sentences: 'The snail is on the trail.\nWait for the rain to stop.' }),
     fields: () => [
       { k: 'lesson', label: 'Lesson', type: 'text' },
       { k: 'concept', label: 'New spelling', type: 'text', help: 'Like a_e, ai, igh.' },
       { k: 'words', label: 'Sample words', type: 'area' },
-      { k: 'heart', label: 'Heart word, split into sounds', type: 'text', help: 'Split with | and put * after the heart parts: wh*|o* for who, s|ai*|d for said.' },
+      { k: 'heart', label: 'Heart word, split into sounds', type: 'text', help: 'Split with | and put * after the heart parts: wh*|o* for who, s|ai*|d for said. Leave empty if the lesson has none.' },
       { k: 'chains', label: 'Word chains', type: 'area', rows: 3, help: 'One chain per line: make, lake, cake, bake' },
       { k: 'sentences', label: 'Sentences', type: 'area', rows: 3, help: 'One per line.' }
     ],
@@ -194,7 +196,8 @@ const LT = {
     help: 'One heart word (a word with a part you learn by heart): map its sounds into boxes, write it 3 times, write a sentence with it, and find it in a row of words.',
     schools: {
       '2026-11-09': { note: 'Same word and the same row of words as the school sheet for “their”.', set: () => ({ word: 'their', parts: 'th|eir*', row: 'the their they she say go have their their said I of I' }) },
-      '2026-11-12': { note: 'Same word and the same row of words as the school sheet for “my” (m is regular, y is the heart part).', set: () => ({ word: 'my', parts: 'm|y*', row: 'my the said look me my and my me too my said me is' }) }
+      '2026-11-12': { note: 'Same word and the same row of words as the school sheet for “my” (m is regular, y is the heart part).', set: () => ({ word: 'my', parts: 'm|y*', row: 'my the said look me my and my me too my said me is' }) },
+      '2026-11-16': { note: 'Same word and the same row of words as the school sheet for “who” (both parts are heart parts).', set: () => ({ word: 'who', parts: 'wh*|o*', row: 'Said me who see are was who as you who be I who and' }) }
     },
     own: () => ({ word: 'said', parts: 's|ai*|d', row: L_heartRow('said') }),
     fields: () => [
@@ -214,7 +217,8 @@ const LT = {
     schools: {
       '2026-11-09': { note: 'Same letter, names and sentences as the school sheet “Uppercase Q”.', set: () => ({ letter: 'Q', words: 'Quinn, Quella, Quentin', trace: 'Quency has a quilt.', copy: 'Quinn the quail quests for food.' }) },
       '2026-11-10': { note: 'Same letter, words and sentences as the school sheet “Lowercase f”.', set: () => ({ letter: 'f', words: 'fish, fan, fat', trace: 'The fawn is fast.', copy: 'The fox has fuzzy fur.' }) },
-      '2026-11-12': { note: 'Same letter, names and sentences as the school sheet “Uppercase F”.', set: () => ({ letter: 'F', words: 'Felicia, Frank, Finn', trace: 'Flora fed the fish.', copy: 'Fred the fly flies fast.' }) }
+      '2026-11-12': { note: 'Same letter, names and sentences as the school sheet “Uppercase F”.', set: () => ({ letter: 'F', words: 'Felicia, Frank, Finn', trace: 'Flora fed the fish.', copy: 'Fred the fly flies fast.' }) },
+      '2026-11-16': { note: 'Same letter, words and sentences as the school sheet “Lowercase s”.', set: () => ({ letter: 's', words: 'see, sub, snap', trace: 'The shop sells salt.', copy: 'Sally the seal sings a song.' }) }
     },
     own: () => ({ letter: 'R', words: 'Rosa, Ryan, Rudy', trace: 'Rex ran to the rug.', copy: 'Rita reads a red book.' }),
     fields: () => [
@@ -294,10 +298,90 @@ const LT = {
       return { words: words.slice(0, 12), trace: Math.min(3, Math.max(1, +c.trace || 2)) };
     },
     check: d => d.words.length ? '' : 'Type the words, or tap 📥 to load his spelling mistakes.'
+  },
+  /* Nov 16, 2026 (UFLI Lesson 56 "o_e /ō/" word search): find the words in a grid of letters, across → and down ↓ */
+  wsearch: {
+    name: 'Word Search', cls: 'phonics',
+    help: 'Words hidden in a grid of letters, across → and down ↓. On screen he taps the first letter of a word, then its last letter, and hears the word when he finds it. 🆘 Help me lights up where a word starts (noted in Parent Review).',
+    schools: {
+      '2026-11-16': { note: 'Same letter grid and words as the school word search “o_e /ō/” (UFLI Lesson 56).', set: () => ({ heading: 'o_e /ō/', pattern: 'o_e', words: 'hole, rode, home, rose, those, phone, close, stove, globe', grid: 'QTCMAHOLEOHF\nRHLWGDXXNHRC\nDOOSXPGLOBER\nTSSTIHLPMIRO\nZEEOEORPSKQD\nLFBVANSHOMEE\nKREEBEHROSEK\nBWSQQHRBZTWF' }) }
+    },
+    own: () => { const c = { heading: 'Long a: a_e', pattern: 'a_e', words: 'cake, game, lake, name, plate, snake, gate, wave', grid: '' }; c.grid = L_makeSearch(L_list(c.words)); return c; },
+    fields: () => [
+      { k: 'heading', label: 'Title', type: 'text' },
+      { k: 'pattern', label: 'Spelling pattern (optional)', type: 'text', help: 'Like o_e or ai. Found words show it in color. Leave empty to skip.' },
+      { k: 'words', label: 'Words to find', type: 'area', help: 'Separate with commas. Each one has to be in the grid, across or down.' },
+      { k: 'grid', label: 'Letter grid', type: 'area', rows: 8, help: 'One row of letters per line, every row the same length. Tap 🎲 to make a new grid from the words.' }
+    ],
+    acts: mode => mode === 'own' ? [['grid', '🎲 Make a new puzzle from the words']] : [],
+    act: (a, c) => { if (a === 'grid') c.grid = L_makeSearch(L_list(c.words)); },
+    title: c => `Word Search${(c.heading || '').trim() ? ': ' + c.heading.trim() : ''}`,
+    data: c => ({ heading: (c.heading || '').trim(), pattern: (c.pattern || '').trim(), words: [...new Set(L_list(c.words).map(L_letters).filter(Boolean))], rows: L_lines(c.grid).map(r => r.toUpperCase().replace(/[^A-Z]/g, '')).filter(Boolean) }),
+    check: d => {
+      if (!d.words.length) return 'Type the words to find.';
+      if (!d.rows.length) return 'Type the letter grid (or tap 🎲 to make one).';
+      if (d.rows.some(r => r.length !== d.rows[0].length)) return 'Every row of the grid needs the same number of letters.';
+      const gone = d.words.filter(w => !L_findIn(d.rows, w));
+      return gone.length ? `These aren’t in the grid (across or down): ${gone.join(', ')}.` : '';
+    }
+  },
+  /* Nov 16, 2026 (Stride "Finish the Job", Silent e spelling for sound /ō/): pick a word from the box, write it in the blank, read the sentence out loud */
+  fillin: {
+    name: 'Fill in the Blank', cls: 'phonics',
+    help: 'A word box and sentences with a missing word. On screen he types the word that fits into the blank (a word he tries that doesn’t fit gets crossed out), then reads the whole sentence out loud. His reading is saved for Parent Review.',
+    schools: {
+      '2026-11-16': { note: 'Same word box and sentences as the school sheet “Finish the Job” (Silent e Spelling for Sound /ō/).', set: () => ({ heading: 'Finish the Job', label: 'Silent e spelling for sound /ō/', bank: 'time, hope, miles, robe, vase, plate', sentences: 'I rode my bike for five [miles].\nPut the rose in a [vase].\nFor the first [time], I can skate fast.\nDid you put the cake on this [plate]?\nThe king has a red [robe].\nI [hope] the plane is on time.', aloud: true }) }
+    },
+    own: () => ({ heading: 'Finish the Sentence', label: 'Long o: o_e', bank: 'home, rope, nose, bone, note, stone', sentences: 'The dog dug up a [bone].\nI wrote Mom a [note].\nWe walked [home] from the park.\nShe can jump [rope] fast.\nI smell with my [nose].\nHe sat on a big [stone].', aloud: true }),
+    fields: () => [
+      { k: 'heading', label: 'Title', type: 'text' },
+      { k: 'label', label: 'Lesson (optional)', type: 'text' },
+      { k: 'bank', label: 'Word box', type: 'text', help: 'Separate with commas.' },
+      { k: 'sentences', label: 'Sentences', type: 'area', rows: 6, help: 'One per line. Put the missing word in [square brackets]: I rode my bike for five [miles].' },
+      { k: 'aloud', label: 'Then read the sentence out loud (microphone)', type: 'check' }
+    ],
+    acts: () => [],
+    title: c => (c.heading || '').trim() || 'Fill in the Blank',
+    data: c => ({ heading: LT.fillin.title(c), label: (c.label || '').trim(), bank: L_list(c.bank), aloud: !!c.aloud,
+      sents: L_lines(c.sentences).map(l => { const m = l.match(/\[([^\]]+)\]/); return m ? { a: l.slice(0, m.index), w: m[1].trim(), b: l.slice(m.index + m[0].length) } : null; }).filter(Boolean) }),
+    check: d => {
+      if (!d.sents.length) return 'Type a sentence with the missing word in [square brackets].';
+      const out = d.sents.map(s => s.w).filter(w => !d.bank.some(b => b.toLowerCase() === w.toLowerCase()));
+      return out.length ? `Add these to the word box: ${out.join(', ')}.` : '';
+    }
   }
 };
 const L_IDS = Object.keys(LT);
-const L_CLASS_OF = { fixit: 'phonics', tenmore: 'math', sound: 'phonics', story: 'phonics', readaloud: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela', sort: 'ela' };
+const L_CLASS_OF = { fixit: 'phonics', tenmore: 'math', sound: 'phonics', story: 'phonics', readaloud: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela', sort: 'ela', wsearch: 'phonics', fillin: 'phonics' };
+/* Word search helpers: where a word is in the grid (across or down) as cell indexes, and a new grid from a list of words */
+function L_findIn(rows, w) {
+  const W = String(w).toUpperCase(), R = rows.length, C = (rows[0] || '').length;
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+    if (c + W.length <= C && rows[r].slice(c, c + W.length) === W) return [...W].map((_, k) => r * C + c + k);
+    if (r + W.length <= R && [...W].every((ch, k) => rows[r + k][c] === ch)) return [...W].map((_, k) => (r + k) * C + c);
+  }
+  return null;
+}
+function L_makeSearch(words, R = 8, C = 12) {
+  const ws = words.map(w => L_letters(w).toUpperCase()).filter(Boolean).sort((a, b) => b.length - a.length);
+  C = Math.max(C, ...ws.map(w => w.length)); R = Math.max(R, Math.ceil(ws.length * 0.9));
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const g = Array.from({ length: R }, () => Array(C).fill('')); let ok = true;
+    for (const w of ws) {
+      let placed = false;
+      for (let t = 0; t < 300 && !placed; t++) {
+        const down = Math.random() < 0.45, r = L_rand(0, down ? R - w.length : R - 1), c = L_rand(0, down ? C - 1 : C - w.length);
+        if (r < 0 || c < 0) continue;
+        if ([...w].every((ch, k) => { const x = down ? g[r + k][c] : g[r][c + k]; return !x || x === ch; })) { [...w].forEach((ch, k) => { if (down) g[r + k][c] = ch; else g[r][c + k] = ch; }); placed = true; }
+      }
+      if (!placed) { ok = false; break; }
+    }
+    if (!ok) continue;
+    const AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', rows = g.map(row => row.map(x => x || AZ[L_rand(0, 25)]).join(''));
+    if (ws.every(w => L_findIn(rows, w))) return rows.join('\n');
+  }
+  return '';
+}
 
 /* =====================================================================
    Worksheets page (index.html): the settings panel and the printed page
@@ -369,7 +453,7 @@ LT.chains.print = (d, exact) => {
     + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">`
     + box(`New Concept: ${L_esc(d.concept)}`, `<div style="columns:2;font-size:26px;line-height:1.6;text-align:center">${d.words.map(w => `<div>${L_hlWord(w, pat)}</div>`).join('')}</div>`)
     + box('Word Chains', d.chains.map((ch, i) => `<div style="font-size:19px;margin:4px 0"><b>${i + 1}.</b> ${ch.map(L_esc).join(' → ')}</div>`).join('') + `<div style="font-size:14px;color:#475569;margin-top:6px">Make the first word. Change one letter at a time to make the next.</div>`)
-    + box('New Irregular Word', heart + `<div style="font-size:14px;color:#475569;text-align:center">♥ = the part you learn by heart</div>`)
+    + box('New Irregular Word', d.heart.length ? heart + `<div style="font-size:14px;color:#475569;text-align:center">♥ = the part you learn by heart</div>` : `<div style="font-size:22px;text-align:center;color:#475569">None this time</div>`)
     + box('Sentences', d.sentences.map((s, i) => `<div style="font-size:21px;margin:4px 0"><b>${i + 1}.</b> ${L_esc(s)}</div>`).join(''))
     + `</div>` + L_h('✎', '#0F766E', 'Spell each word in the chain.') + `<div style="display:flex;flex-direction:column;gap:8px">${(d.chains[0] || []).map(() => writebox(736, '', 40)).join('')}</div>`, exact, { gap: 14 });
 };
@@ -444,6 +528,17 @@ LT.fixit.print = d => {
 };
 LT.readaloud.print = (d, exact) => L_sheetOf(nameDate() + title(d.heading || 'My Story', 'Read it out loud', star('#F59E0B'), star('#1D4ED8'))
   + `<div style="font:400 30px/1.9 Andika,sans-serif;padding:10px 24px">${L_esc(d.text)}</div>`, exact, { gap: 14 });
+LT.wsearch.print = (d, exact) => {
+  const C = (d.rows[0] || '').length, cell = Math.min(52, Math.floor(700 / Math.max(C, 1)));
+  return L_sheetOf(nameDate() + title(d.heading || 'Word Search', 'Word Search', star('#0F766E'), star('#7E22CE'))
+    + `<div style="display:flex;justify-content:center"><table style="border:2px solid #1F2937;border-collapse:collapse;padding:6px">${d.rows.map(r => `<tr>${[...r].map(ch => `<td style="width:${cell}px;height:${cell}px;text-align:center;font:600 ${Math.round(cell * 0.55)}px Fredoka,sans-serif;color:#1F2937">${L_esc(ch)}</td>`).join('')}</tr>`).join('')}</table></div>`
+    + `<div style="font-size:20px">Find the following words in the puzzle. Words are hidden → and ↓.</div>`
+    + `<div style="columns:3;font:600 24px Fredoka,sans-serif;line-height:1.6;padding-left:20px">${d.words.map(w => `<div>☐ ${L_esc(w.toUpperCase())}</div>`).join('')}</div>`, exact, { gap: 16 });
+};
+LT.fillin.print = (d, exact) => L_sheetOf(nameDate() + (d.label ? `<div style="font:600 15px Fredoka,sans-serif;color:#475569;text-transform:uppercase">${L_esc(d.label)}</div>` : '')
+  + title(d.heading, 'Choose a word from the box. Write it. Then read the sentence out loud.', star('#7E22CE'), star('#EA580C'), 40)
+  + `<div style="display:flex;justify-content:center"><div style="border:3px dotted #F59E0B;border-radius:18px;background:#FFFBEB;padding:14px 26px;display:grid;grid-template-columns:repeat(3,auto);gap:8px 46px;font:700 28px Andika,sans-serif">${d.bank.map(w => `<span>${L_esc(w)}</span>`).join('')}</div></div>`
+  + `<div style="display:flex;flex-direction:column;gap:30px;margin-top:14px;padding-left:20px">${d.sents.map((x, i) => `<div style="font:400 27px Andika,sans-serif"><b style="color:#7E22CE">${i + 1}.</b> ${L_esc(x.a)}<span style="display:inline-block;width:190px;border-bottom:2px solid #38BDF8;margin:0 6px"></span>${L_esc(x.b)}</div>`).join('')}</div>`, exact, { gap: 16 });
 
 /* settings panel. Each worksheet can have several official school sheets, one per school day (Nov 9, 2026, Dylan: "Load 11/10/26
    Official School Worksheets so I know it's for the next day's assignments"). state[t] = { mode: 'school'|'own', day: 'YYYY-MM-DD',
@@ -582,6 +677,15 @@ if (L_IN_DO) {
     .ls-row button.found { border-color:#7E22CE; background:#F3E8FF; box-shadow:0 0 0 3px #7E22CE; } .ls-row button.no { border-color:var(--bad); background:#FEE2E2; }
     .ls-palette { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; } .ls-palette button { width:48px; height:48px; border-radius:50%; border:3px solid var(--line); cursor:pointer; font-size:22px; }
     .ls-palette button.on { box-shadow:0 0 0 4px #fff; } .ls-model { font:700 clamp(30px,6vw,52px) Andika,sans-serif; background:#fff; color:#1F2937; border-radius:16px; padding:2px 22px; }
+    .ls-ws { display:flex; gap:22px; align-items:flex-start; justify-content:center; flex-wrap:wrap; }
+    .ls-wsg { display:grid; gap:3px; background:#fff; padding:8px; border-radius:14px; }
+    .ls-wsg button { width:clamp(30px,5.6vw,46px); height:clamp(30px,5.6vw,46px); border-radius:9px; border:2px solid #E2E8F0; background:#fff; color:#1F2937; font:700 clamp(18px,3.2vw,26px) Fredoka,sans-serif; display:grid; place-items:center; cursor:pointer; touch-action:manipulation; padding:0; }
+    .ls-wsg button.first { border-color:#F59E0B; background:#FEF3C7; } .ls-wsg button.found { border-color:transparent; color:#0E151D; } .ls-wsg button.hint { animation:lspulse 1s infinite; border-color:#EA580C; background:#FED7AA; }
+    .ls-wsg button.no { background:#FECACA; }
+    .ls-wsf { display:flex; flex-direction:column; gap:8px; } .ls-wsf div { display:flex; align-items:center; gap:10px; font:700 26px Andika,sans-serif; }
+    .ls-wsf i { width:26px; height:26px; border:3px solid var(--field-line); border-radius:8px; display:grid; place-items:center; font-style:normal; font-size:18px; }
+    .ls-wsf .got { color:var(--good); } .ls-wsf .got i { border-color:var(--good); background:var(--good); color:#0E151D; } .ls-wsf button { border:0; background:none; cursor:pointer; color:var(--muted); }
+    .pill.used { opacity:.4; } .fj-fill { color:var(--good); border-bottom:4px solid var(--good); padding:0 6px; }
     .ls-help { font-size:15px; } .ls-ten { display:flex; align-items:center; gap:18px; font:700 clamp(40px,8vw,70px) Fredoka,sans-serif; } .ls-ten i { font-style:normal; color:var(--muted); font-size:.6em; }
     `; document.head.appendChild(st); })();
 }
@@ -1687,3 +1791,90 @@ function L_warmup() {
   PARTS = [{ name: 'Look at It', run: lookP }, { name: 'Trace It', run: traceP }, { name: 'Spell It', run: spellP }];
   return { intro: `Quick warm-up! ${W.length === 1 ? 'One tricky word' : `${W.length} tricky words`} before the quiz: look at ${W.length === 1 ? 'it' : 'each one'}, trace ${W.length === 1 ? 'it' : 'it once'}, then spell ${W.length === 1 ? 'it' : 'them'} from memory.` };
 }
+
+/* ---------- Word Search (Nov 16, 2026) ---------- */
+LT.wsearch.run = () => {
+  const d = SD, R = d.rows, C = R[0].length, pat = L_pattern(d.pattern), COL = ['#34D399', '#7FB0F0', '#FBBF24', '#C4B5FD', '#F9A8D4', '#FDBA74'];
+  const at = n => R[Math.floor(n / C)][n % C];
+  const findP = async () => {
+    const found = new Map(), helped = new Set(), wrong = []; let first = null, hintCell = -1;
+    app.innerHTML = L_exactTag() + head('Find each word. Tap its first letter, then its last letter. Words go across → or down ↓.')
+      + `<div class="ls-ws"><div class="ls-wsg" id="wsg" style="grid-template-columns:repeat(${C},auto)"></div><div class="ls-wsf" id="wsf"></div></div><div class="message" id="msg"></div><div class="row" style="justify-content:center"><button class="btn" id="wsHelp">🆘 Help me</button></div>`;
+    const draw = () => {
+      const color = {}; [...found.values()].forEach((cells, k) => cells.forEach(c => color[c] = COL[k % COL.length]));   // in the order he found them, so neighbors differ
+      $('wsg').innerHTML = R.join('').split('').map((ch, n) => `<button class="${color[n] ? 'found' : ''}${first === n ? ' first' : ''}${hintCell === n && first !== n ? ' hint' : ''}" data-n="${n}" style="${color[n] ? `background:${color[n]}` : ''}" aria-label="${ch}">${ch}</button>`).join('');
+      $('wsf').innerHTML = d.words.map(w => `<div class="${found.has(w) ? 'got' : ''}"><i>${found.has(w) ? '✓' : ''}</i><span>${found.has(w) && pat ? L_hlWord(w, pat, '#C4B5FD') : L_esc(w)}</span><button data-say="${L_esc(w)}" aria-label="Hear ${L_esc(w)}">${SPK}</button></div>`).join('');
+    };
+    draw(); fb('Find each word. Tap its first letter, then its last letter.', 0.95);
+    $('wsf').onclick = e => { const b = e.target.closest('[data-say]'); if (b) playWord(b.dataset.say); };
+    $('wsHelp').onclick = () => {
+      const w = d.words.find(x => !found.has(x)); if (!w) return;
+      helped.add(w); hintCell = L_findIn(R, w)[0]; draw();
+      setMsg(`Look for “${w}”. It starts with the orange ${w[0].toUpperCase()}.`, 'try'); say(`Look for ${w}. It starts here.`, 0.9);
+    };
+    await new Promise(res => {
+      $('wsg').onclick = e => {
+        const b = e.target.closest('[data-n]'); if (!b) return; const n = +b.dataset.n;
+        if (first === null) { first = n; draw(); setMsg('Now tap the last letter of the word.'); return; }
+        if (n === first) { first = null; draw(); setMsg(''); return; }
+        let a = first, z = n; first = null;
+        if (z < a) [a, z] = [z, a];   // tapped the last letter first: that's fine too
+        const r1 = Math.floor(a / C), c1 = a % C, r2 = Math.floor(z / C), c2 = z % C, cells = [];
+        if (r1 === r2) for (let c = c1; c <= c2; c++) cells.push(r1 * C + c);
+        else if (c1 === c2) for (let r = r1; r <= r2; r++) cells.push(r * C + c1);
+        else { draw(); setMsg('Words go straight across → or straight down ↓. Tap the first letter, then the last letter.', 'try'); return; }
+        const str = cells.map(at).join('').toLowerCase(), hit = d.words.find(w => w === str && !found.has(w));
+        if (hit) {
+          found.set(hit, cells); if (hintCell === cells[0]) hintCell = -1; draw();
+          setMsg(`You found “${hit}”!`, 'good'); playWord(hit);
+          if (found.size === d.words.length) { $('wsHelp').disabled = true; $('wsg').onclick = null; setTimeout(() => { setMsg('You found them all!', 'good'); fb('You found them all!', 1); nextUp(1400).then(res); }, 900); }
+        } else {
+          wrong.push(str.toUpperCase()); draw();
+          cells.forEach(c => { const el = app.querySelector(`[data-n="${c}"]`); if (el && !el.classList.contains('found')) { el.classList.add('no'); setTimeout(() => el.classList.remove('no'), 800); } });
+          setMsg(found.has(str) ? `You already found “${str}”. Look for another word.` : 'That’s not one of the words. Try again!', 'try');
+        }
+      };
+    });
+    d.words.forEach(w => { mark('Find the Words', w, true, '', '', null, { text: helped.has(w) ? `He found “${w}” after 🆘 Help me showed where it starts.` : `He found “${w}” by himself.` }, [helped.has(w) ? 'found it with help' : 'found it']); L_free(); });   // no grade: a search, not a test
+    if (wrong.length) { mark('Find the Words', 'Wrong taps', true, '', '', null, { text: `Letters he tapped that weren’t a word: ${wrong.join(', ')}.` }, wrong); L_free(); }
+    partDone(helped.size ? `Found all ${d.words.length} (help with ${helped.size}).` : `Found all ${d.words.length} by himself!`);
+  };
+  PARTS = [{ name: 'Find the Words', run: findP }];
+  return { intro: `Word search: find ${d.words.length} words.` };
+};
+
+/* ---------- Fill in the Blank (Nov 16, 2026) ---------- */
+LT.fillin.run = () => {
+  const d = SD, run = Date.now().toString(36), n = d.sents.length;
+  const fillP = async () => {
+    if (d.aloud) await L_mic();
+    const used = new Set();
+    await each(n, i => new Promise(async done => {
+      const s = d.sents[i], blankS = `${s.a}___${s.b}`, full = `${s.a}${s.w}${s.b}`;
+      d.sents.slice(0, i).forEach(x => used.add(x.w.toLowerCase()));
+      app.innerHTML = L_exactTag() + head('Choose a word from the box to finish the sentence. Type it in.') + L_count(i, n, 'Sentence')
+        + `<div class="sentence" id="fs">${L_esc(s.a)}<span class="blankbox" id="blank"></span>${L_esc(s.b)}</div>`
+        + `<div class="bank">${d.bank.map(w => `<span class="pill show${used.has(w.toLowerCase()) ? ' used' : ''}" data-bw="${L_esc(w.toLowerCase())}">${L_esc(w)}</span>`).join('')}</div>`
+        + `<button class="btn" id="hear">${SPK}Hear the sentence</button><div id="io"></div><div id="lsSay"></div>`;
+      $('hear').onclick = () => sayBlank(blankS); sayBlank(blankS);
+      const ans = s.w.toLowerCase();
+      const r = await freeType({ answer: s.w, hint: 'Not quite. Read the sentence again. Which word makes sense?', onMiss: t => {
+        const tn = String(t).toLowerCase().trim(); app.querySelectorAll('.bank .pill').forEach(p => { if (p.dataset.bw === tn) p.classList.add('wrong'); });
+        if (typeof redOut === 'function') redOut(tn, ans);
+      } });
+      mark('Fill in the Blank', blankS, r.ok, r.typed, s.w, s.w, { text: blankS, bank: d.bank }, r.attempts);
+      $('blank').outerHTML = `<b class="fj-fill">${L_esc(s.w)}</b>`;
+      app.querySelectorAll('.bank .pill').forEach(p => { if (p.dataset.bw === ans) p.classList.add('used'); });
+      if (!d.aloud) return done();
+      $('io').innerHTML = '<div class="message" id="msg"></div>'; $('hear').remove();
+      setMsg('Now read the whole sentence out loud.'); fb('Now read the whole sentence out loud.', 0.95);
+      const rd = await L_read({ minMs: Math.min(5000, full.split(/\s+/).length * 380) });
+      mark('Read It Out Loud', full, true, '', '', null, { text: `He read “${full}” out loud.`, clips: L_keepClip('fillin', run, i, rd.clip) }, [rd.heard ? 'read it out loud' : 'tapped the button']); L_free();
+      setMsg('Great reading!', 'good'); await wait(600); done();
+    }));
+    if (d.aloud) stopMic();
+    partDone(firstTry('Fill in the Blank') + '.');
+  };
+  PARTS = [{ name: 'Fill in the Blank', run: fillP }];
+  return { intro: `${d.heading}: ${n} sentence${n > 1 ? 's' : ''} to finish${d.aloud ? ', then read out loud' : ''}.` };
+};
