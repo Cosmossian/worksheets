@@ -2033,6 +2033,7 @@ function showResults() {
   items.filter(x => x.word && !x.ok).forEach(x => { if (!missed.find(m => m.word === x.word)) missed.push({ word: x.word, typed: '' }); });
   missed.forEach(m => { const t = items.find(x => x.word === m.word && !x.ok && x.typed && /^[a-z ]+$/i.test(x.typed) && x.typed.toLowerCase() !== m.word); if (t) m.typed = t.typed.toLowerCase(); });
   const rec = { id: Date.now().toString(36), t: Date.now(), aid: A.id, tool: A.tool, title: A.title, grade: g ? { pct: g.pct, letter: g.letter } : null, right, of: n, items, missed, parts: partSum, extra, sent: false };
+  if (A.data && (A.data.schoolDay || A.data.exact)) rec.school = true;   // an official school worksheet (Nov 16: their misses don't go to 🛠️ Extra help)
   const wrong = A.tool === 'warmup' ? [] : items.filter(x => !x.ok);   // the warm-up is just practice: no “what to fix” list
   let stars = '';
   if (extra.stars) { const ws = [...new Set(items.filter(x => x.word).map(x => x.word))]; stars = `<div class="part-title"><h2 style="font-size:22px">My Word Master Stars</h2></div><div class="starrow">${ws.map(w => `<div>${STAR(items.filter(x => x.word === w).every(x => x.ok) ? '#FACC15' : 'transparent')}${esc(displayWord(w))}</div>`).join('')}</div>`; }

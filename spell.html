@@ -3113,7 +3113,7 @@ function autoFriday(ds, assigned) {
 }
 /* ---- His start screen ---- */
 /* Nov 10, 2026 (Dylan: "is it auto assigned for today as well"): 🛠️ Extra help puts itself on his day. Any spelling word he missed
-   on today's on-screen worksheets (this device's results) becomes a Fix My Spelling Mistakes sheet (hear it, trace it, spell it),
+   on today's on-screen worksheets (this device's results; not the school's own sheets, Nov 16) becomes a Fix My Spelling Mistakes sheet (hear it, trace it, spell it),
    until he has spelled it in one after the miss. Skipped when a grown-up assigned one for today. Saved as study-fixit-auto for do.html. */
 const FIXIT_TITLE = '🛠️ Let’s fix our mistakes from earlier';
 function autoFixit(ds, assigned) {
@@ -3122,7 +3122,9 @@ function autoFixit(ds, assigned) {
   const fixes = log.filter(r => r.tool === 'fixit'), miss = new Map();
   // not the Word Master Challenge (Nov 13, Dylan: it's already the practice; the Mastered Words Test right after is the check)
   // not the daily sight words (their Sight Word Practice is id daily-<date>): missed sight words already get the Spelling Fix-Up (Nov 10)
-  log.filter(r => r.tool !== 'fixit' && r.tool !== 'mtest' && r.tool !== 'master' && !String(r.aid || '').startsWith('daily-')).sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
+  // not the school's own worksheets (Nov 16, Dylan: the teacher covers those words; a grown-up can still add them with the Fix-it template's 📥)
+  const school = r => r.school || /^📄 School/.test(r.title || '') || assigned.some(a => a.id === r.aid && a.data && (a.data.schoolDay || a.data.exact));
+  log.filter(r => r.tool !== 'fixit' && r.tool !== 'mtest' && r.tool !== 'master' && !String(r.aid || '').startsWith('daily-') && !school(r)).sort((a, b) => a.t - b.t).forEach(r => (r.missed || []).forEach(m => {
     const w = String(m.word || '').trim().toLowerCase(); if (!/[a-z]/.test(w)) return;
     const his = String(m.typed || '').trim().toLowerCase();
     miss.set(w, { w, his: his && his !== w ? his : (miss.get(w) || {}).his || '', t: r.t });
