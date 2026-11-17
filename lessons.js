@@ -175,7 +175,8 @@ const LT = {
     help: 'A home-practice lesson: the new words, a heart word, word chains (change one letter to make a new word) and two sentences. On screen the chains go spell, read, spell, read, like the lesson script.',
     schools: {
       '2026-11-09': { note: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 54”.', set: () => ({ lesson: 'Lesson 54', concept: 'a_e', words: 'make, cape, fade, plate, skate, shade', heart: 'wh*|o*', chains: 'make, lake, cake, bake\nname, same, came, game', sentences: 'Who will be at the lake?\nBlake was late to the game.' }) },
-      '2026-11-16': { note: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 56” (no new irregular word this time).', set: () => ({ lesson: 'Lesson 56', concept: 'o_e', words: 'hope, note, bone, close, phone, those', heart: '', chains: 'rope, mope, cope, hope\nwoke, joke, poke, spoke', sentences: 'Who did you vote for?\nWe drove home at nine.' }) }
+      '2026-11-16': { note: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 56” (no new irregular word this time).', set: () => ({ lesson: 'Lesson 56', concept: 'o_e', words: 'hope, note, bone, close, phone, those', heart: '', chains: 'rope, mope, cope, hope\nwoke, joke, poke, spoke', sentences: 'Who did you vote for?\nWe drove home at nine.' }) },
+      '2026-11-17': { note: 'The school sent the same Lesson 56 sheet as 11/16, so this one is new practice with the same o_e pattern: new words, chains that add the magic e (hop → hope, cod → code) and new sentences.', set: () => ({ lesson: 'Lesson 56 (more practice)', concept: 'o_e', words: 'home, rope, stone, smoke, globe, froze', heart: '', chains: 'hop, hope, rope, robe\ncod, code, rode, rose\nhole, pole, pose, nose', sentences: 'I hope the note is by the stove.\nRose rode home with a cone.\nThe dog woke up and froze.' }) }
     },
     own: () => ({ lesson: 'Long a: ai', concept: 'ai', words: 'rain, tail, paint, snail, wait, chain', heart: 's|ai*|d', chains: 'rain, pain, main, mail\nsail, tail, nail, snail', sentences: 'The snail is on the trail.\nWait for the rain to stop.' }),
     fields: () => [
@@ -218,7 +219,8 @@ const LT = {
       '2026-11-09': { note: 'Same letter, names and sentences as the school sheet “Uppercase Q”.', set: () => ({ letter: 'Q', words: 'Quinn, Quella, Quentin', trace: 'Quency has a quilt.', copy: 'Quinn the quail quests for food.' }) },
       '2026-11-10': { note: 'Same letter, words and sentences as the school sheet “Lowercase f”.', set: () => ({ letter: 'f', words: 'fish, fan, fat', trace: 'The fawn is fast.', copy: 'The fox has fuzzy fur.' }) },
       '2026-11-12': { note: 'Same letter, names and sentences as the school sheet “Uppercase F”.', set: () => ({ letter: 'F', words: 'Felicia, Frank, Finn', trace: 'Flora fed the fish.', copy: 'Fred the fly flies fast.' }) },
-      '2026-11-16': { note: 'Same letter, words and sentences as the school sheet “Lowercase s”.', set: () => ({ letter: 's', words: 'see, sub, snap', trace: 'The shop sells salt.', copy: 'Sally the seal sings a song.' }) }
+      '2026-11-16': { note: 'Same letter, words and sentences as the school sheet “Lowercase s”.', set: () => ({ letter: 's', words: 'see, sub, snap', trace: 'The shop sells salt.', copy: 'Sally the seal sings a song.' }) },
+      '2026-11-17': { note: 'Same letter, words and sentences as the school sheet “Uppercase S”.', set: () => ({ letter: 'S', words: 'Sam, Sophia, Sal', trace: 'Sean sat in the snow.', copy: 'Silly Steve spits seeds.' }) }
     },
     own: () => ({ letter: 'R', words: 'Rosa, Ryan, Rudy', trace: 'Rex ran to the rug.', copy: 'Rita reads a red book.' }),
     fields: () => [
@@ -262,7 +264,8 @@ const LT = {
     name: 'Read Story for Class Recording', cls: 'phonics',
     help: 'Just the story, big and easy to read, so he can read it out loud while his school website records him. This page doesn’t talk and doesn’t record. It can show the picture he drew of the story in Story Time.',
     schools: {
-      '2026-11-10': { note: 'Read aloud of “Cave in the Maze” (UFLI Lesson 54). The story isn’t built in: it’s copied from what you typed in Story Time’s 11/09/26 sheet (or type it here).', set: () => ({ heading: 'Cave in the Maze', text: '', pic: true, follow: false }) }
+      '2026-11-10': { note: 'Read aloud of “Cave in the Maze” (UFLI Lesson 54). The story isn’t built in: it’s copied from what you typed in Story Time’s 11/09/26 sheet (or type it here).', set: () => ({ heading: 'Cave in the Maze', text: '', pic: true, follow: false }) },
+      '2026-11-17': { note: 'Read aloud of “The Drive Home” (UFLI Lesson 56). The story isn’t built in: it’s copied from what you typed in Story Time’s 11/16/26 sheet (or paste it here).', set: () => ({ heading: 'The Drive Home', text: '', pic: true, follow: false }) }
     },
     own: () => ({ heading: '', text: '', pic: true, follow: false }),
     prefill: c => { if (c.text || typeof state === 'undefined' || !state.story) return; const st = state.story, all = [...Object.values(st.schools || {}), st.school, st.own].filter(Boolean); const m = all.find(x => (x.heading || '').trim().toLowerCase() === (c.heading || '').trim().toLowerCase() && (x.text || '').trim()); if (m) c.text = m.text; },
@@ -298,6 +301,26 @@ const LT = {
       return { words: words.slice(0, 12), trace: Math.min(3, Math.max(1, +c.trace || 2)) };
     },
     check: d => d.words.length ? '' : 'Type the words, or tap 📥 to load his spelling mistakes.'
+  },
+  /* Nov 17, 2026 (Stride "Respond: The Water of Life" (B)): draw a picture about a story, then finish sentence starters in his own words */
+  respond: {
+    name: 'Draw and Write', cls: 'ela',
+    help: 'He draws a picture about a story, then finishes each sentence starter in his own words: he says it out loud first (saved), then writes it on the lines. Nothing is graded; you see his drawing, his voice and his writing in Parent Review.',
+    schools: {
+      '2026-11-17': { note: 'Same task as the school sheet “Respond: The Water of Life” (B): draw your favorite character, then finish the two sentences.', set: () => ({ heading: 'Respond: “The Water of Life”', prompt: 'Draw a picture of your favorite character from the story.', starters: 'My favorite character is ___.\nI like this character because ___.', say: true }) }
+    },
+    own: () => ({ heading: 'My Favorite Part', prompt: 'Draw a picture of your favorite part of the story.', starters: 'My favorite part is when ___.\nI liked it because ___.', say: true }),
+    fields: () => [
+      { k: 'heading', label: 'Title', type: 'text' },
+      { k: 'prompt', label: 'What to draw', type: 'text' },
+      { k: 'starters', label: 'Sentence starters', type: 'area', rows: 4, help: 'One per line. Put ___ where he finishes it: My favorite character is ___.' },
+      { k: 'say', label: 'Say each answer out loud first (microphone)', type: 'check' }
+    ],
+    acts: () => [],
+    title: c => (c.heading || '').trim() || 'Draw and Write',
+    data: c => ({ heading: LT.respond.title(c), prompt: (c.prompt || '').trim(), say: !!c.say,
+      starters: L_lines(c.starters).map(l => { const k = l.indexOf('___'); return k < 0 ? { a: l.replace(/[.!?]\s*$/, '') + ' ', b: '.' } : { a: l.slice(0, k), b: l.slice(k).replace(/^_+/, '') }; }) }),
+    check: d => d.prompt || d.starters.length ? '' : 'Type what to draw or a sentence starter.'
   },
   /* Nov 16, 2026 (UFLI Lesson 56 "o_e /ō/" word search): find the words in a grid of letters, across → and down ↓ */
   wsearch: {
@@ -352,7 +375,7 @@ const LT = {
   }
 };
 const L_IDS = Object.keys(LT);
-const L_CLASS_OF = { fixit: 'phonics', tenmore: 'math', sound: 'phonics', story: 'phonics', readaloud: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela', sort: 'ela', wsearch: 'phonics', fillin: 'phonics' };
+const L_CLASS_OF = { fixit: 'phonics', tenmore: 'math', sound: 'phonics', story: 'phonics', readaloud: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela', sort: 'ela', wsearch: 'phonics', fillin: 'phonics', respond: 'ela' };
 /* Word search helpers: where a word is in the grid (across or down) as cell indexes, and a new grid from a list of words */
 function L_findIn(rows, w) {
   const W = String(w).toUpperCase(), R = rows.length, C = (rows[0] || '').length;
@@ -535,6 +558,9 @@ LT.wsearch.print = (d, exact) => {
     + `<div style="font-size:20px">Find the following words in the puzzle. Words are hidden → and ↓.</div>`
     + `<div style="columns:3;font:600 24px Fredoka,sans-serif;line-height:1.6;padding-left:20px">${d.words.map(w => `<div>☐ ${L_esc(w.toUpperCase())}</div>`).join('')}</div>`, exact, { gap: 16 });
 };
+LT.respond.print = (d, exact) => L_sheetOf(nameDate() + title(d.heading, d.prompt || 'Draw and write', star('#7E22CE'), star('#0F766E'), 40)
+  + (d.prompt ? `<div style="height:430px;border:3px solid #3B82F6;border-radius:18px"></div>` : '')
+  + `<div style="display:flex;flex-direction:column;gap:34px;margin-top:10px">${d.starters.map(x => `<div style="font:400 27px Andika,sans-serif;line-height:2.2">${L_esc(x.a)}<span style="display:inline-block;width:300px;border-bottom:2px solid #38BDF8"></span>${L_esc(x.b)}<div style="border-bottom:2px solid #38BDF8;height:44px"></div></div>`).join('')}</div>`, exact, { gap: 14 });
 LT.fillin.print = (d, exact) => L_sheetOf(nameDate() + (d.label ? `<div style="font:600 15px Fredoka,sans-serif;color:#475569;text-transform:uppercase">${L_esc(d.label)}</div>` : '')
   + title(d.heading, 'Choose a word from the box. Write it. Then read the sentence out loud.', star('#7E22CE'), star('#EA580C'), 40)
   + `<div style="display:flex;justify-content:center"><div style="border:3px dotted #F59E0B;border-radius:18px;background:#FFFBEB;padding:14px 26px;display:grid;grid-template-columns:repeat(3,auto);gap:8px 46px;font:700 28px Andika,sans-serif">${d.bank.map(w => `<span>${L_esc(w)}</span>`).join('')}</div></div>`
@@ -1877,4 +1903,41 @@ LT.fillin.run = () => {
   };
   PARTS = [{ name: 'Fill in the Blank', run: fillP }];
   return { intro: `${d.heading}: ${n} sentence${n > 1 ? 's' : ''} to finish${d.aloud ? ', then read out loud' : ''}.` };
+};
+
+/* ---------- Draw and Write (Nov 17, 2026) ---------- */
+LT.respond.run = () => {
+  const d = SD, run = Date.now().toString(36), n = d.starters.length;
+  const drawIt = async () => {
+    app.innerHTML = L_exactTag() + head(L_esc(d.prompt)) + '<div id="lsPad"></div>';
+    say(d.prompt, 0.95);
+    const r = await L_drawPad();
+    mark('Draw It', d.prompt, true, '', '', null, { img: r.img, text: `His drawing: ${d.prompt}` }, []); L_free();
+    partDone('What a picture!');
+  };
+  const writeIt = async () => {
+    if (d.say) await L_mic();
+    await each(n, i => new Promise(async done => {
+      const x = d.starters[i], spoken = `${x.a.trim()} blank${x.b.trim() && x.b.trim() !== '.' ? ' ' + x.b.trim() : ''}`;
+      const top = `<div class="sentence">${L_esc(x.a)}<span class="blankbox"></span>${L_esc(x.b)}</div>`;
+      let clip = null, heard = false;
+      if (d.say) {
+        app.innerHTML = L_exactTag() + head('Finish the sentence. Say it out loud first.') + L_count(i, n, 'Sentence') + top + `<button class="btn" id="hear">${SPK}Hear it</button><div class="message" id="msg"></div><div id="lsSay"></div>`;
+        $('hear').onclick = () => say(spoken, 0.9); say(`${spoken}. Say the whole sentence out loud.`, 0.9);
+        const rd = await L_read({ minMs: 1800, label: 'I said it 🗣️', nudge: 'I’m listening… say your sentence!' }); clip = rd.clip; heard = rd.heard;
+      }
+      app.innerHTML = L_exactTag() + head('Now write how you finish the sentence.') + L_count(i, n, 'Sentence') + top + '<div id="lsPad"></div>';
+      if (!d.say) say(spoken, 0.9);
+      const long = /because|when|so /i.test(x.a);
+      const p = await L_pad({ text: long ? 'he is kind and he helps' : 'the little king', guide: false, fsMax: 70, H: 200, label: 'your words', check: false, rows: long ? 2 : 0 });
+      mark('Finish the Sentences', `${x.a.trim()} ___${x.b}`, true, '', '', null, { img: p.img, text: `${d.say ? 'He said his sentence out loud, then wrote the end' : 'He wrote the end'} of “${x.a.trim()} ___${x.b}”.${L_padNote(p, false)}`, clips: clip ? L_keepClip('respond', run, i, clip) : undefined }, [d.say ? (heard ? 'said it out loud, then wrote it' : 'wrote it') : 'wrote it']); L_free();
+      done();
+    }));
+    if (d.say) stopMic();
+    partDone('Great writing!');
+  };
+  PARTS = [];
+  if (d.prompt) PARTS.push({ name: 'Draw It', run: drawIt });
+  if (n) PARTS.push({ name: 'Finish the Sentences', run: writeIt });
+  return { intro: `${d.heading}: ${d.prompt ? 'draw a picture' : ''}${d.prompt && n ? ', then ' : ''}${n ? `finish ${n} sentence${n > 1 ? 's' : ''}` : ''}.` };
 };
