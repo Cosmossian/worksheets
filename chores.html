@@ -187,6 +187,7 @@ details.edit summary { cursor: pointer; font: 700 18px Fredoka, sans-serif; }
 <main id="msg" hidden><section class="card"><h2 id="msgH"></h2><p class="help" id="msgP"></p></section></main>
 <div class="menu" id="menu" hidden></div>
 
+<script src="listen.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 const SB_URL = 'https://wpgclwmssnmiidvnekml.supabase.co';
@@ -230,6 +231,7 @@ const SEED = () => ({ reward: 'Fortnite Crew Pass', limit: 8, setAt: 0, marks: {
 ] });
 let C = lsGet(LS) || null;   // the chart (cached on this device)
 let sb = null, me = '', role = null, pending = false, saving = false;
+window.LISTEN_ON = () => role === 'kid';   // listen.js (Nov 18): no tapping while a chore is read out loud, on his login only
 const view = { week: sundayOf(todayS()), month: monthKey(todayS()) };
 
 const activeOn = (c, s) => (c.from || START) <= s && (!c.to || s <= c.to);
