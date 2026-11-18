@@ -439,6 +439,19 @@ const LT = {
     check: d => !d.cols.length ? 'Type at least one question.' : !d.rows.length ? 'Type at least one character.' : ''
   }
 };
+/* Planned extra help (Nov 18, 2026, Dylan: "create assignments for extra help so we can push to the ipad now").
+   autoSchool (index.html) puts each on his day like the school sheets, but as 🛠️ Extra help (a.extra), not 📄 School.
+   key must be unique; removing one on the Worksheets page keeps it off (autoSkip 'plan:<key>'). */
+const L_PLANNED = [
+  { key: 'fix-1118', day: '2026-11-18', tool: 'fixit', why: 'He wrote “era” for are and “awx” for wax in his handwriting sentences.', set: () => ({ words: 'are: era, wax: awx', trace: '2' }) },
+  { key: 'whose-1118', day: '2026-11-18', tool: 'fillin', title: '🛠️ Who or whose?', why: 'His sentence “Whose are you” didn’t use whose the right way. Whose asks who something belongs to: Whose hat is this?',
+    set: () => ({ heading: 'Who or Whose?', label: 'Whose asks who something belongs to', bank: 'whose, who', aloud: true,
+      sentences: '[Whose] hat is this?\n[Who] is at the door?\n[Whose] dog is in the yard?\n[Who] can run fast?\n[Whose] cup is on the table?\nDo you know [whose] bike this is?' }) }
+];
+function L_plannedSnap(p) {
+  const c = p.set(), d = LT[p.tool].data(c), need = LT[p.tool].check(d);
+  return { ok: !need, need, title: p.title || LT[p.tool].title(c), data: d };
+}
 /* Add Three Numbers: two numbers that make 10 (indexes), and new numbers for ✏️ My own */
 function L_tenPair(t) { for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) if (t[i] + t[j] === 10) return [i, j]; return null; }
 function L_add3Random() {

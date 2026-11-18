@@ -3217,12 +3217,12 @@ function renderKidHome() {
   // Nov 10 (Dylan: so he knows which ones he already did): to-do ones stay big and blue at the top; finished ones move to
   // the "All done" shelf at the bottom, smaller, with a star stamp. Tapping a finished one says so first (kidAgain).
   // Nov 10: Fix My Spelling Mistakes goes in its own "🛠️ Extra help" group, after the worksheets and before the sight words
-  const isExtra = a => a.tool === 'fixit' || a.tool === 'relearn';
+  const isExtra = a => a.tool === 'fixit' || a.tool === 'relearn' || a.extra;   // Nov 18: planned extra help (lessons.js L_PLANNED) too
   const todoAll = sheets.filter(a => !doneFor(a)), todo = todoAll.filter(a => !isExtra(a)), extra = todoAll.filter(isExtra), fin = sheets.filter(a => doneFor(a));
   const wordsDone = words.length > 0 && today.length > 0;
   $('kidExtra').hidden = !extra.length;
-  $('kidExtra').innerHTML = extra.length ? `<h3 class="kid-h">${todo.length ? 'Next: ' : ''}🛠️ Extra help</h3>` + extra.map(a => { const n = ((a.data && a.data.words) || []).length, nq = ((a.data && a.data.qs) || []).length;
-    return `<a href="${href(a)}"><span>${esc(a.title.replace(/^🛠️\s*/, ''))}</span>${n ? `<small>${n} word${n > 1 ? 's' : ''} to fix</small>` : nq ? `<small>${nq} quiz question${nq > 1 ? 's' : ''} to learn</small>` : ''}</a>`; }).join('') : '';
+  $('kidExtra').innerHTML = extra.length ? `<h3 class="kid-h">${todo.length ? 'Next: ' : ''}🛠️ Extra help</h3>` + extra.map(a => { const n = ((a.data && a.data.words) || []).length, nq = ((a.data && a.data.qs) || []).length, ns = ((a.data && a.data.sents) || []).length;
+    return `<a href="${href(a)}"><span>${esc(a.title.replace(/^🛠️\s*/, ''))}</span>${n ? `<small>${n} word${n > 1 ? 's' : ''} to fix</small>` : nq ? `<small>${nq} quiz question${nq > 1 ? 's' : ''} to learn</small>` : ns ? `<small>${ns} sentences</small>` : ''}</a>`; }).join('') : '';
   $('kidSheets').hidden = !todo.length;
   $('kidSheets').innerHTML = todo.length ? `<h3 class="kid-h">${words.length && !wordsDone ? 'First: worksheets' : 'Worksheets'}</h3>` + todo.map(a => {
     const left = a.tool !== 'spellq' && !RECUR.includes(a.tool) && sheetDay(a) < ymd(Date.now()) ? `<small class="left">from ${esc(new Date(sheetDay(a) + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long' }))}</small>` : '';

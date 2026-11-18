@@ -939,7 +939,7 @@ function countEagles() {
 }
 
 </script>
-<script src="lessons.js?v=15"></script>
+<script src="lessons.js?v=16"></script>
 <script src="science.js?v=6"></script>
 <script>
 /* First Grade Fun Worksheets — the page you use to make worksheets. */
@@ -1641,6 +1641,12 @@ async function autoSchool() {
       if (!have) { list.push({ id: (Date.now() + list.length).toString(36), tool: t, title: snap.title, at: Date.now(), day, data: snap.data, auto: true }); changed = true; return; }
       if (have.auto && !started(have.id) && (have.title !== snap.title || JSON.stringify(have.data) !== JSON.stringify(snap.data))) { have.title = snap.title; have.data = snap.data; changed = true; }
     }));
+    // Nov 18, 2026: planned extra help (lessons.js L_PLANNED) goes on his day the same way, as 🛠️ Extra help
+    (typeof L_PLANNED === 'undefined' ? [] : L_PLANNED).forEach(p => {
+      if (p.day < today || skip.has(`plan:${p.key}`) || list.some(a => a.planned === p.key)) return;
+      const snap = L_plannedSnap(p); if (!snap.ok) return;
+      list.push({ id: (Date.now() + list.length).toString(36), tool: p.tool, title: snap.title, at: Date.now(), day: p.day, data: snap.data, auto: true, extra: true, planned: p.key }); changed = true;
+    });
     if (changed) { await saveSheets(sb, list.slice(-40)); renderAssigned(); refreshOnDay(list); }
     const el = document.getElementById('autoNote');
     if (el) {
@@ -1749,6 +1755,7 @@ async function unassignClick(e) {
     try {
       const all = await loadSheets(sb), gone = all.find(a => a.id === b.dataset.unassign);
       if (gone && gone.data && gone.data.exact && gone.data.schoolDay) { state.autoSkip = [...new Set([...(state.autoSkip || []), `${gone.tool}@${gone.data.schoolDay}`])]; save(); }   // don't put it back by itself
+      if (gone && gone.planned) { state.autoSkip = [...new Set([...(state.autoSkip || []), `plan:${gone.planned}`])]; save(); }   // planned extra help (L_PLANNED) too
       await saveSheets(sb, all.filter(a => a.id !== b.dataset.unassign)); amsg('Removed from his device.');
     }
     catch (er) { amsg(`Couldn’t remove it: ${esc(er.message || er)}`, true); }
