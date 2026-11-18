@@ -837,7 +837,7 @@ async function doubleCheck() {
   spans.forEach(x => x.classList.remove('chk')); yes.disabled = false;
   say('Is every letter right?', 0.95);
 }
-const letterName = ch => ({ a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye', j: 'jay', k: 'kay', l: 'el', m: 'em', n: 'en', o: 'oh', p: 'pee', q: 'cue', r: 'ar', s: 'ess', t: 'tee', u: 'you', v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zee' }[String(ch).toLowerCase()] || ch);   // spoken letter names (a capital letter makes iPads say "capital F")
+const letterName = ch => ({ a: 'eh', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye', j: 'jay', k: 'kay', l: 'el', m: 'em', n: 'en', o: 'oh', p: 'pee', q: 'cue', r: 'ar', s: 'ess', t: 'tee', u: 'you', v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zee' }[String(ch).toLowerCase()] || ch);   // spoken letter names (a capital letter makes iPads say "capital F")
 
 /* ============ Splitting a word into sound parts ============ */
 const DIGRAPHS = ['tch', 'ch', 'sh', 'th', 'wh', 'ph', 'ck', 'ng', 'gh', 'qu', 'kn', 'wr'];

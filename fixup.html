@@ -463,7 +463,7 @@ async function nextUp(ms = 1200, label = 'Next one coming…') {
   document.body.appendChild(bar); await wait(ms); bar.remove(); document.body.classList.remove('advancing'); heardShut = false;
   if (g !== partGen) return stale(g);
 }
-const letterName = ch => ({ a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye', j: 'jay', k: 'kay', l: 'el', m: 'em', n: 'en', o: 'oh', p: 'pee', q: 'cue', r: 'ar', s: 'ess', t: 'tee', u: 'you', v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zee' }[String(ch).toLowerCase()] || ch);   // spoken letter names (a capital letter makes iPads say "capital F")
+const letterName = ch => ({ a: 'eh', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye', j: 'jay', k: 'kay', l: 'el', m: 'em', n: 'en', o: 'oh', p: 'pee', q: 'cue', r: 'ar', s: 'ess', t: 'tee', u: 'you', v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zee' }[String(ch).toLowerCase()] || ch);   // spoken letter names (a capital letter makes iPads say "capital F")
 function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
 const voices = store('spell-voice') || {};
 function playClip(url) {
@@ -479,6 +479,17 @@ function letterClip(url) {
   return new Promise(res => { const a = new Audio(url); letterAudio = a; a.onended = a.onerror = () => res(); a.play().catch(() => res()); setTimeout(res, 3000); });
 }
 const sayLetter = (ch, rate = 0.9) => voices['l:' + ch] ? letterClip(voices['l:' + ch]) : say(letterName(ch), rate);
+// Nov 18, 2026 (Dylan: "It's spelled w a x" sounded like "w i x"): letter a was 'ay', which voices read as "aye" (eye); now 'eh'.
+// spellOut says the letters one at a time, so his recorded letter voices (Parent Settings) are used inside "It's spelled …" too.
+let spellTok = 0;
+async function spellOut(letters, rate = 0.75) {
+  const my = ++spellTok;
+  await Promise.race([fb("It's spelled", rate), wait(2500)]);
+  for (const c of String(letters).toLowerCase()) {
+    if (my !== spellTok) return;
+    await Promise.race([voices['l:' + c] ? letterClip(voices['l:' + c]) : fb(letterName(c), rate), wait(2500)]); await wait(180);
+  }
+}
 // Nov 10 (Dylan: the word/sentence fix "for every place"): every spoken word greys out the keyboard until it's been said
 const playWord = (w, rate = 0.85) => lockKeysFor(playWord0(w, rate));
 const playWord0 = (w, rate = 0.85) => { const k = w.toLowerCase(), f = (store('study-wordfix') || {})[k]; if (f && f.rec) { heardLog('', 0, w); return playClip(f.rec); } if (voices['w:' + k]) { heardLog('', 0, w); return playClip(voices['w:' + k]); } return say(f && f.say ? f.say : w, rate); };
@@ -921,7 +932,7 @@ function partFix() {
         fb('Fixed it!', 1); nextUp(1200).then(() => { i++; fxSave(i); i < WORDS.length ? show() : partDone(`You fixed ${score.fix.first} of ${WORDS.length} on the first try.`); });
       } else {
         tries++; typed = ''; draw(); shakeEl($('ans'));
-        if (tries >= 2) { setMsg(`It’s spelled: ${[...dw].join(' ')}. Now you type it.`, 'try'); fb(`It's spelled ${[...dw.replace(/\s+/g, '')].map(letterName).join(', ')}.`, 0.75); }
+        if (tries >= 2) { setMsg(`It’s spelled: ${[...dw].join(' ')}. Now you type it.`, 'try'); spellOut(dw.replace(/\s+/g, '')); }
         else { setMsg('Not quite. Think about the tricky part and try again.', 'try'); }
       }
     };
