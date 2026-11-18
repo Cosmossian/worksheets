@@ -1371,8 +1371,18 @@ const OPTIONAL = ['steps', 'weather'];
 const isWeekday = ds => { const g = new Date(ds + 'T12:00:00').getDay(); return g > 0 && g < 6; };
 const wxDone = (a, L) => new Set(L.filter(l => l.aid === a.id).map(l => ymd(l.t))).size >= (+(a.data && a.data.days) || 5);
 const sheetDay = a => a.day || (a.data && a.data.schoolDay) || (a.data && a.data.exact ? '2026-11-09' : ymd(a.at));   // the old undated “📄 School copy” ones were all the 11/09/26 sheets
+/* Nov 18, 2026 (Dylan: Parent Review said ✗ Not completed for work he did on Nov 9/10): this device only keeps the newest 40 worksheet
+   results (about 40 KB each with the Replay pictures; localStorage holds ~5 MB), so older days' results fell off and their worksheets
+   looked missed. cloudPullLogs now also keeps every result from the last 30 days in memory (LOG_MEM), and the calendar, "Assigned for
+   this day", the day's list and ▶ Replay read allLog(), which is that plus anything on this device. The 40-limit on the device copy stays. */
+const LOG_MEM = {};
+function allLog(key) {
+  const mine = store(key) || [], mem = LOG_MEM[key]; if (!mem) return mine;
+  const ids = new Set(mine.map(x => String(x.id)));
+  return [...mine, ...mem.filter(x => !ids.has(String(x.id)))].sort((a, b) => a.t - b.t);
+}
 function sheetsFor(ds) {
-  const L = [...(store('sheet-log') || []), ...(store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))];
+  const L = [...allLog('sheet-log'), ...allLog('fixup-log').map(f => ({ ...f, aid: f.cid }))];
   return ((store('study-sheets') || {}).list || []).filter(a => {
     const d = sheetDay(a);
     if (a.tool === 'mtest') return d === ds;
@@ -1421,7 +1431,7 @@ function recordAgenda(words, sheets) {
   const rec = { t: Date.now(), day, items: merged }; store('study-day-agenda', rec); cloudPutLog('day', day, rec.t, rec);
 }
 function dayStatus(ds, agendas) {
-  const L = [...(store('sheet-log') || []), ...(store('fixup-log') || []).map(f => ({ ...f, aid: f.cid }))], C = store('spell-check-log') || [];
+  const L = [...allLog('sheet-log'), ...allLog('fixup-log').map(f => ({ ...f, aid: f.cid }))], C = allLog('spell-check-log');
   const on = t => ymd(t) === ds, upTo = t => ymd(t) <= ds;
   let items = (agendas[ds] || {}).items;
   if (!items && ds === ymd(Date.now())) { const d = store('spell-daily') || {}, w = d.on === false ? [] : dailyWords(), sq = store('spell-queue'); items = [...(w.length ? [{ id: 'check', tool: 'check' }] : []), ...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq' }] : []), ...sheetsFor(ds)]; }
@@ -2570,9 +2580,9 @@ function cleanPic(html) {
 }
 function replaySteps(key) {
   const [kind, id] = key.split(':');
-  if (kind === 'check') { const x = (store('spell-check-log') || []).find(r => String(r.id) === id); return x && { title: 'Sight word check', steps: x.results.map(r => ({ part: 'Check', label: r.word, ok: r.ok, answer: r.word, hear: true, shown: { text: 'He heard the word and a sentence. The word wasn’t shown.' }, picks: [r.typed] })) }; }
-  if (kind === 'fixup') { const x = (store('fixup-log') || []).find(r => String(r.id) === id); return x && { title: 'Spelling Fix-Up', steps: (x.detail || x.test.map(r => ({ part: 'Practice Test', label: r.word, ok: r.ok, answer: r.word, picks: [r.typed] }))).map(r => ({ ...r, hear: /Practice Test|Pick/.test(r.part) })) }; }
-  const x = (store('sheet-log') || []).find(r => String(r.id) === id); if (!x) return null;
+  if (kind === 'check') { const x = allLog('spell-check-log').find(r => String(r.id) === id); return x && { title: 'Sight word check', steps: x.results.map(r => ({ part: 'Check', label: r.word, ok: r.ok, answer: r.word, hear: true, shown: { text: 'He heard the word and a sentence. The word wasn’t shown.' }, picks: [r.typed] })) }; }
+  if (kind === 'fixup') { const x = allLog('fixup-log').find(r => String(r.id) === id); return x && { title: 'Spelling Fix-Up', steps: (x.detail || x.test.map(r => ({ part: 'Practice Test', label: r.word, ok: r.ok, answer: r.word, picks: [r.typed] }))).map(r => ({ ...r, hear: /Practice Test|Pick/.test(r.part) })) }; }
+  const x = allLog('sheet-log').find(r => String(r.id) === id); if (!x) return null;
   const its = x.items || [], say = its.filter(r => r.part === 'Look & Say');   // in the order he did them: Look & Say, Trace, then the rest
   const steps = [...say, ...((x.extra && x.extra.traces) || []).map(tr => ({ part: 'Trace', label: tr.word, ok: !tr.redo, img: tr.img, shown: { text: tr.redo ? `He had to trace more ${tr.redo} time${tr.redo > 1 ? 's' : ''}.` : 'Traced neatly the first time.' }, picks: [] })), ...its.filter(r => r.part !== 'Look & Say')];
   return { title: x.title, steps };
@@ -2641,7 +2651,7 @@ async function renderReview(noPull) {
     calSel = /^\d{4}-\d{2}-\d{2}$/.test(want || '') ? want : ymd(Date.now());
     if (want) calMonth.review = [+calSel.slice(0, 4), +calSel.slice(5, 7) - 1];
   }
-  const looks = lookLog(), checks = store('spell-check-log') || [], fixes = store('fixup-log') || [], sheets = store('sheet-log') || [];
+  const looks = lookLog(), checks = allLog('spell-check-log'), fixes = allLog('fixup-log'), sheets = allLog('sheet-log');
   const days = {};
   const add = (t, item) => { (days[dayKey(t)] = days[dayKey(t)] || { t, items: [] }).items.push(item); };
   looks.forEach(x => add(x.t, { t: x.t, kind: 'look', x }));
@@ -2938,9 +2948,11 @@ async function cloudPullLogs() {
       mine.forEach(x => { if (!ids.has(String(idOf(x)))) { out.push(x); if (kind !== 'look') cloudPutLog(kind, idOf(x), x.t, x); } });
       return out.sort((a, b) => a.t - b.t);
     };
-    putLog('spell-check-log', merge('spell-check-log', 'check', x => x.id).slice(-30));
-    putLog('fixup-log', merge('fixup-log', 'fixup', x => x.id).slice(-30));
-    putLog('sheet-log', merge('sheet-log', 'sheet', x => x.id).slice(-40));
+    const mc = merge('spell-check-log', 'check', x => x.id), mf = merge('fixup-log', 'fixup', x => x.id), ms = merge('sheet-log', 'sheet', x => x.id);
+    LOG_MEM['spell-check-log'] = mc; LOG_MEM['fixup-log'] = mf; LOG_MEM['sheet-log'] = ms;   // all 30 days, in memory only (see allLog)
+    putLog('spell-check-log', mc.slice(-30));
+    putLog('fixup-log', mf.slice(-30));
+    putLog('sheet-log', ms.slice(-40));
     const ag = store('study-days') || {}; (data || []).filter(r => r.kind === 'day').forEach(r => { ag[r.data.day] = r.data; }); localStorage.setItem('study-days', JSON.stringify(ag));
     const localLooks = lookLog(), urlByKey = {};
     localLooks.forEach(sess => (sess.clips || []).forEach(c => { if (c.key && c.url) urlByKey[c.key] = c.url; }));

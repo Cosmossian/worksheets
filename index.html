@@ -1516,7 +1516,7 @@ document.getElementById('schoolList').addEventListener('click', async e => {
     if (!snap.ok) return alert(snap.need);
     const sb = await studySession(); if (!sb) return alert('Sign in as the grown-up first.');
     go.disabled = true; go.textContent = 'Assigning…';
-    try { const list = await loadSheets(sb); list.push({ id: Date.now().toString(36), tool: t, title: snap.title, at: Date.now(), day: when, data: snap.data }); await saveSheets(sb, list.slice(-40));
+    try { const list = await loadSheets(sb); list.push({ id: Date.now().toString(36), tool: t, title: snap.title, at: Date.now(), day: when, data: snap.data }); await saveSheets(sb, list.slice(-150));
       state.autoSkip = (state.autoSkip || []).filter(x => x !== `${t}@${day}`); save(); go.textContent = `✓ On his day ${dayName(when)}`; refreshOnDay(list); renderAssigned(); setTimeout(() => renderPanel(), 1200);
     } catch (er) { go.disabled = false; go.textContent = 'Try again'; }
     return; }
@@ -1648,7 +1648,7 @@ async function autoSchool() {
       const snap = L_plannedSnap(p); if (!snap.ok) return;
       list.push({ id: (Date.now() + list.length).toString(36), tool: p.tool, title: snap.title, at: Date.now(), day: p.day, data: snap.data, auto: true, extra: true, planned: p.key }); changed = true;
     });
-    if (changed) { await saveSheets(sb, list.slice(-40)); renderAssigned(); refreshOnDay(list); }
+    if (changed) { await saveSheets(sb, list.slice(-150)); renderAssigned(); refreshOnDay(list); }
     const el = document.getElementById('autoNote');
     if (el) {
       el.hidden = !waiting.length;
@@ -1733,7 +1733,7 @@ function wireOnScreen() {
       const list = (await loadSheets(sb)).filter(a => !(a.tool === t && a.title === snap.title && sheetDay(a) === day));   // re-assigning replaces the same worksheet on the same day
       list.push({ id: Date.now().toString(36), tool: t, title: snap.title, at: Date.now(), day, data: snap.data });
       if (snap.data && snap.data.schoolDay) { state.autoSkip = (state.autoSkip || []).filter(k => k !== `${t}@${snap.data.schoolDay}`); save(); }
-      await saveSheets(sb, list.slice(-40));
+      await saveSheets(sb, list.slice(-150));
       amsg(day === today ? `Assigned ✓ “${esc(snap.title)}” is on his start screen now.` : `Assigned ✓ “${esc(snap.title)}” for ${esc(dayName(day, true))}. It shows up on his start screen that day.`);
       renderAssigned();
     } catch (e) { amsg(`Couldn’t assign it: ${esc(e.message || e)}. Check the internet and try again.`, true); }
