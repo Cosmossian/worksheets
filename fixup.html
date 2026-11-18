@@ -536,6 +536,9 @@ const params = new URLSearchParams(location.search);
 let WORDS = [];   // [{ w, his }]
 if (params.get('w')) WORDS = params.get('w').split('|').map(p => { const [w, his] = p.split(':'); return { w: (w || '').trim(), his: (his || '').trim() }; }).filter(x => x.w);
 else { const l = store('spell-check-latest'); if (l) WORDS = l.results.filter(r => !r.ok).map(r => ({ w: r.word, his: r.typed })); }
+// Nov 18, 2026 (Dylan: a Fix-Up for "whose" had it twice, so the word search hid it twice and marking one marked both: he couldn't finish):
+// each word only once, keeping a misspelling if any copy has one
+WORDS = WORDS.reduce((out, x) => { const k = x.w.toLowerCase(), have = out.find(y => y.w.toLowerCase() === k); if (!have) out.push(x); else if (!have.his && x.his) have.his = x.his; return out; }, []);
 WORDS = WORDS.slice(0, 6);
 const FROM = params.get('from') || 'Sight word check';
 const seed = seedOf(WORDS.map(x => x.w));
@@ -942,7 +945,7 @@ function partFix() {
 
 /* ---------- 5. Word Search: tap the first letter, then the last letter ---------- */
 function partSearch() {
-  const targets = WORDS.map(x => x.w.toLowerCase().replace(/[^a-z]/g, '')).filter(Boolean);
+  const targets = [...new Set(WORDS.map(x => x.w.toLowerCase().replace(/[^a-z]/g, '')).filter(Boolean))];   // each word once (Nov 18)
   const ws = wordSearch(targets, seed + 3);
   if (!ws) return nextPart();
   const { N, grid } = ws, found = new Map(), FOUND_COLORS = ['#34D399', '#7FB0F0', '#FBBF24', '#C4B5FD', '#F9A8D4', '#FDBA74'];
