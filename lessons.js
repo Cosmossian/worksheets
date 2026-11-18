@@ -472,7 +472,10 @@ const L_PLANNED = [
       sentences: '[Whose] hat is this?\n[Who] is at the door?\n[Whose] dog is in the yard?\n[Who] can run fast?\n[Whose] cup is on the table?\nDo you know [whose] bike this is?' }) },
   { key: 'make10-1118', day: '2026-11-18', tool: 'add3', title: '🛠️ Make a 10 practice', why: 'On Add Three Numbers he picked 5 + 4, then 5 + 6, before finding 6 + 4 in 6 + 5 + 4.',
     set: () => ({ heading: 'Make a 10 practice', facts: '', tens: '4 + 7 + 6\n5 + 3 + 5\n9 + 2 + 1\n7 + 4 + 3\n8 + 6 + 2\n1 + 5 + 9', adds: '' }) },
-  { key: 'silente-1118', day: '2026-11-18', tool: 'silente', why: 'He thinks have has a silent e because it has an e in it.', set: () => LT.silente.own() }
+  { key: 'silente-1118', day: '2026-11-18', tool: 'silente', why: 'He thinks have has a silent e because it has an e in it.', set: () => LT.silente.own() },
+  { key: 'silente2-1118', day: '2026-11-18', tool: 'silente', title: '🛠️ Silent e Detective 2: words from the story', why: 'In Five Mile Hike he tapped when, the, black, dock, want, Chan, thank, have and are as silent e words.',
+    set: () => ({ pairs: 'can, cane\npin, pine\nnot, note\ntub, tube\nrid, ride\nman, mane', heart: 'have, are, give, come',
+      words: 'when, hike, the, lake, black, five, dock, these, want, smile, chan, wide, thank, close, have, are' }) }
 ];
 function L_plannedSnap(p) {
   const c = p.set(), d = LT[p.tool].data(c), need = LT[p.tool].check(d);
@@ -1360,7 +1363,18 @@ LT.story.run = () => {
     partDone(helped.length ? `Read the whole story (tapped for help: ${helped.join(', ')}).` : 'Read the whole story!');
   };
   const find = async () => {
-    const targets = [...new Set(words.filter(w => pat.test(w.t)).map(w => L_letters(w.t)))], found = new Set(), wrong = new Set(); let dones = 0;
+    const targets = [...new Set(words.filter(w => pat.test(w.t)).map(w => L_letters(w.t)))], found = new Set(), wrong = new Set(); let dones = 0, streak = 0, slows = 0, lockedTil = 0;
+    // Nov 18, 2026 (Dylan: "he's rushing and picking random words… a lot of these words don't even have e's in them"):
+    // for silent e patterns a wrong tap says why (no e at all / e not at the end / heart word), and 2 wrong taps in a row lock the story for 5 s
+    const silentPat = /_e$|^silent e$/.test(pat.label);
+    const whyNot = t => { if (!silentPat) return `“${t}” doesn’t have ${pat.label}. Look again.`;
+      const x = L_silentE(t);
+      return !/e/.test(t) ? `“${t}” doesn’t even have an e! A silent e word ends in e.`
+        : !x.end ? `The e in “${t}” isn’t at the end. A silent e word ends in e.`
+        : x.heart ? `“${t}” ends in e, but the ${x.v} doesn’t say its name. It’s a heart word.`
+        : !x.vce ? `“${t}” ends in e, but it doesn’t have a vowel, one letter, then e.`
+        : `“${t}” doesn’t have ${pat.label}. Look again.`; };
+    const sayWhy = m => m.replace(/[“”]/g, '').replace(/the ([aeiou]) doesn’t/, (q, v) => `the ${letterName(v)} doesn't`);
     app.innerHTML = L_exactTag() + head(`Find every word with <b>${L_esc(pat.label)}</b>. Tap them!`) + `<div class="count" id="fc"></div><div class="message" id="msg"></div>` + story() + `<button class="btn big primary" id="allFound">I found them all ✓</button>`;
     say(`Find every word with ${pat.spoken} and tap it.`, 0.95);
     const upd = () => { $('fc').textContent = `Found ${found.size} of ${targets.length}`; };
@@ -1368,10 +1382,21 @@ LT.story.run = () => {
     await new Promise(res => {
       $('story').onclick = e => {
         const el = e.target.closest('[data-w]'); if (!el) return; const t = L_letters(el.textContent); if (!t || found.has(t)) return;
-        if (targets.includes(t)) { found.add(t); app.querySelectorAll('[data-w]').forEach(x => { if (L_letters(x.textContent) === t) x.classList.add('found'); }); setMsg(`Yes! “${t}” has ${pat.label}.`, 'good'); upd(); if (found.size === targets.length) { $('allFound').hidden = true; nextUp(1300).then(res); } }
-        else { if (!wrong.has(t)) wrong.add(t); el.classList.add('no'); shakeEl(el); setTimeout(() => el.classList.remove('no'), 900); setMsg(`“${t}” doesn’t have ${pat.label}. Look again.`, 'try'); }
+        if (Date.now() < lockedTil) return;
+        if (targets.includes(t)) { streak = 0; found.add(t); app.querySelectorAll('[data-w]').forEach(x => { if (L_letters(x.textContent) === t) x.classList.add('found'); }); setMsg(`Yes! “${t}” has ${pat.label}.`, 'good'); upd(); if (found.size === targets.length) { $('allFound').hidden = true; nextUp(1300).then(res); } }
+        else {
+          if (!wrong.has(t)) wrong.add(t); el.classList.add('no'); shakeEl(el); setTimeout(() => el.classList.remove('no'), 900);
+          const m = whyNot(t); setMsg(m, 'try'); streak++;
+          if (streak >= 2) {
+            streak = 0; slows++; lockedTil = Date.now() + 5000; $('story').style.opacity = '.45';
+            const slow = 'Slow down 🐢. Read each word before you tap.';
+            fb(sayWhy(m) + ' ' + (silentPat ? 'Slow down. Read each word. A silent e word ends in e.' : 'Slow down. Read each word carefully.'), 0.9);
+            let left = 5; const tick = () => { if (left <= 0) { $('story').style.opacity = ''; setMsg('OK, try again. Read before you tap.', 'try'); return; } setMsg(`${m} ${silentPat ? slow : 'Slow down 🐢. Read each word carefully.'} (${left})`, 'try'); left--; setTimeout(tick, 1000); }; tick();
+          } else fb(sayWhy(m), 0.9);
+        }
       };
       $('allFound').onclick = () => {
+        if (Date.now() < lockedTil) return;
         if (found.size === targets.length) return res();
         dones++;
         if (dones === 1) { setMsg(`There ${targets.length - found.size === 1 ? 'is 1 more' : `are ${targets.length - found.size} more`}. Keep looking!`, 'try'); fb('Keep looking!', 1); return; }
@@ -1380,8 +1405,9 @@ LT.story.run = () => {
       };
     });
     targets.forEach(t => mark('Find the Words', t, found.has(t), found.has(t) ? t : '', t, null, { text: `A word with ${pat.label} in the story.` }, found.has(t) ? [t] : ['missed']));
-    wrong.forEach(t => mark('Find the Words', `${t} (no ${pat.label})`, false, t, `not ${pat.label}`, null, { text: `He tapped “${t}”, which doesn’t have ${pat.label}.` }, [t]));
-    partDone(`Found ${found.size} of ${targets.length}${wrong.size ? `, ${wrong.size} wrong tap${wrong.size > 1 ? 's' : ''}` : ''}.`);
+    wrong.forEach(t => mark('Find the Words', `${t} (no ${pat.label})`, false, t, `not ${pat.label}`, null, { text: `He tapped “${t}”: ${whyNot(t).replace(/ Look again\.$/, '')}` }, [t]));
+    if (slows) { mark('Find the Words', 'Slow down', true, '', '', null, { text: `He tapped 2 wrong words in a row ${slows} time${slows > 1 ? 's' : ''}, so the story paused for 5 seconds to slow him down.` }, [`slowed down ${slows}×`]); L_free(); }
+    partDone(`Found ${found.size} of ${targets.length}${wrong.size ? `, ${wrong.size} wrong tap${wrong.size > 1 ? 's' : ''}` : ''}${slows ? ` (slowed down ${slows}×)` : ''}.`);
   };
   const drawIt = async () => {
     app.innerHTML = L_exactTag() + head(`Draw the story “${L_esc(d.heading)}”.`) + '<div id="lsPad"></div>';
