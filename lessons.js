@@ -446,7 +446,9 @@ const L_PLANNED = [
   { key: 'fix-1118', day: '2026-11-18', tool: 'fixit', why: 'He wrote “era” for are and “awx” for wax in his handwriting sentences.', set: () => ({ words: 'are: era, wax: awx', trace: '2' }) },
   { key: 'whose-1118', day: '2026-11-18', tool: 'fillin', title: '🛠️ Who or whose?', why: 'His sentence “Whose are you” didn’t use whose the right way. Whose asks who something belongs to: Whose hat is this?',
     set: () => ({ heading: 'Who or Whose?', label: 'Whose asks who something belongs to', bank: 'whose, who', aloud: true,
-      sentences: '[Whose] hat is this?\n[Who] is at the door?\n[Whose] dog is in the yard?\n[Who] can run fast?\n[Whose] cup is on the table?\nDo you know [whose] bike this is?' }) }
+      sentences: '[Whose] hat is this?\n[Who] is at the door?\n[Whose] dog is in the yard?\n[Who] can run fast?\n[Whose] cup is on the table?\nDo you know [whose] bike this is?' }) },
+  { key: 'make10-1118', day: '2026-11-18', tool: 'add3', title: '🛠️ Make a 10 practice', why: 'On Add Three Numbers he picked 5 + 4, then 5 + 6, before finding 6 + 4 in 6 + 5 + 4.',
+    set: () => ({ heading: 'Make a 10 practice', facts: '', tens: '4 + 7 + 6\n5 + 3 + 5\n9 + 2 + 1\n7 + 4 + 3\n8 + 6 + 2\n1 + 5 + 9', adds: '' }) }
 ];
 function L_plannedSnap(p) {
   const c = p.set(), d = LT[p.tool].data(c), need = LT[p.tool].check(d);
@@ -2098,12 +2100,14 @@ LT.add3.run = () => {
           if (sel.includes(k)) { sel = sel.filter(x => x !== k); b.classList.remove('sel'); return; }
           if (sel.length >= 2) return;
           sel.push(k); b.classList.add('sel'); if (sel.length < 2) return;
-          const [a, c] = sel, sm = t[a] + t[c]; picks.push(`${t[a]} + ${t[c]}`);
+          const [a, c] = [...sel].sort((x, y) => x - y), sm = t[a] + t[c]; picks.push(`${t[a]} + ${t[c]}`);   // in the problem's order, so a right pair matches the answer in Parent Review (Nov 18)
           if (sm === 10) {
             $('nums').onclick = null; sel.forEach(j => { const x = $('nums').querySelector(`[data-k="${j}"]`); x.classList.remove('sel', 'hint'); x.classList.add('ten'); });
             setMsg(`Yes! ${t[a]} + ${t[c]} = 10!`, 'good'); fb(`Yes! ${t[a]} plus ${t[c]} makes 10!`, 0.95); nextUp(1200).then(res); return;
           }
-          wrong++; shakeEl($('nums')); setMsg(`${t[a]} + ${t[c]} = ${sm}. That’s not 10. Try two other numbers.`, 'try');
+          wrong++; shakeEl($('nums'));
+          const big = Math.max(t[right[0]], t[right[1]]);   // Nov 18: point him at one number of the pair
+          setMsg(`${t[a]} + ${t[c]} = ${sm}. That’s not 10. Look at the ${big}. Which number goes with ${big} to make 10?`, 'try'); fb(`That's ${sm}, not 10. Look at the ${big}. What goes with ${big} to make 10?`, 0.9);
           setTimeout(() => { sel = []; $('nums').querySelectorAll('button').forEach(x => x.classList.remove('sel')); if (wrong >= 2) right.forEach(j => $('nums').querySelector(`[data-k="${j}"]`).classList.add('hint')); }, 700);
         };
       });
