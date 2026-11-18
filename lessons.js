@@ -368,11 +368,16 @@ const LT = {
       { k: 'label', label: 'Lesson (optional)', type: 'text' },
       { k: 'bank', label: 'Word box', type: 'text', help: 'Separate with commas.' },
       { k: 'sentences', label: 'Sentences', type: 'area', rows: 6, help: 'One per line. Put the missing word in [square brackets]: I rode my bike for five [miles].' },
-      { k: 'aloud', label: 'Then read the sentence out loud (microphone)', type: 'check' }
+      { k: 'aloud', label: 'Then read the sentence out loud (microphone)', type: 'check' },
+      { k: 'pick', label: 'Tap the word instead of typing it (for words that mean different things, like who / whose)', type: 'check' },
+      { k: 'teach', label: 'Learn It first (optional)', type: 'area', rows: 3, help: 'One word per line: word | what it means | an example | a trick (optional). who | asks about a person | Who is at the door?' },
+      { k: 'tips', label: 'Clues after a wrong answer (optional)', type: 'area', rows: 3, help: 'One per line: the right word, then the clue. {next} is the word after the blank (it lights up). whose: Look at {next}. Who owns the {next}? Use whose.' }
     ],
     acts: () => [],
     title: c => (c.heading || '').trim() || 'Fill in the Blank',
-    data: c => ({ heading: LT.fillin.title(c), label: (c.label || '').trim(), bank: L_list(c.bank), aloud: !!c.aloud,
+    data: c => ({ heading: LT.fillin.title(c), label: (c.label || '').trim(), bank: L_list(c.bank), aloud: !!c.aloud, pick: !!c.pick,
+      teach: L_lines(c.teach).map(l => { const [w, mean, ex, trick] = l.split('|').map(x => (x || '').trim()); return w && mean ? { w, mean, ex: ex || '', trick: trick || '' } : null; }).filter(Boolean),
+      tips: Object.fromEntries(L_lines(c.tips).map(l => { const i = l.indexOf(':'); return i > 0 ? [l.slice(0, i).trim().toLowerCase(), l.slice(i + 1).trim()] : null; }).filter(Boolean)),
       sents: L_lines(c.sentences).map(l => { const m = l.match(/\[([^\]]+)\]/); return m ? { a: l.slice(0, m.index), w: m[1].trim(), b: l.slice(m.index + m[0].length) } : null; }).filter(Boolean) }),
     check: d => {
       if (!d.sents.length) return 'Type a sentence with the missing word in [square brackets].';
@@ -475,7 +480,12 @@ const L_PLANNED = [
   { key: 'silente-1118', day: '2026-11-18', tool: 'silente', why: 'He thinks have has a silent e because it has an e in it.', set: () => LT.silente.own() },
   { key: 'silente2-1118', day: '2026-11-18', tool: 'silente', title: '🛠️ Silent e Detective 2: words from the story', why: 'In Five Mile Hike he tapped when, the, black, dock, want, Chan, thank, have and are as silent e words.',
     set: () => ({ pairs: 'can, cane\npin, pine\nnot, note\ntub, tube\nrid, ride\nman, mane', heart: 'have, are, give, come',
-      words: 'when, hike, the, lake, black, five, dock, these, want, smile, chan, wide, thank, close, have, are' }) }
+      words: 'when, hike, the, lake, black, five, dock, these, want, smile, chan, wide, thank, close, have, are' }) },
+  { key: 'whose2-1118', day: '2026-11-18', tool: 'fillin', title: '🛠️ Who or Whose? Learn the difference', why: 'On Who or whose? he typed “who” where it was “whose” (Whose cup…, Do you know whose bike…): he thinks they’re the same word.',
+    set: () => ({ heading: 'Who or Whose?', label: 'Who asks about a person. Whose asks who owns something.', bank: 'who, whose', aloud: true, pick: true,
+      teach: 'who | asks about a person | Who is at the door? | Who is at the door? Mom is!\nwhose | asks who something belongs to | Whose cup is this? | Whose cup? means: who owns the cup? A thing comes right after whose.',
+      tips: 'whose: Look at the word after the blank: {next}. It’s a thing! Who owns the {next}? Use whose.\nwho: The word after the blank is {next}. That’s not a thing someone owns. We’re asking about a person, so use who.',
+      sentences: '[Whose] cup is on the table?\n[Who] is at the door?\n[Whose] shoes are these?\n[Who] can jump high?\n[Whose] dog is barking?\n[Who] made this cake?\n[Whose] turn is it?\n[Who] wants a snack?\nDo you know [whose] bike this is?\nDo you know [who] took my pen?' }) }
 ];
 function L_plannedSnap(p) {
   const c = p.set(), d = LT[p.tool].data(c), need = LT[p.tool].check(d);
@@ -861,7 +871,7 @@ if (L_IN_DO) {
     .ls-cmp th, .ls-cmp td { border:2px solid #CBD5E1; padding:4px 6px; text-align:center; } .ls-cmp th { background:#E0F2FE; } .ls-cmp th.now { background:#FDE68A; }
     .ls-cmp td { height:46px; font:700 18px Andika,sans-serif; } .ls-cmp td.nm { font:700 16px Fredoka,sans-serif; } .ls-cmp td.now { background:#FEF3C7; } .ls-cmp td.cur { background:#FEF9C3; box-shadow:inset 0 0 0 3px #F59E0B; }
     .ls-cmp img { max-width:100%; max-height:40px; display:block; margin:0 auto; }
-    .ls-help { font-size:15px; }
+    .ls-help { font-size:15px; } mark.fj-next { background:#FDE68A; color:#1F2937; border-radius:6px; padding:0 4px; }
     .ls-se { font:700 clamp(54px,10vw,96px) Andika,sans-serif; letter-spacing:4px; } .ls-se .v { color:#FBBF24; } .ls-se .e { color:#94A3B8; } .ls-se .e.new { display:inline-block; animation:lsdrop .6s ease-out; }
     @keyframes lsdrop { from { transform:translateY(-60px); opacity:0; } to { transform:none; opacity:1; } }
     .ls-checks { display:flex; flex-direction:column; gap:6px; font:600 19px Fredoka,sans-serif; text-align:left; background:var(--surface); border:2px solid var(--line); border-radius:14px; padding:10px 18px; }
@@ -2060,17 +2070,30 @@ LT.fillin.run = () => {
     await each(n, i => new Promise(async done => {
       const s = d.sents[i], blankS = `${s.a}___${s.b}`, full = `${s.a}${s.w}${s.b}`;
       d.sents.slice(0, i).forEach(x => used.add(x.w.toLowerCase()));
-      app.innerHTML = L_exactTag() + head('Choose a word from the box to finish the sentence. Type it in.') + L_count(i, n, 'Sentence')
+      app.innerHTML = L_exactTag() + head(d.pick ? 'Tap the word that finishes the sentence.' : 'Choose a word from the box to finish the sentence. Type it in.') + L_count(i, n, 'Sentence')
         + `<div class="sentence" id="fs">${L_esc(s.a)}<span class="blankbox" id="blank"></span>${L_esc(s.b)}</div>`
-        + `<div class="bank">${d.bank.map(w => `<span class="pill show${used.has(w.toLowerCase()) ? ' used' : ''}" data-bw="${L_esc(w.toLowerCase())}">${L_esc(w)}</span>`).join('')}</div>`
+        + `<div class="bank"${d.pick ? ' hidden' : ''}>${d.bank.map(w => `<span class="pill show${used.has(w.toLowerCase()) ? ' used' : ''}" data-bw="${L_esc(w.toLowerCase())}">${L_esc(w)}</span>`).join('')}</div>`
         + `<button class="btn" id="hear">${SPK}Hear the sentence</button><div id="io"></div><div id="lsSay"></div>`;
       $('hear').onclick = () => sayBlank(blankS); sayBlank(blankS);
       const ans = s.w.toLowerCase();
-      const r = await freeType({ answer: s.w, hint: 'Not quite. Read the sentence again. Which word makes sense?', onMiss: t => {
+      // Nov 18, 2026 (who / whose): a clue for the right word after a wrong answer; {next} = the word after the blank, lit up
+      const next = (s.b.match(/[A-Za-z']+/) || [''])[0], tipRaw = (d.tips || {})[ans], tip = tipRaw ? tipRaw.replace(/\{next\}/g, next) : '';
+      const showClue = () => { if (!tip || !next) return; const fs = $('fs'); if (fs && !fs.querySelector('.fj-next')) fs.innerHTML = fs.innerHTML.replace(new RegExp(`(<span class="blankbox" id="blank"></span>\\W*)(${next})`), '$1<mark class="fj-next">$2</mark>'); };
+      const missHint = tip || 'Not quite. Read the sentence again. Which word makes sense?';
+      const r = d.pick ? await new Promise(res => {
+        const picks = [];
+        $('io').innerHTML = `<div class="ls-choices row2" id="ch">${d.bank.map(w => `<button data-c="${L_esc(w)}">${L_esc(w)}</button>`).join('')}</div><div class="message" id="msg"></div>`;
+        $('ch').onclick = e => {
+          const b = e.target.closest('[data-c]'); if (!b || b.disabled) return; const c = b.dataset.c; picks.push(c);
+          if (c.toLowerCase() === ans) { b.classList.add('right'); $('ch').querySelectorAll('button').forEach(x => x.disabled = true); setMsg(picks.length === 1 ? 'Yes! Right the first time!' : 'You got it!', 'good'); fb(`Yes! ${full}`, 0.9); nextUp(1600).then(() => res({ ok: picks.length === 1, typed: picks[0], attempts: picks })); }
+          else { b.classList.add('wrong'); b.disabled = true; shakeEl(b); app.querySelectorAll('.bank .pill').forEach(p => { if (p.dataset.bw === c.toLowerCase()) p.classList.add('wrong'); }); showClue(); setMsg(missHint, 'try'); fb(missHint, 0.9); }
+        };
+      }) : await freeType({ answer: s.w, hint: missHint, onMiss: t => {
         const tn = String(t).toLowerCase().trim(); app.querySelectorAll('.bank .pill').forEach(p => { if (p.dataset.bw === tn) p.classList.add('wrong'); });
         if (typeof redOut === 'function') redOut(tn, ans);
+        showClue(); if (tip) fb(tip, 0.9);
       } });
-      mark('Fill in the Blank', blankS, r.ok, r.typed, s.w, s.w, { text: blankS, bank: d.bank }, r.attempts);
+      mark('Fill in the Blank', blankS, r.ok, r.typed, s.w, d.pick ? null : s.w, { text: blankS + (tip && !r.ok ? ` (Clue he got: ${tip})` : ''), bank: d.bank }, r.attempts);
       $('blank').outerHTML = `<b class="fj-fill">${L_esc(s.w)}</b>`;
       app.querySelectorAll('.bank .pill').forEach(p => { if (p.dataset.bw === ans) p.classList.add('used'); });
       if (!d.aloud) return done();
@@ -2083,8 +2106,24 @@ LT.fillin.run = () => {
     if (d.aloud) stopMic();
     partDone(firstTry('Fill in the Blank') + '.');
   };
-  PARTS = [{ name: 'Fill in the Blank', run: fillP }];
-  return { intro: `${d.heading}: ${n} sentence${n > 1 ? 's' : ''} to finish${d.aloud ? ', then read out loud' : ''}.` };
+  const learnP = async () => {
+    const t = d.teach, m = t.length;
+    await each(m, i => new Promise(async done => {
+      const x = t[i], exHtml = L_esc(x.ex).replace(new RegExp(`\\b(${x.w})\\b`, 'i'), '<b class="fj-fill">$1</b>');
+      app.innerHTML = L_exactTag() + head('Learn the words.') + L_count(i, m, 'Word')
+        + `<div class="ls-se" style="font-size:clamp(56px,10vw,90px)">${L_esc(x.w)}</div><div class="message good" style="font-size:24px">${L_esc(x.w)} ${L_esc(x.mean)}.</div>`
+        + (x.ex ? `<div class="sentence">${exHtml}</div>` : '') + (x.trick ? `<div class="message try" style="font-size:22px">💡 ${L_esc(x.trick)}</div>` : '')
+        + `<button class="btn" id="hearT">${SPK}Hear it again</button><button class="btn big primary" id="gotT">Got it 👍</button>`;
+      const talk = () => fb(`${x.w}. ${x.w} ${x.mean}. ${x.ex ? 'Like this: ' + x.ex : ''} ${x.trick}`, 0.85);
+      $('hearT').onclick = talk; talk();
+      await new Promise(r => { $('gotT').onclick = r; });
+      mark('Learn It', x.w, true, '', '', null, { text: `${x.w} ${x.mean}. ${x.ex} ${x.trick}` }, ['looked at it']); L_free();
+      done();
+    }));
+    partDone('Now let’s use them!');
+  };
+  PARTS = [...((d.teach || []).length ? [{ name: 'Learn It', run: learnP }] : []), { name: 'Fill in the Blank', run: fillP }];
+  return { intro: `${d.heading}: ${(d.teach || []).length ? 'learn the words, then ' : ''}${n} sentence${n > 1 ? 's' : ''} to finish${d.aloud ? ', then read out loud' : ''}.` };
 };
 
 /* ---------- Draw and Write (Nov 17, 2026) ---------- */
