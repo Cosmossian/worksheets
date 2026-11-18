@@ -459,6 +459,7 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 </head>
 <body class="authwait">
 <script src="testclock.js?v=1"></script>
+<script src="listen.js?v=1"></script>
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <h1 id="appTitle">Spelling Helper</h1>
@@ -1347,6 +1348,8 @@ $('again').onclick = () => begin();
 if (!canTalk) $('voiceWarn').hidden = false;
 
 let grownMode = false;
+// listen.js (Nov 18): lock taps while the page talks only on his login (or a grown-up's Test day), not on grown-up screens
+window.LISTEN_ON = () => { try { return (cloud.role === 'kid' && !grownMode) || sessionStorage.getItem('study-testday-parent') === '1'; } catch (e) { return false; } };
 $('grownDone').onclick = () => { grownMode = false; show('kidhome'); window.scrollTo(0, 0); };
 function placeMicTest(id) {   // his start screen gets the same mic test (sensitivity is per device), when Look & Listen uses the mic
   const d = store('spell-daily') || {}, onKid = id === 'kidhome' && d.on !== false && d.look !== false && d.mic !== false && dailyWords().length > 0;
