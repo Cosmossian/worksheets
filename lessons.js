@@ -437,8 +437,31 @@ const LT = {
       return { heading: LT.compare.title(c), inst: (c.inst || '').trim(), cols, rows, bank: L_list(c.bank), say: !!c.say };
     },
     check: d => !d.cols.length ? 'Type at least one question.' : !d.rows.length ? 'Type at least one character.' : ''
+  },
+  /* Nov 18, 2026 (Dylan: "He thinks have has a silent e in it cause it has an e in it"): what makes a silent e,
+     and heart words that break the rule. Learn It (add an e: cap → cape) → Detective (yes/no + the 3 checks, every word) */
+  silente: {
+    name: 'Silent e Detective', cls: 'phonics', noSchool: true,
+    help: 'What makes a silent e. Learn It: he adds an e to a word (cap → cape) and hears the vowel say its name, then meets the heart words that break the rule (have, give, come, some). Detective: for each word he says if it has a silent e, then sees the 3 checks: the e is at the end, a vowel + one letter + e, the vowel says its name. Heart words (have) aren’t silent e words.',
+    schools: {},
+    own: () => ({ pairs: 'cap, cape\nkit, kite\nhop, hope\ncub, cube\nthem, theme', heart: 'have, give, come, some', words: 'have, cake, bed, hike, give, these, ten, rope, come, five, help, some' }),
+    fields: () => [
+      { k: 'pairs', label: 'Learn It: add a silent e', type: 'area', rows: 4, help: 'One pair per line: cap, cape. Leave empty to skip Learn It.' },
+      { k: 'heart', label: 'Heart words that break the rule', type: 'text', help: 'Separate with commas. They have an e at the end, but the vowel doesn’t say its name. Shown at the end of Learn It.' },
+      { k: 'words', label: 'Detective words', type: 'area', rows: 3, help: 'Separate with commas. Mix silent e words (cake), words with an e that isn’t at the end (bed), and heart words (have). The answer is worked out for you.' }
+    ],
+    acts: () => [],
+    title: () => '🛠️ Silent e Detective',
+    data: c => ({ pairs: L_lines(c.pairs).map(l => L_list(l)).filter(x => x.length === 2).map(([a, b]) => ({ a: a.toLowerCase(), b: b.toLowerCase() })),
+      heart: L_list(c.heart).map(w => w.toLowerCase()), words: L_list(c.words).map(w => w.toLowerCase()).filter(w => /^[a-z]+$/.test(w)).map(w => ({ w, ...L_silentE(w) })) }),
+    check: d => !d.pairs.length && !d.words.length ? 'Type some pairs or some detective words.' : (d.pairs.filter(p => p.b !== p.a + 'e').map(p => `${p.a} + e isn’t ${p.b}`)[0] || '')
   }
 };
+/* Silent e Detective: the 3 checks for a word. end = e is the last letter; vce = a vowel, 1–2 letters, then that e; name = the vowel says its name (not a heart word) */
+function L_silentE(w) {
+  const end = /e$/.test(w), m = w.match(/([aeiou])([bcdfghjklmnpqrstvwxz]{1,2})e$/), vce = !!m, heart = vce && L_IRREG.has(w);
+  return { end, vce, heart, ok: vce && !heart, v: m ? m[1] : '', vi: m ? m.index : -1 };
+}
 /* Planned extra help (Nov 18, 2026, Dylan: "create assignments for extra help so we can push to the ipad now").
    autoSchool (index.html) puts each on his day like the school sheets, but as 🛠️ Extra help (a.extra), not 📄 School.
    key must be unique; removing one on the Worksheets page keeps it off (autoSkip 'plan:<key>'). */
@@ -448,7 +471,8 @@ const L_PLANNED = [
     set: () => ({ heading: 'Who or Whose?', label: 'Whose asks who something belongs to', bank: 'whose, who', aloud: true,
       sentences: '[Whose] hat is this?\n[Who] is at the door?\n[Whose] dog is in the yard?\n[Who] can run fast?\n[Whose] cup is on the table?\nDo you know [whose] bike this is?' }) },
   { key: 'make10-1118', day: '2026-11-18', tool: 'add3', title: '🛠️ Make a 10 practice', why: 'On Add Three Numbers he picked 5 + 4, then 5 + 6, before finding 6 + 4 in 6 + 5 + 4.',
-    set: () => ({ heading: 'Make a 10 practice', facts: '', tens: '4 + 7 + 6\n5 + 3 + 5\n9 + 2 + 1\n7 + 4 + 3\n8 + 6 + 2\n1 + 5 + 9', adds: '' }) }
+    set: () => ({ heading: 'Make a 10 practice', facts: '', tens: '4 + 7 + 6\n5 + 3 + 5\n9 + 2 + 1\n7 + 4 + 3\n8 + 6 + 2\n1 + 5 + 9', adds: '' }) },
+  { key: 'silente-1118', day: '2026-11-18', tool: 'silente', why: 'He thinks have has a silent e because it has an e in it.', set: () => LT.silente.own() }
 ];
 function L_plannedSnap(p) {
   const c = p.set(), d = LT[p.tool].data(c), need = LT[p.tool].check(d);
@@ -463,7 +487,7 @@ function L_add3Random() {
   return { heading: 'Add Three Numbers', facts: facts.join('\n'), tens: tens.join('\n'), adds: Array.from({ length: 4 }, () => three().join(' + ')).join('\n') };
 }
 const L_IDS = Object.keys(LT);
-const L_CLASS_OF = { fixit: 'phonics', tenmore: 'math', sound: 'phonics', story: 'phonics', readaloud: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela', sort: 'ela', wsearch: 'phonics', fillin: 'phonics', respond: 'ela', add3: 'math', compare: 'ela' };
+const L_CLASS_OF = { fixit: 'phonics', tenmore: 'math', sound: 'phonics', story: 'phonics', readaloud: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela', sort: 'ela', wsearch: 'phonics', fillin: 'phonics', respond: 'ela', add3: 'math', compare: 'ela', silente: 'phonics' };
 /* Word search helpers: where a word is in the grid (across or down) as cell indexes, and a new grid from a list of words */
 function L_findIn(rows, w) {
   const W = String(w).toUpperCase(), R = rows.length, C = (rows[0] || '').length;
@@ -673,6 +697,11 @@ LT.compare.print = (d, exact) => {
     + (d.bank.length ? `<div style="font:400 20px Andika,sans-serif;color:#475569;text-align:center">Words that may help: ${d.bank.map(L_esc).join(', ')}</div>` : ''), exact, { gap: 14 });
 };
 
+LT.silente.print = (d, exact) => L_sheetOf(nameDate() + title('Silent e Detective', 'A silent e is quiet. It makes the vowel say its name.', star('#7E22CE'), star('#0F766E'))
+  + (d.pairs.length ? L_h(1, '#7E22CE', 'Add a silent e. Write the new word and read both.') + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 30px;padding:4px 20px">${d.pairs.map(p => `<div style="font:400 30px Andika,sans-serif">${L_esc(p.a)} + e → <span style="display:inline-block;width:130px;border-bottom:3px solid #1F2937;height:34px"></span></div>`).join('')}</div>` : '')
+  + (d.heart.length ? `<div style="margin:6px 20px;padding:8px 14px;border:2px dashed #DB2777;border-radius:12px;font:400 20px Andika,sans-serif">${L_HEART(18)} Watch out! <b>${d.heart.map(L_esc).join(', ')}</b> have an e at the end, but the vowel doesn’t say its name. They’re heart words.</div>` : '')
+  + (d.words.length ? L_h(2, '#0F766E', 'Does it have a silent e? Circle yes or no.') + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 30px;padding:4px 20px">${d.words.map(x => `<div style="display:flex;gap:18px;align-items:center;font:400 30px Andika,sans-serif"><span style="width:110px">${L_esc(x.w)}</span><span style="font-size:22px">yes</span><span style="font-size:22px">no</span></div>`).join('')}</div>` : ''), exact, { gap: 14 });
+
 /* settings panel. Each worksheet can have several official school sheets, one per school day (Nov 9, 2026, Dylan: "Load 11/10/26
    Official School Worksheets so I know it's for the next day's assignments"). state[t] = { mode: 'school'|'own', day: 'YYYY-MM-DD',
    schools: { day: settings }, own }. The first version had one "school" set; it was the 11/09/26 sheet, so it moves there. */
@@ -829,7 +858,11 @@ if (L_IN_DO) {
     .ls-cmp th, .ls-cmp td { border:2px solid #CBD5E1; padding:4px 6px; text-align:center; } .ls-cmp th { background:#E0F2FE; } .ls-cmp th.now { background:#FDE68A; }
     .ls-cmp td { height:46px; font:700 18px Andika,sans-serif; } .ls-cmp td.nm { font:700 16px Fredoka,sans-serif; } .ls-cmp td.now { background:#FEF3C7; } .ls-cmp td.cur { background:#FEF9C3; box-shadow:inset 0 0 0 3px #F59E0B; }
     .ls-cmp img { max-width:100%; max-height:40px; display:block; margin:0 auto; }
-    .ls-help { font-size:15px; } .ls-ten { display:flex; align-items:center; gap:18px; font:700 clamp(40px,8vw,70px) Fredoka,sans-serif; } .ls-ten i { font-style:normal; color:var(--muted); font-size:.6em; }
+    .ls-help { font-size:15px; }
+    .ls-se { font:700 clamp(54px,10vw,96px) Andika,sans-serif; letter-spacing:4px; } .ls-se .v { color:#FBBF24; } .ls-se .e { color:#94A3B8; } .ls-se .e.new { display:inline-block; animation:lsdrop .6s ease-out; }
+    @keyframes lsdrop { from { transform:translateY(-60px); opacity:0; } to { transform:none; opacity:1; } }
+    .ls-checks { display:flex; flex-direction:column; gap:6px; font:600 19px Fredoka,sans-serif; text-align:left; background:var(--surface); border:2px solid var(--line); border-radius:14px; padding:10px 18px; }
+    .ls-checks .y::before { content:'✅ '; } .ls-checks .n::before { content:'❌ '; } .ls-checks .n { color:var(--muted); } .ls-ten { display:flex; align-items:center; gap:18px; font:700 clamp(40px,8vw,70px) Fredoka,sans-serif; } .ls-ten i { font-style:normal; color:var(--muted); font-size:.6em; }
     `; document.head.appendChild(st); })();
 }
 
@@ -2190,4 +2223,67 @@ LT.compare.run = () => {
   };
   PARTS = d.rows.map((r, i) => ({ name: r.name, run: rowPart(i) }));
   return { intro: `${d.heading}: fill in the chart for ${d.rows.map(r => r.name).join(' and ')}.` };
+};
+
+
+/* ---------- Silent e Detective (Nov 18, 2026) ---------- */
+const L_seWord = (w, vi, eNew) => { const ei = w.length - 1; return `<span class="ls-se">${[...w].map((c, i) => `<span class="${i === vi ? 'v' : i === ei && c === 'e' && vi >= 0 ? 'e' + (eNew ? ' new' : '') : ''}">${L_esc(c)}</span>`).join('')}</span>`; };
+const L_seWhy = x => x.ok ? `Yes! ${x.w}: ${x.v === 'a' || x.v === 'e' || x.v === 'i' || x.v === 'o' ? 'an' : 'a'} ${x.v}, then a letter, then e at the end. The e is quiet and makes the ${x.v} say its name.`
+  : x.heart ? `${x.w} has an e at the end, but the ${x.v} doesn't say its name. ${x.w} is a heart word. It breaks the rule, so it's not a silent e word.`
+  : !x.end ? `The e in ${x.w} isn't at the end. It says e, like in egg. That's not a silent e.`
+  : `The e in ${x.w} is at the end, but there's no vowel, then one letter, then e. That's not a silent e.`;
+const L_seSay = t => t.replace(/the ([aeiou]) (say|doesn)/g, (m, v, r) => `the ${letterName(v)} ${r}`).replace(/(an?) ([aeiou]), then/, (m, a, v) => `${a} ${letterName(v)}, then`);
+LT.silente.run = () => {
+  const d = SD;
+  const learnP = async () => {
+    const n = d.pairs.length;
+    await each(n, i => new Promise(async done => {
+      const p = d.pairs[i], x = L_silentE(p.b);
+      app.innerHTML = L_exactTag() + head('Add a silent e and listen.') + L_count(i, n, 'Word')
+        + `<div id="seW">${L_seWord(p.a, -1)}</div><button class="btn" id="hearA">${SPK}Hear it</button><button class="btn big primary" id="addE">✨ Add a silent e</button><div class="message" id="msg"></div>`;
+      $('hearA').onclick = () => playWord(p.a); await playWord(p.a);
+      await new Promise(r => { $('addE').onclick = r; });
+      $('seW').innerHTML = L_seWord(p.b, x.vi, true); $('addE').remove();
+      $('hearA').onclick = async () => { await playWord(p.a); await wait(300); playWord(p.b); };
+      setMsg(`${p.a} → ${p.b}. The e is quiet. It makes the ${x.v} say its name!`, 'good');
+      await playWord(p.a); await wait(300); await playWord(p.b); await fb(`The e is quiet. It makes the ${letterName(x.v)} say its name.`, 0.9);
+      mark('Learn It', `${p.a} → ${p.b}`, true, p.b, p.b, null, { text: `He added a silent e: ${p.a} became ${p.b}.` }, [p.b]); L_free();
+      await nextUp(600); done();
+    }));
+    if (d.heart.length) {
+      app.innerHTML = L_exactTag() + head(`${L_HEART(26)} Watch out! These words break the rule.`)
+        + `<div>${d.heart.map(w => `<button class="btn" data-hw="${L_esc(w)}" style="font:700 clamp(34px,6vw,54px) Andika,sans-serif;margin:6px">${L_esc(w)}</button>`).join('')}</div>`
+        + `<div class="message try">They have an e at the end, but the vowel doesn’t say its name. They’re heart words, not silent e words. Tap one to hear it.</div><button class="btn big primary" id="gotIt">Got it 👍</button>`;
+      app.querySelectorAll('[data-hw]').forEach(b => b.onclick = () => playWord(b.dataset.hw));
+      await fb(`Watch out! ${d.heart.join(', ')}. They have an e at the end, but the vowel doesn't say its name. They're heart words.`, 0.85);
+      await new Promise(r => { $('gotIt').onclick = r; });
+    }
+    partDone('Now you know how a silent e works!');
+  };
+  const detP = async () => {
+    const n = d.words.length;
+    await each(n, i => new Promise(async done => {
+      const x = d.words[i];
+      app.innerHTML = L_exactTag() + head('Does it have a silent e?') + L_count(i, n, 'Word')
+        + `<div id="seW">${L_seWord(x.w, -1)}</div><button class="btn" id="hearW">${SPK}Hear it</button>`
+        + `<div class="ls-choices row2" id="ch"><button data-a="1">Yes, silent e</button><button data-a="0">No</button></div><div id="why"></div>`;
+      $('hearW').onclick = () => playWord(x.w); await playWord(x.w); fb('Does it have a silent e?', 0.95);
+      const pick = await new Promise(r => { $('ch').onclick = e => { const b = e.target.closest('[data-a]'); if (b) { $('ch').onclick = null; r(b.dataset.a === '1'); } }; });
+      const right = pick === x.ok;
+      $('ch').querySelectorAll('button').forEach(b => { b.disabled = true; if ((b.dataset.a === '1') === x.ok) b.classList.add('right'); else b.classList.add('wrong'); });
+      $('seW').innerHTML = L_seWord(x.w, x.ok ? x.vi : -1);
+      const why = L_seWhy(x).replace(/^Yes! /, '');
+      $('why').innerHTML = `<div class="ls-checks"><div class="${x.end ? 'y' : 'n'}">The e is at the end</div><div class="${x.vce ? 'y' : 'n'}">A vowel, one letter, then e</div><div class="${x.ok ? 'y' : 'n'}">The vowel says its name${x.heart ? ` (no: ${L_esc(x.w)} is a heart word ${L_HEART(16)})` : ''}</div></div>`
+        + `<div class="message ${right ? 'good' : 'try'}">${right ? 'You got it! ' : 'Not this time. '}${L_esc(why)}</div><button class="btn big primary" id="seNext" style="display:block;margin:10px auto 0">Next →</button>`;
+      fb((right ? 'You got it! ' : 'Not this time. ') + L_seSay(why), 0.9);
+      mark('Detective', `Does ${x.w} have a silent e?`, right, pick ? 'yes' : 'no', x.ok ? 'yes' : 'no', null, { text: `${x.w}: ${why}` }, [pick ? 'yes' : 'no']);
+      await new Promise(r => { $('seNext').onclick = r; });
+      done();
+    }));
+    partDone(firstTry('Detective') + '.');
+  };
+  PARTS = [];
+  if (d.pairs.length || d.heart.length) PARTS.push({ name: 'Learn It', run: learnP });
+  if (d.words.length) PARTS.push({ name: 'Detective', run: detP });
+  return { intro: 'Silent e Detective: what makes a silent e, and the heart words that break the rule.' };
 };
