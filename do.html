@@ -2137,6 +2137,39 @@ async function cloudSaveSheet(rec) {
 
 /* ============ Start ============ */
 const SHEETS = { sight: sightSheet, master: masterSheet, question: questionSheet, steps: stepsSheet, eagles: eaglesSheet, weather: weatherSheet, mtest: mtestSheet, ...(typeof LT !== 'undefined' ? Object.fromEntries(L_IDS.map(k => [k, LT[k].run])) : {}), ...(typeof L_warmup === 'function' ? { warmup: L_warmup } : {}) };   // warmup: the daily quiz's warm-up (lessons.js, Nov 11)   // lessons.js: 10 More or Less, Sound Investigator, Story Time, Word Chains, Heart Word, Handwriting
+/* Nov 19, 2026 (Dylan: "I want the ones that are school assigned to auto assign for the day"): his start screen opens
+   do.html?autoschool=1 in a hidden frame. It puts today's school sheets (lessons.js / science.js `schools`, plus planned extra help)
+   on his list itself, so no grown-up has to open the Worksheets page first. Only adds missing ones with the sheet's own settings
+   (a grown-up's edits still come from the Worksheets page, which refreshes ones he hasn't started); sheets that need a grown-up to
+   type something (Story Time's story) still wait for the grown-up. Removed ones stay off: the list's synced `skip`. */
+async function autoSchoolHere() {
+  if (typeof LT === 'undefined') return 0;
+  const sb = sbClient(); if (!sb) return 0;
+  const { data: s } = await sb.auth.getSession(); if (!s.session) return 0;
+  const { data, error } = await sb.from('study_state').select('data').eq('key', 'sheets').maybeSingle(); if (error) return 0;
+  const cur = (data && data.data) || {}, list = [...(cur.list || [])], skip = new Set(cur.skip || []), today = ymdD(Date.now());
+  const dayOfA = a => a.day || (a.data && a.data.schoolDay) || '';
+  let added = 0;
+  const add = (o) => { list.push({ id: (Date.now() + list.length).toString(36), at: Date.now(), auto: true, ...o }); added++; };
+  L_IDS.forEach(t => { const L = LT[t], sc = L && L.schools && L.schools[today]; if (!sc || skip.has(`${t}@${today}`)) return;
+    if (list.some(a => a.tool === t && a.data && a.data.exact && dayOfA(a) === today)) return;
+    try {
+      const c = sc.set(); try { if (L.prefill) L.prefill(c); } catch (e) { }
+      const d = L.data(c), need = L.check(d) || (sc.need ? sc.need(c) : ''); if (need) return;
+      add({ tool: t, title: L_schoolTag(today) + L.title(c), day: today, data: { ...d, exact: true, schoolDay: today } });
+    } catch (e) { console.warn('autoschool', t, e); }
+  });
+  (typeof L_PLANNED === 'undefined' ? [] : L_PLANNED).forEach(p => {
+    if (p.day !== today || skip.has(`plan:${p.key}`) || list.some(a => a.planned === p.key)) return;
+    try { const sn = L_plannedSnap(p); if (sn.ok) add({ tool: p.tool, title: sn.title, day: p.day, data: sn.data, extra: true, planned: p.key }); } catch (e) { }
+  });
+  if (!added) return 0;
+  const r = await sb.from('study_state').upsert({ key: 'sheets', data: { ...cur, list: list.slice(-150) }, updated_at: new Date().toISOString() });
+  return r.error ? 0 : added;
+}
+if (new URLSearchParams(location.search).get('autoschool')) {
+  autoSchoolHere().catch(() => 0).then(n => window.parent.postMessage({ studyAutoSchool: n }, location.origin));
+} else
 (async () => {
   if (DAILY) {   // links that would leave go back to his daily routine instead
     document.body.classList.add('emb');

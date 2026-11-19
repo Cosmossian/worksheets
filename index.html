@@ -1517,8 +1517,8 @@ document.getElementById('schoolList').addEventListener('click', async e => {
     if (!snap.ok) return alert(snap.need);
     const sb = await studySession(); if (!sb) return alert('Sign in as the grown-up first.');
     go.disabled = true; go.textContent = 'Assigning…';
-    try { const list = await loadSheets(sb); list.push({ id: Date.now().toString(36), tool: t, title: snap.title, at: Date.now(), day: when, data: snap.data }); await saveSheets(sb, list.slice(-150));
-      state.autoSkip = (state.autoSkip || []).filter(x => x !== `${t}@${day}`); save(); go.textContent = `✓ On his day ${dayName(when)}`; refreshOnDay(list); renderAssigned(); setTimeout(() => renderPanel(), 1200);
+    try { const list = await loadSheets(sb); list.push({ id: Date.now().toString(36), tool: t, title: snap.title, at: Date.now(), day: when, data: snap.data }); skipDrop(`${t}@${day}`); await saveSheets(sb, list.slice(-150));
+      go.textContent = `✓ On his day ${dayName(when)}`; refreshOnDay(list); renderAssigned(); setTimeout(() => renderPanel(), 1200);
     } catch (er) { go.disabled = false; go.textContent = 'Try again'; }
     return; }
   if (e.target.closest('select, .again')) { e.stopPropagation(); return; }
@@ -1613,10 +1613,15 @@ const addDays = (ds, n) => { const x = new Date(ds + 'T12:00:00'); x.setDate(x.g
 const dayName = (ds, long) => { const x = new Date(ds + 'T12:00:00'), t = dayOf(Date.now()), rel = ds === t ? 'today' : ds === addDays(t, 1) ? 'tomorrow' : ds === addDays(t, -1) ? 'yesterday' : '';
   const base = long ? x.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : `${x.toLocaleDateString(undefined, { weekday: 'short' })} ${x.getMonth() + 1}/${x.getDate()}`; return rel ? `${base} (${rel})` : base; };
 const expired = a => (a.tool === 'mtest' && sheetDay(a) < dayOf(Date.now())) || (!RECUR.includes(a.tool) && sheetDay(a) < addDays(dayOf(Date.now()), -21));   // the Mastered Words Test is only for its day; anything 3 weeks old is tidied away
+let sheetSkip = [];
+const skipSet = () => new Set([...(state.autoSkip || []), ...sheetSkip]);
+const skipAdd = k => { state.autoSkip = [...new Set([...(state.autoSkip || []), k])]; save(); sheetSkip = [...new Set([...sheetSkip, k])]; };
+const skipDrop = k => { state.autoSkip = (state.autoSkip || []).filter(x => x !== k); save(); sheetSkip = sheetSkip.filter(x => x !== k); };
 async function loadSheets(sb) {
   const { data, error } = await sb.from('study_state').select('data').eq('key', 'sheets').maybeSingle();
   if (error) throw error;
   const list = (data && data.data && data.data.list) || [];
+  sheetSkip = [...new Set([...((data && data.data && data.data.skip) || []), ...(state.autoSkip || [])])];   // Nov 19: removed school sheets, shared with his device (it adds today's by itself)
   if (list.some(expired)) { const keep = list.filter(a => !expired(a)); try { await saveSheets(sb, keep); } catch (e) { } return keep; }   // tidy up yesterday's test and old work
   return list;
 }
@@ -1624,14 +1629,14 @@ async function loadSheets(sb) {
    they have the date on it, to that specific date"). For every 📄 school sheet dated tomorrow or later: if it isn't on that day yet,
    it's added (marked auto); if it's already there by itself and he hasn't started it, it's refreshed with what's typed on the sheet
    now. A sheet that still needs something from you (like the word hunt paragraph) waits, and the note at the top says what.
-   Removing one keeps it off (state.autoSkip); assigning it again by hand brings it back. */
+   Removing one keeps it off (state.autoSkip, and the list's synced `skip` so his device doesn't add it back either); assigning it again by hand brings it back. */
 let autoBusy = false, autoTimer = null;
 const autoSchoolSoon = () => { clearTimeout(autoTimer); autoTimer = setTimeout(() => autoSchool(), 1500); };
 async function autoSchool() {
   if (autoBusy) return autoSchoolSoon(); autoBusy = true;
   try {
     const sb = await studySession(); if (!sb) return;
-    const today = dayOf(Date.now()), list = await loadSheets(sb), skip = new Set(state.autoSkip || []), waiting = [];
+    const today = dayOf(Date.now()), list = await loadSheets(sb), skip = skipSet(), waiting = [];
     let changed = false;
     const { data: logs } = await sb.from('study_log').select('kind,data').in('kind', ['sheet', 'fixup']).gte('t', new Date(Date.now() - 30 * 864e5).toISOString());
     const started = id => (logs || []).some(r => (r.data.aid || r.data.cid) === id);
@@ -1660,9 +1665,9 @@ async function autoSchool() {
   finally { autoBusy = false; }
 }
 async function saveSheets(sb, list) {
-  const r = await sb.from('study_state').upsert({ key: 'sheets', data: { list }, updated_at: new Date().toISOString() });
+  const r = await sb.from('study_state').upsert({ key: 'sheets', data: { list, skip: sheetSkip }, updated_at: new Date().toISOString() });
   if (r.error) throw r.error;
-  lsSet('study-sheets', { list });   // so this device's Spelling Helper shows it right away too
+  lsSet('study-sheets', { list, skip: sheetSkip });   // so this device's Spelling Helper shows it right away too
 }
 async function renderAssigned() {
   const el = document.getElementById('assignedList'); if (!el) return;
@@ -1733,7 +1738,7 @@ function wireOnScreen() {
       const day = sel.value || today;
       const list = (await loadSheets(sb)).filter(a => !(a.tool === t && a.title === snap.title && sheetDay(a) === day));   // re-assigning replaces the same worksheet on the same day
       list.push({ id: Date.now().toString(36), tool: t, title: snap.title, at: Date.now(), day, data: snap.data });
-      if (snap.data && snap.data.schoolDay) { state.autoSkip = (state.autoSkip || []).filter(k => k !== `${t}@${snap.data.schoolDay}`); save(); }
+      if (snap.data && snap.data.schoolDay) skipDrop(`${t}@${snap.data.schoolDay}`);
       await saveSheets(sb, list.slice(-150));
       amsg(day === today ? `Assigned ✓ “${esc(snap.title)}” is on his start screen now.` : `Assigned ✓ “${esc(snap.title)}” for ${esc(dayName(day, true))}. It shows up on his start screen that day.`);
       renderAssigned();
@@ -1756,8 +1761,8 @@ async function unassignClick(e) {
     b.disabled = true;
     try {
       const all = await loadSheets(sb), gone = all.find(a => a.id === b.dataset.unassign);
-      if (gone && gone.data && gone.data.exact && gone.data.schoolDay) { state.autoSkip = [...new Set([...(state.autoSkip || []), `${gone.tool}@${gone.data.schoolDay}`])]; save(); }   // don't put it back by itself
-      if (gone && gone.planned) { state.autoSkip = [...new Set([...(state.autoSkip || []), `plan:${gone.planned}`])]; save(); }   // planned extra help (L_PLANNED) too
+      if (gone && gone.data && gone.data.exact && gone.data.schoolDay) skipAdd(`${gone.tool}@${gone.data.schoolDay}`);   // don't put it back by itself
+      if (gone && gone.planned) skipAdd(`plan:${gone.planned}`);   // planned extra help (L_PLANNED) too
       await saveSheets(sb, all.filter(a => a.id !== b.dataset.unassign)); amsg('Removed from his device.');
     }
     catch (er) { amsg(`Couldn’t remove it: ${esc(er.message || er)}`, true); }

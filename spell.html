@@ -3214,8 +3214,25 @@ async function pullTodayResults(day = '') {   // day (YYYY-MM-DD, for a grown-up
     if (before !== after && !$('kidhome').hidden) renderKidHome();
   } catch (e) { } finally { todayPulling = false; }
 }
+/* Nov 19, 2026: school sheets go on his day by themselves. do.html?autoschool=1 (it has lessons.js) adds today's to his list
+   from his own device; then his list is pulled again. At most every 10 minutes, and again when the day changes. */
+let autoSchoolAt = 0, autoSchoolDay = '';
+function autoSchoolKid() {
+  if (cloud.role !== 'kid' || !cloudMember() || sessionStorage.getItem('study-testday')) return;
+  const d = ymd(Date.now()); if (d === autoSchoolDay && Date.now() - autoSchoolAt < 600000) return;
+  autoSchoolAt = Date.now(); autoSchoolDay = d;
+  const old = $('autoSchoolFrame'); if (old) old.remove();
+  const f = document.createElement('iframe'); f.id = 'autoSchoolFrame'; f.hidden = true; f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+  f.src = 'do.html?autoschool=1&t=' + Date.now(); document.body.appendChild(f);
+  setTimeout(() => { if (f.isConnected) f.remove(); }, 60000);
+}
+window.addEventListener('message', e => {
+  if (e.origin !== location.origin || !e.data || e.data.studyAutoSchool == null) return;
+  const f = $('autoSchoolFrame'); if (f) f.remove();
+  if (e.data.studyAutoSchool > 0) cloudPull().then(() => { if (!$('kidhome').hidden) renderKidHome(); }).catch(() => { });
+});
 function renderKidHome() {
-  pullTodayResults();
+  pullTodayResults(); autoSchoolKid();
   const d = store('spell-daily') || {}, words = d.on === false || !isWeekday(ymd(Date.now())) ? [] : dailyWords();   // sight words: Monday to Friday
   const today = withToday('spell-check-log', store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString() && r.t > (d.resetAt || 0));   // "Reset today" starts his day fresh
   $('kidHi').textContent = kidName() ? `Hi ${kidName()}! 👋` : 'Hi! 👋';
