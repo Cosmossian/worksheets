@@ -180,7 +180,8 @@ const LT = {
       '2026-11-09': { note: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 54”.', set: () => ({ lesson: 'Lesson 54', concept: 'a_e', words: 'make, cape, fade, plate, skate, shade', heart: 'wh*|o*', chains: 'make, lake, cake, bake\nname, same, came, game', sentences: 'Who will be at the lake?\nBlake was late to the game.' }) },
       '2026-11-16': { note: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 56” (no new irregular word this time).', set: () => ({ lesson: 'Lesson 56', concept: 'o_e', words: 'hope, note, bone, close, phone, those', heart: '', chains: 'rope, mope, cope, hope\nwoke, joke, poke, spoke', sentences: 'Who did you vote for?\nWe drove home at nine.' }) },
       '2026-11-17': { note: 'The school sent the same Lesson 56 sheet as 11/16, so this one is new practice with the same o_e pattern: new words, chains that add the magic e (hop → hope, cod → code) and new sentences.', set: () => ({ lesson: 'Lesson 56 (more practice)', concept: 'o_e', words: 'home, rope, stone, smoke, globe, froze', heart: '', chains: 'hop, hope, rope, robe\ncod, code, rode, rose\nhole, pole, pose, nose', sentences: 'I hope the note is by the stove.\nRose rode home with a cone.\nThe dog woke up and froze.' }) },
-      '2026-11-18': { note: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 57” (e_e & review), with its three review irregular words: who, by, my.', set: () => ({ lesson: 'Lesson 57', concept: 'e_e & review', words: 'eve, theme, these, here, shape, while, drove', heart: 'wh*|o*, b|y*, m|y*', chains: 'ride, rode, mode, made\ncame, tame, time, lime', sentences: 'They should hike by the lake.\nI will bake a cake for my class.' }) }
+      '2026-11-18': { note: 'Same words, chains and sentences as the school sheet “Home Practice Lesson 57” (e_e & review), with its three review irregular words: who, by, my.', set: () => ({ lesson: 'Lesson 57', concept: 'e_e & review', words: 'eve, theme, these, here, shape, while, drove', heart: 'wh*|o*, b|y*, m|y*', chains: 'ride, rode, mode, made\ncame, tame, time, lime', sentences: 'They should hike by the lake.\nI will bake a cake for my class.' }) },
+      '2026-11-19': { note: 'The school sent the same Lesson 57 sheet as 11/18, so this one is new practice with the same pattern (e_e and the other silent e spellings): new words, chains that add the silent e (them → theme, cut → cute, pin → pine), new sentences, and the same review heart words: who, by, my.', set: () => ({ lesson: 'Lesson 57 (more practice)', concept: 'e_e & review', words: 'Pete, Steve, theme, these, cute, spine, stone', heart: 'wh*|o*, b|y*, m|y*', chains: 'them, theme, these\ncut, cute, mute, mule\npin, pine, pane, cane', sentences: 'Pete and Steve rode by the lake.\nMy mule ate a huge pile of hay.\nWho will ride the bike home with me?' }) }
     },
     own: () => ({ lesson: 'Long a: ai', concept: 'ai', words: 'rain, tail, paint, snail, wait, chain', heart: 's|ai*|d', chains: 'rain, pain, main, mail\nsail, tail, nail, snail', sentences: 'The snail is on the trail.\nWait for the rain to stop.' }),
     fields: () => [
@@ -226,7 +227,8 @@ const LT = {
       '2026-11-12': { note: 'Same letter, names and sentences as the school sheet “Uppercase F”.', set: () => ({ letter: 'F', words: 'Felicia, Frank, Finn', trace: 'Flora fed the fish.', copy: 'Fred the fly flies fast.' }) },
       '2026-11-16': { note: 'Same letter, words and sentences as the school sheet “Lowercase s”.', set: () => ({ letter: 's', words: 'see, sub, snap', trace: 'The shop sells salt.', copy: 'Sally the seal sings a song.' }) },
       '2026-11-17': { note: 'Same letter, words and sentences as the school sheet “Uppercase S”.', set: () => ({ letter: 'S', words: 'Sam, Sophia, Sal', trace: 'Sean sat in the snow.', copy: 'Silly Steve spits seeds.' }) },
-      '2026-11-18': { note: 'Same letter, words and sentences as the school sheet “Lowercase x”.', set: () => ({ letter: 'x', words: 'x-ray, xylophone, xerox', trace: 'Xu has an extra axe.', copy: 'Xavier has a wax fox.' }) }
+      '2026-11-18': { note: 'Same letter, words and sentences as the school sheet “Lowercase x”.', set: () => ({ letter: 'x', words: 'x-ray, xylophone, xerox', trace: 'Xu has an extra axe.', copy: 'Xavier has a wax fox.' }) },
+      '2026-11-19': { note: 'Same letter, names and sentences as the school sheet “Uppercase X”.', set: () => ({ letter: 'X', words: 'Xander, Xena, Xu', trace: 'Xena x-rayed a fish.', copy: 'Xaiden xeroxed a text.' }) }
     },
     own: () => ({ letter: 'R', words: 'Rosa, Ryan, Rudy', trace: 'Rex ran to the rug.', copy: 'Rita reads a red book.' }),
     fields: () => [
@@ -244,6 +246,7 @@ const LT = {
     name: 'Spelling Sort', cls: 'ela',
     help: 'Sort spelling words under headings (like the endings –ff, –ll, –ss, –zz), spell each one when he hears it, then say sentences with 3 of them out loud. Printed, it has word cards to cut out, the chart and the activity.',
     schools: {
+      '2026-11-19': { note: 'Same headings and words as the school sheet “The Wonderful Brocade” (A): Practice Spelling List 4. He spells each word, sorts it by its ending, then says sentences with 3 of the words (the sheet’s “Say sentences” choice).', set: () => ({ heading: 'Spelling List 4', heads: '–ack, –ick, –ock, –uck', words: 'lock, luck, pack, pick, back, quack, buck, quick, dock, rock, lick, tuck', spell: true, say: true }) },
       '2026-11-12': { need: c => String(c.hunt || '').trim() ? '' : 'Paste the word hunt paragraph from the school sheet.', note: 'Same headings and words as the school sheet “The Poor Man’s Reward” (C): Apply Spelling List 3: the word hunt, then sort and glue the chart. The word hunt paragraph isn’t built in: copy it from the school PDF into the Word hunt box.', set: () => ({ heading: 'Spelling List 3: Word Hunt', heads: '–ff, –ll, –ss, –zz', words: 'miss, off, pass, pull, boss, buzz, fizz, less, small, still, stuff, tell', hunt: '', spell: false, glue: true, say: false }) },
       '2026-11-10': { note: 'Same headings and words as the school sheet “The Poor Man’s Reward” (B): Practice Spelling List 3.', set: () => ({ heading: 'Spelling List 3', heads: '–ff, –ll, –ss, –zz', words: 'miss, off, pass, pull, boss, buzz, fizz, less, small, still, stuff, tell', spell: true, say: true }) }
     },
@@ -418,6 +421,32 @@ const LT = {
       return no10.length ? `Two numbers have to make 10 in: ${no10.map(t => t.join(' + ')).join('; ')}.` : '';
     }
   },
+  /* Nov 19, 2026 (Stride "Addition Strategies (B): Add by Counting On within 20"): start at the bigger number, then hop one at a time on a number line */
+  counton: {
+    name: 'Count On', cls: 'math',
+    help: 'Add by counting on. Count on: he taps the number to start on (the bigger one), hops one number at a time on a number line, then types the answer. Add: two numbers, with 🆘 Show me the number line if he needs it.',
+    schools: {
+      '2026-11-19': { note: 'Same numbers as the school sheet “Addition Strategies (B): Add by Counting On within 20”. 12 + 5 and 14 + 4 are stacked (one number on top of the other), like the sheet.', set: () => ({ heading: 'Add by Counting On', line: '9 + 2\n3 + 16\n11 + 4\n6 + 11\n13 + 7', adds: '9 + 4\n5 + 10\ndown: 12 + 5\ndown: 14 + 4' }) }
+    },
+    own: () => L_countOnRandom(),
+    fields: () => [
+      { k: 'heading', label: 'Title', type: 'text' },
+      { k: 'line', label: 'Count on with a number line', type: 'area', rows: 4, help: 'One per line: 9 + 2. The number line goes to 20. Leave empty to skip.' },
+      { k: 'adds', label: 'Add', type: 'area', rows: 3, help: 'One per line: 9 + 4. Put “down:” in front to stack it (12 on top of + 5): down: 12 + 5. Leave empty to skip.' }
+    ],
+    acts: mode => mode === 'own' ? [['shuffle', '🎲 New numbers']] : [],
+    act: (a, c) => { if (a === 'shuffle') Object.assign(c, L_countOnRandom()); },
+    title: c => (c.heading || '').trim() || 'Add by Counting On',
+    data: c => {
+      const two = l => { const n = L_ints(l).slice(0, 2); return n.length === 2 ? { n, down: /^\s*down\s*:/i.test(l) } : null; };
+      return { heading: LT.counton.title(c), line: L_lines(c.line).map(two).filter(Boolean), adds: L_lines(c.adds).map(two).filter(Boolean) };
+    },
+    check: d => {
+      if (!d.line.length && !d.adds.length) return 'Type some problems, like 9 + 2.';
+      const big = d.line.filter(x => x.n[0] + x.n[1] > 20);
+      return big.length ? `The number line goes to 20, so these are too big for it: ${big.map(x => x.n.join(' + ')).join('; ')}. Put them under Add.` : '';
+    }
+  },
   /* Nov 18, 2026 (Stride "Make Connections: The Water of Life" (C)): a chart that compares characters, one row per character */
   compare: {
     name: 'Compare Chart', cls: 'ela',
@@ -499,8 +528,13 @@ function L_add3Random() {
   const tens = Array.from({ length: 4 }, () => { const a = L_rand(1, 9), t = [a, 10 - a, r()]; return L_shuf(t).join(' + '); });
   return { heading: 'Add Three Numbers', facts: facts.join('\n'), tens: tens.join('\n'), adds: Array.from({ length: 4 }, () => three().join(' + ')).join('\n') };
 }
+/* Count On: new numbers for ✏️ My own (within 20; some with the small number first, so he has to pick the bigger one) */
+function L_countOnRandom() {
+  const pair = () => { const big = L_rand(6, 16), small = L_rand(1, Math.min(6, 20 - big)); return Math.random() < 0.4 ? `${small} + ${big}` : `${big} + ${small}`; };
+  return { heading: 'Add by Counting On', line: Array.from({ length: 5 }, pair).join('\n'), adds: Array.from({ length: 4 }, (_, i) => (i >= 2 ? 'down: ' : '') + pair()).join('\n') };
+}
 const L_IDS = Object.keys(LT);
-const L_CLASS_OF = { fixit: 'phonics', tenmore: 'math', sound: 'phonics', story: 'phonics', readaloud: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela', sort: 'ela', wsearch: 'phonics', fillin: 'phonics', respond: 'ela', add3: 'math', compare: 'ela', silente: 'phonics' };
+const L_CLASS_OF = { fixit: 'phonics', tenmore: 'math', sound: 'phonics', story: 'phonics', readaloud: 'phonics', chains: 'phonics', heart: 'phonics', letter: 'ela', sort: 'ela', wsearch: 'phonics', fillin: 'phonics', respond: 'ela', add3: 'math', counton: 'math', compare: 'ela', silente: 'phonics' };
 /* Word search helpers: where a word is in the grid (across or down) as cell indexes, and a new grid from a list of words */
 function L_findIn(rows, w) {
   const W = String(w).toUpperCase(), R = rows.length, C = (rows[0] || '').length;
@@ -702,6 +736,19 @@ LT.add3.print = (d, exact) => {
     + (d.adds.length ? L_h(3, '#1D4ED8', 'Add.') + `<div style="display:flex;flex-direction:column;gap:24px;padding:6px 20px">${d.adds.map(t => prob(t, ++n)).join('')}</div>` : '');
   return (d.facts.length ? L_sheetOf(p1, exact, { gap: 14 }) : '') + (d.tens.length || d.adds.length ? L_sheetOf(p2, exact, { gap: 16 }) : '');
 };
+/* Count On printout: a 0–20 number line under each Count on problem */
+const L_nlSvg = top => { const m = Math.max(20, top), w = 620 / m; return `<svg viewBox="0 0 660 46" style="width:92%;display:block;margin:4px 0 0 34px"><line x1="14" y1="14" x2="646" y2="14" stroke="#1F2937" stroke-width="2.5"/>${Array.from({ length: m + 1 }, (_, k) => `<line x1="${20 + k * w}" y1="6" x2="${20 + k * w}" y2="22" stroke="#1F2937" stroke-width="2"/><text x="${20 + k * w}" y="40" text-anchor="middle" font-family="Fredoka,sans-serif" font-size="15" font-weight="600" fill="#334155">${k}</text>`).join('')}</svg>`; };
+const L_blank = w => `<span style="display:inline-block;width:${w}px;border-bottom:3px solid #1F2937;height:32px"></span>`;
+LT.counton.print = (d, exact) => {
+  let n = 0;
+  const num = () => `<span style="width:40px;display:inline-block;color:#64748B;font-size:20px">${++n}.</span>`;
+  const across = x => `<div style="font:700 30px Fredoka,sans-serif;display:flex;align-items:center;gap:10px">${num()}${x.n[0]} + ${x.n[1]} = ${L_blank(90)}</div>`;
+  const down = x => `<div style="font:700 30px Fredoka,sans-serif;display:flex;align-items:flex-start">${num()}<div style="display:inline-grid;text-align:right;line-height:1.15"><span>${x.n[0]}</span><span>+ ${x.n[1]}</span><span style="border-top:3px solid #1F2937;min-width:90px;height:44px"></span></div></div>`;
+  const top = nameDate() + title(d.heading, 'Addition Strategies', star('#16A34A'), star('#1D4ED8'));
+  const p1 = top + L_h(1, '#16A34A', 'Count on to add. Start at the bigger number. Show your hops!') + `<div style="display:flex;flex-direction:column;gap:22px;padding:6px 20px">${d.line.map(x => `<div>${across(x)}${L_nlSvg(x.n[0] + x.n[1])}</div>`).join('')}</div>`;
+  const p2 = (d.line.length ? nameDate() : top) + L_h(d.line.length ? 2 : 1, '#1D4ED8', 'Add.') + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:34px 30px;padding:6px 20px">${d.adds.map(x => x.down ? down(x) : across(x)).join('')}</div>`;
+  return (d.line.length ? L_sheetOf(p1, exact, { gap: 14 }) : '') + (d.adds.length ? L_sheetOf(p2, exact, { gap: 16 }) : '');
+};
 LT.compare.print = (d, exact) => {
   const th = 'border:2px solid #1F2937;padding:8px;font:700 17px Fredoka,sans-serif;background:#E0F2FE;vertical-align:bottom';
   return L_sheetOf(nameDate() + title(d.heading, d.inst || 'Fill in the chart.', star('#0F766E'), star('#7E22CE'), 34)
@@ -867,6 +914,11 @@ if (L_IN_DO) {
     .ls-fact { font:700 clamp(30px,5vw,44px) Fredoka,sans-serif; background:var(--surface); border:2px solid var(--line); border-radius:16px; padding:4px 22px; }
     .ls-dots { display:flex; gap:22px; flex-wrap:wrap; justify-content:center; background:#fff; border-radius:16px; padding:12px 18px; }
     .ls-dots div { display:grid; grid-template-columns:repeat(5,24px); gap:6px; align-content:start; } .ls-dots span { width:24px; height:24px; border-radius:50%; }
+    .ls-nl { display:flex; gap:3px; width:min(1000px,98vw); margin-top:22px; } .ls-nl button { flex:1 1 0; min-width:0; height:56px; padding:0; border-radius:10px; border:3px solid var(--line); background:var(--surface-2); color:var(--ink); font:700 clamp(14px,2.3vw,24px) Fredoka,sans-serif; cursor:pointer; touch-action:manipulation; position:relative; }
+    .ls-nl button.start { border-color:#2563EB; background:#DBEAFE; color:#1E3A8A; } .ls-nl button.hop { border-color:var(--good); background:var(--good-bg); color:var(--good); }
+    .ls-nl button.hop::before { content:attr(data-hop); position:absolute; top:-26px; left:50%; transform:translateX(-50%); font-size:18px; color:#FDBA74; } .ls-nl button.hint { animation:lspulse 1s infinite; border-color:#EA580C; } .ls-nl button.no { background:#FECACA; color:#1F2937; }
+    .ls-nl.static button { cursor:default; pointer-events:none; }
+    .ls-stack { display:inline-grid; text-align:right; font:700 clamp(32px,5.5vw,46px) Fredoka,sans-serif; line-height:1; } .ls-stack .bar { border-top:5px solid var(--ink); height:6px; }
     .ls-cmp { border-collapse:collapse; background:#fff; color:#1F2937; border-radius:12px; overflow:hidden; font:600 14px Fredoka,sans-serif; table-layout:fixed; width:min(900px,96vw); }
     .ls-cmp th, .ls-cmp td { border:2px solid #CBD5E1; padding:4px 6px; text-align:center; } .ls-cmp th { background:#E0F2FE; } .ls-cmp th.now { background:#FDE68A; }
     .ls-cmp td { height:46px; font:700 18px Andika,sans-serif; } .ls-cmp td.nm { font:700 16px Fredoka,sans-serif; } .ls-cmp td.now { background:#FEF3C7; } .ls-cmp td.cur { background:#FEF9C3; box-shadow:inset 0 0 0 3px #F59E0B; }
@@ -2238,6 +2290,78 @@ LT.add3.run = () => {
   if (d.tens.length) PARTS.push({ name: 'Make a 10', run: tenP });
   if (d.adds.length) PARTS.push({ name: 'Add', run: addP });
   return { intro: `${d.heading}: add three numbers!` };
+};
+
+/* ---------- Count On (Nov 19, 2026) ---------- */
+const L_nlButtons = top => Array.from({ length: Math.max(20, top) + 1 }, (_, k) => `<button data-v="${k}">${k}</button>`).join('');
+const L_probHtml = x => x.down ? `<div class="ls-stack"><span>${x.n[0]}</span><span>+ ${x.n[1]}</span><span class="bar"></span></div>` : `<div class="ls-add">${x.n[0]}<i>+</i>${x.n[1]}<i>=</i>?</div>`;
+LT.counton.run = () => {
+  const d = SD;
+  const lineP = async () => {
+    const n = d.line.length;
+    await each(n, i => new Promise(async done => {
+      const [a, b] = d.line[i].n, s = a + b, big = Math.max(a, b), small = Math.min(a, b), starts = []; let hopWrong = 0;
+      app.innerHTML = L_exactTag() + head('Start at the bigger number. Then hop!') + L_count(i, n, 'Problem')
+        + L_probHtml(d.line[i]) + `<div class="ls-nl" id="nl">${L_nlButtons(s)}</div><div id="io"><div class="message" id="msg">Tap the number you start on.</div></div>`;
+      const btn = v => $('nl').querySelector(`[data-v="${v}"]`);
+      say(`${a} plus ${b}. Which number do you start on? Tap it on the number line.`, 0.9);
+      // 1. where to start (graded on the first tap)
+      await new Promise(res => {
+        $('nl').onclick = e => {
+          const t = e.target.closest('[data-v]'); if (!t) return; const v = +t.dataset.v; starts.push(String(v));
+          if (v === big) { $('nl').onclick = null; t.classList.remove('hint'); t.classList.add('start'); setMsg(`Yes! Start at ${big}.`, 'good'); fb(`Yes! Start at ${big}.`, 0.95); nextUp(1000).then(res); return; }
+          shakeEl(t); t.classList.add('no'); setTimeout(() => t.classList.remove('no'), 700);
+          const m = v === small ? `You could start at ${small}, but ${big} is bigger. Start at the bigger number, so you count less!` : `Start at one of the numbers in ${a} + ${b}. Which one is bigger?`;
+          setMsg(m, 'try'); fb(m, 0.9);
+          if (starts.length >= 2) btn(big).classList.add('hint');
+        };
+      });
+      mark('Count On', `Where to start: ${a} + ${b}`, starts.length === 1, starts[0], String(big), null, { text: `${a} + ${b}: which number does he start on? (the bigger one)` }, starts);
+      // 2. hop one at a time (not graded; wrong hops go in the note)
+      if (small) {
+        let at = big;
+        setMsg(`Now count on ${small}. Hop one number at a time.`, ''); say(`Now count on ${small}. Hop one number at a time.`, 0.9);
+        await new Promise(res => {
+          $('nl').onclick = e => {
+            const t = e.target.closest('[data-v]'); if (!t) return; const v = +t.dataset.v;
+            if (v === at + 1) {
+              at = v; const h = at - big; t.classList.remove('hint'); t.classList.add('hop'); t.dataset.hop = h; fb(String(v), 1);
+              if (h === small) { $('nl').onclick = null; setMsg(`${small} hop${small > 1 ? 's' : ''}! You landed on ${at}.`, 'good'); nextUp(1200).then(res); }
+              else setMsg(`${v}. That’s ${h}. Keep hopping!`, 'good');
+              return;
+            }
+            if (v <= at) return;   // one he already did
+            hopWrong++; shakeEl(t); setMsg(`Hop to the very next number: ${at + 1}.`, 'try'); fb(`Hop to the next number. ${at + 1}.`, 0.9);
+            if (hopWrong >= 2) btn(at + 1).classList.add('hint');
+          };
+        });
+      }
+      // 3. the answer (graded)
+      say(`So, ${a} plus ${b} is?`, 0.9);
+      const r = await L_numpad(s, { hint: 'Look where you landed on the number line.' });
+      mark('Count On', `${a} + ${b}`, r.ok, r.typed, String(s), null, { text: `${a} + ${b}: he started at ${big} and hopped ${small}${hopWrong ? ` (${hopWrong} wrong hop${hopWrong > 1 ? 's' : ''} on the way)` : ''}.` }, r.attempts);
+      done();
+    }));
+    partDone(firstTry('Count On') + '.');
+  };
+  const addP = async () => {
+    const n = d.adds.length;
+    await each(n, i => new Promise(async done => {
+      const x = d.adds[i], [a, b] = x.n, s = a + b, big = Math.max(a, b), small = Math.min(a, b); let helped = false;
+      app.innerHTML = L_exactTag() + head('Add. Start at the bigger number and count on.') + L_count(i, n, 'Problem') + L_probHtml(x)
+        + `<button class="btn ls-help" id="nlBtn">🆘 Show me the number line</button><div id="nlBox"></div><div id="io"></div>`;
+      say(`What is ${a} plus ${b}?`, 0.9);
+      $('nlBtn').onclick = () => { helped = true; $('nlBtn').remove(); $('nlBox').innerHTML = `<div class="ls-nl static">${L_nlButtons(s)}</div>`; $('nlBox').querySelector(`[data-v="${big}"]`).classList.add('start'); fb(`Start at ${big}. Count on ${small}.`, 0.95); };
+      const r = await L_numpad(s, { hint: `Start at ${big} and count on ${small}.` });
+      mark('Add', `${a} + ${b}`, r.ok, r.typed, String(s), null, { text: `What is ${a} + ${b}?${x.down ? ' (stacked)' : ''}${helped ? ' (He opened the number line to help.)' : ''}` }, r.attempts);
+      done();
+    }));
+    partDone(firstTry('Add') + '.');
+  };
+  PARTS = [];
+  if (d.line.length) PARTS.push({ name: 'Count On', run: lineP });
+  if (d.adds.length) PARTS.push({ name: 'Add', run: addP });
+  return { intro: `${d.heading}: start at the bigger number and count on!` };
 };
 
 /* ---------- Compare Chart (Nov 18, 2026) ---------- */
