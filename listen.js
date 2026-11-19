@@ -2,7 +2,7 @@
    make the audio play and everything is clickable afterwards. I am tired of him rushing. Across the entire worksheets site.")
    Loaded by do.html, fixup.html and spell.html (spell.html only locks on his login, not for a grown-up).
    While the page is talking (computer voice or a recording), taps, presses and typing are ignored, buttons dim, and a "👂 Listen first…"
-   note shows. Not locked: the letter he hears after tapping a key (keySay's keyUtt), the header (Back / Reload), grown-up "Skip this part".
+   note shows. Not locked: the letter he hears after tapping a key (keySay's keyUtt; also the Spelling Helper's letter after a right pick), the header (Back / Reload), grown-up "Skip this part".
    If the voice gets stuck "speaking" for 20 s straight, it lets go (iPads sometimes never say they finished). */
 (function () {
   const FREE = '.app-header, .skip-part, #skipPart, [data-free], body > nav, .tod-bar, #grownDone, .ph-wrap';
@@ -17,11 +17,31 @@
     if (r && r.catch) r.catch(() => off());
     return r;
   };
+  /* Nov 19, 2026 (Dylan: sight words were "taking a really long time between letters"): iPads keep saying speechSynthesis.speaking
+     for a while after a voice has finished, so the lock hung on (up to the 20 s stuck limit). Now each spoken line is tracked
+     by its own end: done when it ends or errors, or when its length has passed (rough guess from its text), or 4 s after it was
+     queued if it never starts. cancel() clears them all. */
+  const utts = new Set();
+  if ('speechSynthesis' in window) {
+    const ss = window.speechSynthesis, speak0 = ss.speak.bind(ss), cancel0 = ss.cancel.bind(ss);
+    ss.speak = u => {
+      try {
+        const off = () => { utts.delete(u); clearTimeout(u.__lfT); };
+        const guess = () => 900 + String(u.text || '').length * 85 / Math.max(0.3, u.rate || 1);
+        u.addEventListener('end', off); u.addEventListener('error', off);
+        u.addEventListener('start', () => { clearTimeout(u.__lfT); u.__lfT = setTimeout(off, guess() + 1500); });
+        u.__lfT = setTimeout(off, guess() + 4000);
+        utts.add(u);
+      } catch (e) { }
+      return speak0(u);
+    };
+    ss.cancel = () => { utts.forEach(u => clearTimeout(u.__lfT)); utts.clear(); return cancel0(); };
+  }
   window.LISTEN_ON = () => true;   // pages can replace this (spell.html: only his login)
   const echo = () => { try { return typeof keyUtt !== 'undefined' && !!keyUtt; } catch (e) { return false; } };   // the letter after a key tap
   const talking = () => {
     if (echo()) return false;
-    const tts = 'speechSynthesis' in window && (speechSynthesis.speaking || speechSynthesis.pending);
+    const tts = utts.size > 0;   // not speechSynthesis.speaking: it sticks on iPads (see above)
     for (const a of [...playing]) if (a.paused || a.ended) playing.delete(a);
     return tts || playing.size > 0;
   };
