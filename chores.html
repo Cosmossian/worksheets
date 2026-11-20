@@ -136,7 +136,7 @@ details.edit summary { cursor: pointer; font: 700 18px Fredoka, sans-serif; }
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); if (new URLSearchParams(location.search).get('embed') === '1' && window.parent !== window) document.body.classList.add('embed'); } catch (e) { }</script>
 <header class="app-header">
   <h1 id="appTitle">🧹 Chore Chart</h1>
-  <a class="hdr-btn" id="backBtn" href="index.html#every">Back to The Study</a>
+  <button type="button" class="hdr-btn" id="backBtn" data-href="index.html#every">Back to The Study</button>
 </header>
 
 <!-- Grown-ups: check chores off, see the month -->
@@ -178,7 +178,7 @@ details.edit summary { cursor: pointer; font: 700 18px Fredoka, sans-serif; }
 
 <!-- His device: just looking -->
 <main id="kid" class="kid" hidden>
-  <div class="kidtop"><h1>🧹 My Chores</h1><a class="btn" href="spell.html">My Agenda</a></div>
+  <div class="kidtop"><h1>🧹 My Chores</h1><button type="button" class="btn" data-href="spell.html">My Agenda</button></div>
   <section class="card reward" id="kReward"></section>
   <section class="card"><h2 id="kTodayH">Today</h2><div class="kidlist" id="kToday"></div></section>
   <section class="card"><h2>This week · do by Saturday night</h2><div class="kidlist" id="kWeekly"></div><div class="totals" id="kTotals"></div></section>
@@ -187,7 +187,8 @@ details.edit summary { cursor: pointer; font: 700 18px Fredoka, sans-serif; }
 <main id="msg" hidden><section class="card"><h2 id="msgH"></h2><p class="help" id="msgP"></p></section></main>
 <div class="menu" id="menu" hidden></div>
 
-<script src="listen.js?v=2"></script>
+<script src="listen.js?v=3"></script>
+<script src="study-ui.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 const SB_URL = 'https://wpgclwmssnmiidvnekml.supabase.co';
@@ -470,12 +471,12 @@ if (EMBED) new ResizeObserver(() => { try { parent.postMessage({ studyH: documen
   if (!session) { location.replace('spell.html?next=chores.html'); return; }
   me = session.user.email.toLowerCase();
   try { const { data, error } = await sb.from('study_members').select('role').eq('email', me).maybeSingle(); if (error) throw error; role = data ? data.role : null; }
-  catch (e) { return showMsg('Couldn’t open the chore chart', `The Study didn’t answer (${esc(e.message || e)}). <a href="">Try again</a>`); }
+  catch (e) { return showMsg('Couldn’t open the chore chart', `The Study didn’t answer (${esc(e.message || e)}). <button type="button" class="btn" onclick="hardReload()">↻ Try again</button>`); }
   if (!role) { location.replace('spell.html'); return; }
   try { localStorage.setItem('study-role', role); } catch (e) { }
   document.body.classList.toggle('kid', role === 'kid');
-  if (role === 'kid') { $('backBtn').href = 'spell.html'; $('backBtn').textContent = 'My Agenda'; $('appTitle').textContent = '🧹 My Chores'; }
-  try { await pull(); } catch (e) { if (!C) return showMsg('Couldn’t load the chore chart', `${esc(e.message || e)}. <a href="">Try again</a>`); }
+  if (role === 'kid') { $('backBtn').dataset.href = 'spell.html'; $('backBtn').textContent = 'My Agenda'; $('appTitle').textContent = '🧹 My Chores'; }
+  try { await pull(); } catch (e) { if (!C) return showMsg('Couldn’t load the chore chart', `${esc(e.message || e)}. <button type="button" class="btn" onclick="hardReload()">↻ Try again</button>`); }
   showOnly(role === 'kid' ? 'kid' : 'parent'); render();
   const refresh = async () => { if (document.hidden || saving || !$('menu').hidden) return; try { await pull(); render(); } catch (e) { } };
   document.addEventListener('visibilitychange', refresh);

@@ -44,6 +44,7 @@ body.framefull { overflow: hidden; }
 .assign-day { display: flex; align-items: center; gap: 8px; font-weight: 700; margin: 0 0 8px; } .assign-day select { flex: 1; }
 .daynav { display: flex; align-items: center; gap: 8px; margin: 2px 0 2px; } .daytoday { text-align: center; margin: 0 0 6px; } .daytoday .btn { font-size: 13px; padding: 4px 12px; } .daynav b { flex: 1; text-align: center; font: 700 18px Fredoka, sans-serif; } .daynav button:disabled { opacity: .35; }
 .dayhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.stage-tag { font: 700 11px Fredoka, sans-serif; text-transform: uppercase; letter-spacing: .04em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--accent); }
 .day-acts { display: flex; gap: 8px; } #dayTest[hidden] { display: none; } #dayTest { text-decoration: none; }
 .dayhead h2 { margin: 0; font: 700 24px Fredoka, sans-serif; color: var(--navy); }
 .dayitem { display: flex; gap: 12px; align-items: flex-start; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
@@ -332,7 +333,7 @@ body.schoolmode .tabs { display: none; }
 <body class="authwait">
 <header class="app-header">
   <h1>The Study</h1>
-  <div class="hdr-btns"><button class="hdr-btn day" id="dayBtn">👀 Review Child’s Day</button><a class="hdr-btn" href="spell.html#review">Parent Review</a><a class="hdr-btn" href="spell.html#settings">⚙️ Parent Settings</a><button class="hdr-btn" id="switchUser">↺ Switch user</button></div>
+  <div class="hdr-btns"><button class="hdr-btn day" id="dayBtn">👀 Review Child’s Day</button><button type="button" class="hdr-btn" data-href="spell.html#review">Parent Review</button><button type="button" class="hdr-btn" data-href="spell.html#settings">⚙️ Parent Settings</button><button class="hdr-btn" id="switchUser">↺ Switch user</button></div>
 </header>
 <nav class="classes" id="classes" aria-label="Classes"></nav>
 <div class="autonote" id="autoNote" hidden></div>
@@ -372,7 +373,7 @@ body.schoolmode .tabs { display: none; }
   <button role="tab" data-tool="compare">Compare Chart</button>
 </nav>
 <div class="daywrap" id="dayWrap" hidden role="dialog" aria-modal="true" aria-labelledby="dayTitle"><div class="daybox">
-  <div class="dayhead"><h2 id="dayTitle">His day</h2><span class="day-acts"><a class="hdr-btn" id="dayTest" href="spell.html#testday" title="Do his day exactly as he sees it. Nothing is saved.">🧪 Test day</a><button class="hdr-btn" id="dayClose">✕ Close</button></span></div>
+  <div class="dayhead"><h2 id="dayTitle">His day</h2><span class="day-acts"><button type="button" class="hdr-btn" id="dayTest" data-href="spell.html#testday" title="Do his day exactly as he sees it. Nothing is saved.">🧪 Test day</button><button class="hdr-btn" id="dayClose">✕ Close</button></span></div>
   <div class="daynav"><button class="btn btn-small" id="dayPrev" aria-label="Day before">‹</button><b id="dayName"></b><button class="btn btn-small" id="dayNext" aria-label="Day after">›</button></div>
   <div class="daytoday"><button class="btn btn-small" id="dayToday">↩ Back to today</button></div>
   <p class="help" style="margin:0 0 10px" id="dayHelp">This is what his start screen shows right now, in order.</p>
@@ -386,6 +387,7 @@ body.schoolmode .tabs { display: none; }
     <div class="preview" id="preview" aria-label="Worksheet preview"></div>
   </div>
 </main>
+<script src="study-ui.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 /* First Grade Fun Worksheets — built-in data.
@@ -944,7 +946,7 @@ function countEagles() {
 }
 
 </script>
-<script src="lessons.js?v=21"></script>
+<script src="lessons.js?v=22"></script>
 <script src="science.js?v=7"></script>
 <script src="rain.js?v=1"></script>
 <script src="social.js?v=1"></script>
@@ -1278,6 +1280,9 @@ document.getElementById('classes').addEventListener('click', e => {
 });
 /* Review Child's Day: what his start screen shows today, straight from the Study database */
 let dayView = null;   // the day Review Child's Day is showing (YYYY-MM-DD)
+/* Nov 20: the steps of his day, in order (each locked on his device until the one before it is done; spell.html renderKidHome) */
+const DAY_STAGE_NAMES = { 1: 'Worksheets', 2: 'Extra help', 3: 'Quiz', 4: 'Test', 5: 'Sight words', 6: 'Last' };
+const dayStage = a => a.tool === 'mtest' ? 6 : (a.tool === 'fixit' || a.tool === 'relearn' || a.extra) ? 2 : (a.tool === 'quiz' || /\bquiz(zes)?\b/i.test(a.title || '')) ? 3 : /\btests?\b/i.test(a.title || '') ? 4 : 1;
 async function openDay(ds) {
   const wrap = document.getElementById('dayWrap'), list = document.getElementById('dayList'), td = dayOf(Date.now());
   ds = typeof ds === 'string' ? ds : td; dayView = ds;
@@ -1285,8 +1290,8 @@ async function openDay(ds) {
   document.getElementById('dayName').textContent = dayName(ds, true);
   document.getElementById('dayPrev').disabled = ds <= addDays(td, -30); document.getElementById('dayNext').disabled = ds >= addDays(td, 14);
   document.getElementById('dayToday').style.visibility = isToday ? 'hidden' : 'visible';
-  document.getElementById('dayTest').href = isToday ? 'spell.html#testday' : `spell.html#testday=${ds}`;   // any day: the page acts as if it's that day   // keeps its space, so the arrows never move
-  document.getElementById('dayHelp').textContent = isToday ? 'This is what his start screen shows right now, in order.' : future ? 'This is what his start screen will show that day, in order. Sight words: the list that’s on now, unless you change it before then.' : 'This is what was on his list that day, and what he finished.';
+  document.getElementById('dayTest').dataset.href = isToday ? 'spell.html#testday' : `spell.html#testday=${ds}`;   // any day: the page acts as if it's that day   // keeps its space, so the arrows never move
+  document.getElementById('dayHelp').textContent = isToday ? 'This is what his start screen shows right now, in order. Each step opens on his device once the one before it is done (worksheets → extra help → quiz → test → sight words → Mastered Words Test).' : future ? 'This is what his start screen will show that day, in order. Sight words: the list that’s on now, unless you change it before then.' : 'This is what was on his list that day, and what he finished.';
   wrap.hidden = false; list.innerHTML = '<p class="help">Loading…</p>';
   const sb = await studySession();
   if (!sb) { list.innerHTML = '<p class="help">Sign in first to see his day.</p>'; return; }
@@ -1301,28 +1306,28 @@ async function openDay(ds) {
     const items = [];
     const d = S.daily || {}, words = bankWords(S.sightbank) || parseWords(d.words || '');
     const plog = (S.points && S.points.log) || [], ptot = plog.filter(e => String(e.day).slice(0, 7) === ds.slice(0, 7)).reduce((a, e) => a + (e.pts || 0), 0), ptoday = plog.filter(today).reduce((a, e) => a + (e.pts || 0), 0);
-    if (plog.length && !future) items.push({ title: `⭐ ${esc((S.profile && S.profile.name) || 'His')} points in ${esc(new Date(ds + 'T12:00').toLocaleDateString(undefined, { month: 'long' }))}: ${ptot}`, sub: `${isToday ? 'Today' : 'That day'}: ${ptoday >= 0 ? '+' : ''}${ptoday}. Every point, day by day, is in Parent Review (Daily Sight Words → Parent Review).`, st: '', ok: true });
+    if (plog.length && !future) items.push({ stage: 0, title: `⭐ ${esc((S.profile && S.profile.name) || 'His')} points in ${esc(new Date(ds + 'T12:00').toLocaleDateString(undefined, { month: 'long' }))}: ${ptot}`, sub: `${isToday ? 'Today' : 'That day'}: ${ptoday >= 0 ? '+' : ''}${ptoday}. Every point, day by day, is in Parent Review (Daily Sight Words → Parent Review).`, st: '', ok: true });
     if (words.length) {
       const steps = [d.look !== false ? `Look &amp; Listen (3 rounds${d.mic !== false ? ', with the microphone' : ''})` : '', d.practice !== false ? 'practice each word with the Spelling Helper' : '', 'the check (spoken words, letter grade)'].filter(Boolean).join(' → ');
       const chk = L.filter(x => x.kind === 'check' && today(x) && x.t > (d.resetAt || 0)).sort((a, b) => b.t - a.t)[0];
-      if (!isWeekday(ds)) items.push({ title: '📝 Sight words', sub: 'Weekends off (sight words are Monday to Friday).', st: 'off', ok: false });
+      if (!isWeekday(ds)) items.push({ stage: 5, title: '📝 Sight words', sub: 'Weekends off (sight words are Monday to Friday).', st: 'off', ok: false });
       else if (!isToday) {
         const pc = L.filter(x => x.kind === 'check' && today(x)).sort((a, b) => b.t - a.t)[0];
-        if (future) items.push({ off: d.on === false, title: `📝 Sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : 'coming up', ok: false, acts: '<button class="btn btn-small" data-goto="daily">Change the words</button>' });
-        else if (pc) items.push({ title: `📝 Sight words check`, sub: esc((pc.results || []).map(r => r.word).join(', ')), st: pc.grade ? `✓ done: ${pc.grade.letter} (${pc.grade.pct}%)` : '✓ done', ok: true });
+        if (future) items.push({ stage: 5, off: d.on === false, title: `📝 Sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : 'coming up', ok: false, acts: '<button class="btn btn-small" data-goto="daily">Change the words</button>' });
+        else if (pc) items.push({ stage: 5, title: `📝 Sight words check`, sub: esc((pc.results || []).map(r => r.word).join(', ')), st: pc.grade ? `✓ done: ${pc.grade.letter} (${pc.grade.pct}%)` : '✓ done', ok: true });
       } else
-      items.push({ off: d.on === false, title: `📝 Today’s sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : chk && chk.grade ? `✓ done: ${chk.grade.letter} (${chk.grade.pct}%)` : 'not done yet', ok: !!chk, acts: `<button class="btn btn-small" data-goto="daily">Change the words</button>${chk ? '<button class="btn btn-small" data-reset="daily">↺ Reset today, keep the words</button>' : ''}` });
+      items.push({ stage: 5, off: d.on === false, title: `📝 Today’s sight words · ${words.length}`, sub: `${esc(words.join(', '))}<br>${steps}`, st: d.on === false ? 'off his device' : chk && chk.grade ? `✓ done: ${chk.grade.letter} (${chk.grade.pct}%)` : 'not done yet', ok: !!chk, acts: `<button class="btn btn-small" data-goto="daily">Change the words</button>${chk ? '<button class="btn btn-small" data-reset="daily">↺ Reset today, keep the words</button>' : ''}` });
     }
     const q = S.spellq;
     if (q && q.words && q.words.length && !(ds < td)) {
       const done = L.find(x => x.kind === 'sheet' && x.aid === q.id);
-      items.push({ title: `✏️ Spelling practice · ${q.words.length}`, sub: `${esc(q.words.join(', '))}<br>each word with the Spelling Helper, on his own`, st: done ? '✓ done' : 'not done yet', ok: !!done, acts: `<button class="btn btn-small" data-goto="helper">Change the words</button>${done ? '<button class="btn btn-small" data-reset="spellq">↺ Do it again, same words</button>' : ''}` });
+      items.push({ stage: 1, title: `✏️ Spelling practice · ${q.words.length}`, sub: `${esc(q.words.join(', '))}<br>each word with the Spelling Helper, on his own`, st: done ? '✓ done' : 'not done yet', ok: !!done, acts: `<button class="btn btn-small" data-goto="helper">Change the words</button>${done ? '<button class="btn btn-small" data-reset="spellq">↺ Do it again, same words</button>' : ''}` });
     }
     ((S.sheets && S.sheets.list) || []).forEach((a, k) => { if (!onList(a, ds, doneDays)) return;
       const sd = sheetDay(a), carried = false;
       const tries = L.filter(x => (x.aid || x.cid) === a.id && (RECUR.includes(a.tool) ? today(x) : dayOf(x.t) <= ds)).sort((x, y) => y.t - x.t), mine = tries[0];
       const g = mine && mine.grade, over = ds < td;
-      items.push({ title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}${tries.length > 1 ? ` · ${tries.length} tries` : ''}` : OPTIONAL.includes(a.tool) ? 'extra (not required)' : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over && !OPTIONAL.includes(a.tool),
+      items.push({ stage: dayStage(a), title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}${tries.length > 1 ? ` · ${tries.length} tries` : ''}` : OPTIONAL.includes(a.tool) ? 'extra (not required)' : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over && !OPTIONAL.includes(a.tool),
         acts: a.tool === 'fixup' ? '' : `<button class="btn btn-small" data-tryday="${k}">Try it</button>` });
     });
     // Fridays: his device adds the Word Master Challenge and the Mastered Words Test by itself (spell.html autoFriday; same words here)
@@ -1335,7 +1340,7 @@ async function openDay(ds) {
         if (!words.length) return;
         const k = 'fri-' + tool; window.__autoFix = window.__autoFix || {};
         window.__autoFix[k] = { id: 'try', tool, title, data: tool === 'mtest' ? { words } : { words, sentences: Object.fromEntries(words.map(x => [x, (SENTENCES[x] || [])[0] || ''])), icons: Object.fromEntries(words.map(x => [x, (SENTENCES[x] || [])[1] || ''])) } };
-        items.push({ title: esc(title), sub: `${esc(words.join(', '))}<br>Added by itself every Friday from his word bank${future ? ' (the words can change before then)' : ''}`, st: mine ? `✓ done${mine.grade ? `: ${mine.grade.letter} (${mine.grade.pct}%)` : ''}` : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over,
+        items.push({ stage: tool === 'mtest' ? 6 : 1, title: esc(title), sub: `${esc(words.join(', '))}<br>Added by itself every Friday from his word bank${future ? ' (the words can change before then)' : ''}`, st: mine ? `✓ done${mine.grade ? `: ${mine.grade.letter} (${mine.grade.pct}%)` : ''}` : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over,
           acts: `<button class="btn btn-small" data-tryauto="${k}">Try it</button>` });
       });
     }
@@ -1360,7 +1365,7 @@ async function openDay(ds) {
         const froms = [...new Set(all.map(m => m.from).filter(Boolean))];
         const g = last && last.grade, k = 'auto' + Date.now().toString(36);
         window.__autoFix = window.__autoFix || {}; window.__autoFix[k] = { id: 'try', tool: 'fixit', title: '🛠️ Let’s fix our mistakes from earlier', data: { words: (pending.length ? pending : all).map(({ w, his }) => ({ w, his })), trace: 2 } };
-        items.push({ title: `🛠️ Extra help: Let’s fix our mistakes from earlier · ${(pending.length ? pending : all).length}`, sub: `${shownW}<br>Added by itself from ${froms.length ? esc(froms.join('; ')) : 'his worksheets'} · hear it, trace it, spell it`,
+        items.push({ stage: 2, title: `🛠️ Extra help: Let’s fix our mistakes from earlier · ${(pending.length ? pending : all).length}`, sub: `${shownW}<br>Added by itself from ${froms.length ? esc(froms.join('; ')) : 'his worksheets'} · hear it, trace it, spell it`,
           st: pending.length ? (last ? `new words since · last time ${g ? `${g.letter} (${g.pct}%)` : 'done'}` : 'not done yet') : `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}${autoF.length > 1 ? ` · ${autoF.length} tries` : ''}`,
           ok: !pending.length, acts: `<button class="btn btn-small" data-tryauto="${k}">Try it</button>` });
       }
@@ -1381,7 +1386,7 @@ async function openDay(ds) {
         const shown = (pending.length ? pending : all), froms = [...new Set(all.map(m => m.from).filter(Boolean))];
         const g = last && last.grade, k = 'auto' + Date.now().toString(36) + 'q';
         window.__autoFix = window.__autoFix || {}; window.__autoFix[k] = { id: 'try', tool: 'relearn', title: '🧠 Let’s learn it again', data: { qs: shown.map(({ t, from, ...q }) => q) } };
-        items.push({ title: `🛠️ Extra help: Let’s learn it again · ${shown.length}`, sub: `${shown.map(m => `${esc(m.q)} <b>${esc(m.answer)}</b>${m.his ? ` <s style="opacity:.7">${esc(m.his)}</s>` : ''}`).join('<br>')}<br>Added by itself from ${froms.length ? esc(froms.join('; ')) : 'his quizzes'} · learn it, show it, answer it again`,
+        items.push({ stage: 2, title: `🛠️ Extra help: Let’s learn it again · ${shown.length}`, sub: `${shown.map(m => `${esc(m.q)} <b>${esc(m.answer)}</b>${m.his ? ` <s style="opacity:.7">${esc(m.his)}</s>` : ''}`).join('<br>')}<br>Added by itself from ${froms.length ? esc(froms.join('; ')) : 'his quizzes'} · learn it, show it, answer it again`,
           st: pending.length ? (last ? `still to learn · last time ${g ? `${g.letter} (${g.pct}%)` : 'done'}` : 'not done yet') : `✓ done${autoR.length > 1 ? ` · ${autoR.length} tries` : ''}`,
           ok: !pending.length, acts: `<button class="btn btn-small" data-tryauto="${k}">Try it</button>` });
       }
@@ -1392,8 +1397,11 @@ async function openDay(ds) {
       const daily = ch.chores.filter(c => c.kind === 'daily' && on(c)), mt = (ch.marks || {})[td] || {};
       const done = daily.filter(c => mt[c.id] && mt[c.id].s === 'ok').length, xd = daily.filter(c => mt[c.id] && mt[c.id].s === 'x').length;
       const xs = Object.keys(ch.marks || {}).filter(s => s.slice(0, 7) === mk).reduce((n, s) => n + Object.values(ch.marks[s]).filter(m => m && m.s === 'x').length, 0), lim = ch.limit || 8;
-      items.push({ title: `🧹 Chores${isToday ? ' today' : ''} · ${daily.length}`, sub: `${esc(daily.map(c => c.name).join(', '))}<br>X’s this month: ${xs} of ${lim}${xs >= lim ? ` (no ${esc(ch.reward)} this month)` : ''}`, st: `${done} ✓${xd ? ` · ${xd} ✗` : ''} · ${daily.length - done - xd} not marked`, ok: done + xd === daily.length, acts: '<button class="btn btn-small" data-goto="chores">Check off chores</button>' });
+      items.push({ stage: 9, title: `🧹 Chores${isToday ? ' today' : ''} · ${daily.length}`, sub: `${esc(daily.map(c => c.name).join(', '))}<br>X’s this month: ${xs} of ${lim}${xs >= lim ? ` (no ${esc(ch.reward)} this month)` : ''}`, st: `${done} ✓${xd ? ` · ${xd} ✗` : ''} · ${daily.length - done - xd} not marked`, ok: done + xd === daily.length, acts: '<button class="btn btn-small" data-goto="chores">Check off chores</button>' });
     }
+    // Nov 20: same order as his start screen (worksheets → extra help → quiz → test → sight words → Mastered Words Test; spell.html renderKidHome)
+    items.forEach((it, i) => { it.k = i; }); items.sort((x, y) => (x.stage ?? 1) - (y.stage ?? 1) || x.k - y.k);
+    items.forEach(it => { const lb = DAY_STAGE_NAMES[it.stage]; if (lb) it.sub = `<b class="stage-tag">${lb}</b> · ${it.sub}`; });
     list.innerHTML = items.length ? items.map((it, i) => `<div class="dayitem${it.off ? ' off' : ''}"><span class="n">${i + 1}</span><div class="body"><b>${it.title}</b><div class="sub">${it.sub}</div>${it.acts ? `<div class="acts2">${it.acts}</div>` : ''}</div><span class="st${it.ok ? ' ok' : it.miss ? ' miss' : ''}">${it.st}</span></div>`).join('')
       : `<p class="help">${isToday ? 'Nothing on his device yet. Type today’s sight words (Phonics → Daily Sight Words) or assign a worksheet.' : future ? 'Nothing assigned for that day yet. On a worksheet tab, pick this day under “For”, then Assign to his device.' : 'Nothing was on his list that day.'}</p>`;
     list.onclick = async e => {
@@ -1490,7 +1498,7 @@ async function renderSchoolList(cls, sel) {
   const past = all.filter(e => e.day < td).sort((a, b) => b.day.localeCompare(a.day));
   const weeks = {}; past.forEach(e => { const k = wk(e.day); (weeks[k] = weeks[k] || []).push(e); });
   const row = e => { const L = LT[e.t], snap = L_snapshotDay(e.t, e.day), c = CLASSES.find(x => x.id === classOf(e.t)), on = sel && sel.t === e.t && sel.day === e.day, x = new Date(e.day + 'T12:00:00');
-    return `<div class="srow${on ? ' on' : ''}" data-sopen="${e.t}@${e.day}"><div class="sd">${x.toLocaleDateString(undefined, { weekday: 'short' })}<small>${x.getMonth() + 1}/${x.getDate()}</small></div><div class="sm"><span class="sub">${c.icon} ${esc(c.name)} · ${esc(L.name)}</span><span class="tt">${esc(snap.title.replace(/^📄 School [\d/]+ · /, ''))}</span><span class="stat" data-stat="${e.t}@${e.day}">…</span><div class="sa"><button class="btn btn-small" data-stry="${e.t}@${e.day}">▶ Try it</button><button class="btn btn-small" data-sagain="${e.t}@${e.day}">↻ Assign again…</button><a class="btn btn-small" data-sres="${e.t}@${e.day}" hidden>📋 Results</a></div><div class="again" data-againbox="${e.t}@${e.day}" hidden></div></div></div>`; };
+    return `<div class="srow${on ? ' on' : ''}" data-sopen="${e.t}@${e.day}"><div class="sd">${x.toLocaleDateString(undefined, { weekday: 'short' })}<small>${x.getMonth() + 1}/${x.getDate()}</small></div><div class="sm"><span class="sub">${c.icon} ${esc(c.name)} · ${esc(L.name)}</span><span class="tt">${esc(snap.title.replace(/^📄 School [\d/]+ · /, ''))}</span><span class="stat" data-stat="${e.t}@${e.day}">…</span><div class="sa"><button class="btn btn-small" data-stry="${e.t}@${e.day}">▶ Try it</button><button class="btn btn-small" data-sagain="${e.t}@${e.day}">↻ Assign again…</button><button type="button" class="btn btn-small" data-sres="${e.t}@${e.day}" hidden>📋 Results</button></div><div class="again" data-againbox="${e.t}@${e.day}" hidden></div></div></div>`; };
   const group = (h, list, open = true) => list.length ? (open ? `<div class="sl-group"><h4>${h}</h4>${list.map(row).join('')}</div>` : `<details class="sl-group"><summary>${h} (${list.length})</summary>${list.map(row).join('')}</details>`) : '';
   el.innerHTML = `<div class="sl-head"><h3>📅 School worksheets by date</h3><div class="sl-filter"><button data-sall="0" aria-pressed="${!state.schoolAll}">${esc(cls.name)}</button><button data-sall="1" aria-pressed="${!!state.schoolAll}">All subjects</button></div></div>`
     + (all.length ? group('Coming up', up) + group('Today', now) + Object.keys(weeks).sort().reverse().map(k => group(k === thisWk ? 'Earlier this week' : `Week of ${new Date(k + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`, weeks[k].sort((a, b) => b.day.localeCompare(a.day)), k === thisWk)).join('') : `<p class="sl-empty">No school worksheets ${state.schoolAll ? '' : `for ${esc(cls.name)} `}yet.</p>`);
@@ -1737,7 +1745,7 @@ function wireOnScreen() {
     const snap = snapshot(t);
     if (!snap.ok) return amsg(snap.need || 'Add some words or questions first.', true);
     const sb = await studySession();
-    if (!sb) return amsg('Sign in first on the <a href="spell.html">Spelling Helper</a> page (the “Shared across devices” box), then come back and assign it.', true);
+    if (!sb) return amsg('Sign in first on the <button type="button" class="hdr-btn" data-href="spell.html">Spelling Helper</button> page (the “Shared across devices” box), then come back and assign it.', true);
     amsg('Assigning…');
     try {
       const day = sel.value || today;

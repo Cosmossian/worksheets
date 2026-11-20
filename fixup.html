@@ -127,8 +127,9 @@ body.inpart .prog { margin: 0 auto; }
 .res .w { font: 700 28px Andika, sans-serif; }
 .res .his { font-size: 16px; color: var(--muted); } .res .his s { color: #FCA5A5; }
 .note { font-size: 14px; color: var(--muted); text-align: center; max-width: 46ch; line-height: 1.4; }
-.grownup { font-size: 14px; color: var(--muted); background: none; border: 0; text-decoration: underline; cursor: pointer; position: relative; padding: 6px 4px; }
-.grownup::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--try); }
+.grownup { font: 600 16px Fredoka, sans-serif; color: var(--ink); background: var(--surface-2); border: 2px solid var(--line); border-radius: 14px; padding: 10px 18px; min-height: 46px; cursor: pointer; text-decoration: none; position: relative; overflow: hidden; z-index: 0; }   /* Nov 20: a real button, not underlined text */
+.grownup::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(251, 191, 36, .28); z-index: -1; }
+.grownup.holding { border-color: var(--try); }
 .grownup.holding::after { width: 100%; transition: width 2s linear; }
 .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
 .confetti i { position: absolute; top: -20px; width: 12px; height: 16px; border-radius: 3px; animation: fall 2.6s linear forwards; }
@@ -184,7 +185,8 @@ body.kid #tod-nav .tod-home { pointer-events: none; }
 </head>
 <body>
 <script src="testclock.js?v=1"></script>
-<script src="listen.js?v=2"></script>
+<script src="listen.js?v=3"></script>
+<script src="study-ui.js?v=1"></script>
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <h1>Spelling Fix-Up</h1>
@@ -1056,7 +1058,7 @@ function showResults() {
   const byWord = Object.fromEntries(score.test.map(r => [r.word, r]));
   const test = WORDS.map(x => byWord[x.w]).filter(Boolean);
   const right = test.filter(r => r.ok).length, g = gradeFor(right, test.length);
-  const rec = { id: Date.now().toString(36), t: Date.now(), from: FROM, words: WORDS, test, grade: { pct: g.pct, letter: g.letter }, parts: partLines(), detail, sent: false };
+  const rec = { id: Date.now().toString(36), t: Date.now(), from: FROM, words: WORDS, test, grade: { pct: g.pct, letter: g.letter }, parts: partLines(), detail, sent: false, taps: window.TAPS ? TAPS.take() : [] };
   rec.cid = params.get('cid') || null;
   if (!TESTDAY) {   // grown-up's Test day: nothing saved
   store('fixup-latest', rec);
@@ -1072,7 +1074,7 @@ function showResults() {
       : `<div class="res no"><span class="mark">✗</span><div><div class="w">${esc(r.word)}</div><div class="his">You wrote <s>${esc(r.typed)}</s></div></div></div>`).join('')}</div>
     <div class="sumlist">${partLines().map(([n, v]) => `<div class="sum"><b>${esc(n)}</b><span>${esc(v)}</span></div>`).join('')}</div>
     <p class="note" id="sent">${emailOn() ? 'Sending the results to your grown-up…' : 'Saved for your grown-up in Parent Review.'}</p>
-    <a class="btn big primary" href="spell.html" style="text-decoration:none">Finished</a>`;
+    <button type="button" class="btn big primary" data-href="spell.html">Finished</button>`;
   say(`You got ${right} out of ${test.length} on the practice test. That’s ${g.pct} percent, a${'AF'.includes(g.letter) ? 'n' : ''} ${g.letter}. ${g.msg}`, 0.95);
   if (right === test.length) { const c = document.createElement('div'); c.className = 'confetti'; const cols = ['#3C7DD9', '#F59E0B', '#34D399', '#C4B5FD', '#F87171', '#FACC15']; c.innerHTML = Array.from({ length: 60 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-delay:${Math.random() * 0.8}s"></i>`).join(''); document.body.appendChild(c); setTimeout(() => c.remove(), 3600); }
   if (emailOn()) sendOutbox().then(() => { const l = store('fixup-latest'); const el = $('sent'); if (el) el.textContent = l && l.sent ? `For the grown-up: results emailed to ${RESULTS_EMAIL}.` : 'For the grown-up: the email couldn’t send right now. It will try again the next time this page or the Spelling Helper opens.'; });
@@ -1220,7 +1222,7 @@ async function cloudSaveFixup(rec) {
 
 /* ============ Start ============ */
 if (!WORDS.length) {
-  app.innerHTML = `<div class="part-title"><h2>No words to fix yet</h2><p>This page uses the words he missed on the daily sight word check.</p></div><a class="btn big primary" href="spell.html" style="text-decoration:none">Go to the Spelling Helper</a>`;
+  app.innerHTML = `<div class="part-title"><h2>No words to fix yet</h2><p>This page uses the words he missed on the daily sight word check.</p></div><button type="button" class="btn big primary" data-href="spell.html">Go to the Spelling Helper</button>`;
 } else {
   app.innerHTML = `<div class="part-title"><h2>Let’s fix ${WORDS.length === 1 ? 'this word' : `these ${WORDS.length} words`}!</h2><p>Six fun parts, then a practice test. Take your time and try your best.</p></div>
     <div class="row">${WORDS.map(x => `<span class="big-word" style="font-size:36px;padding:4px 18px">${esc(displayWord(x.w))}</span>`).join('')}</div>

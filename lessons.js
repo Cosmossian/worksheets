@@ -867,7 +867,7 @@ if (L_IN_DO) {
     .ls-bubble.sel { outline:4px solid #fff; outline-offset:3px; } .ls-bubble.drag { position:fixed; z-index:60; pointer-events:none; cursor:grabbing; box-shadow:0 10px 24px rgba(0,0,0,.45); }
     #sortChart .c { min-width:120px; transition:outline-color .1s; } #sortChart .c.over { outline:4px solid #FACC15; outline-offset:2px; } #sortChart .c.good { outline:4px solid var(--good); }
     #sortChart .c span { min-height:28px; }
-    #hunt .w { cursor:pointer; border-radius:8px; padding:0 3px; } #hunt .w.found { background:#BBF7D0; color:#14532D; } #hunt .w.nope { background:#FECACA; } #hunt .w.missed { background:#FDE68A; outline:2px dashed #B45309; }
+    #hunt .w { cursor:pointer; display:inline-block; border:2px solid #CBD5E1; border-bottom-width:4px; background:#F8FAFC; border-radius:10px; padding:0 7px; margin:3px 0; line-height:1.45; } #hunt .w.found { background:#BBF7D0; color:#14532D; } #hunt .w.nope { background:#FECACA; } #hunt .w.missed { background:#FDE68A; outline:2px dashed #B45309; }
     .ls-ten .q { color:var(--try); }
     #lsErase.on, #undoBtn + #eraseBtn.on, #wlErase.on { background:#FDE68A; color:#17201A; border-color:#F59E0B; } canvas.erasing { cursor:cell; }
     .ls-help-box .ls-choices { width:100%; } .ls-help-box .ls-choices.row2 button { flex:1 1 120px; }
@@ -880,7 +880,7 @@ if (L_IN_DO) {
     .ls-grid .c span.now { background:#FDE68A; color:#1F2937; font-weight:700; } .ls-grid .c span.did { color:var(--good); }
     .ls-grid.small .c span { font-size:16px; min-height:24px; }
     .ls-story { background:#fff; color:#1F2937; border-radius:18px; padding:16px 22px; font:400 clamp(20px,3vw,27px)/1.7 Andika,sans-serif; width:min(900px,96vw); text-align:left; }
-    .ls-story .w { border-radius:6px; padding:0 2px; cursor:pointer; } .ls-story .s.now { background:#FEF3C7; box-shadow:0 0 0 4px #FEF3C7; border-radius:6px; } .ls-story .s.done { color:#64748B; }
+    .ls-story .w { display:inline-block; border:2px solid #CBD5E1; border-bottom-width:4px; background:#F8FAFC; border-radius:10px; padding:0 7px; margin:3px 0; line-height:1.45; cursor:pointer; -webkit-user-select:none; user-select:none; } .ls-story .w:active { transform:translateY(2px); border-bottom-width:2px; }   /* Nov 20: every word he can tap looks like a button */ .ls-story .s.now { background:#FEF3C7; box-shadow:0 0 0 4px #FEF3C7; border-radius:6px; } .ls-story .s.done { color:#64748B; }
     .ls-story .w.found { background:#DDD6FE; color:#5B21B6; font-weight:700; } .ls-story .w.miss { background:#FED7AA; animation:lspulse 1s infinite; } .ls-story .w.no { background:#FECACA; }
     @keyframes lspulse { 50% { box-shadow:0 0 0 4px #FDBA74; } }
     .ls-tiles { display:flex; gap:0; justify-content:center; flex-wrap:wrap; }
@@ -941,7 +941,7 @@ const L_exactTag = () => SD && SD.exact ? `<div class="ls-exact">📄 ${SD.schoo
    that only works after minMs. Needs a <div id="lsSay"> on the screen. Resolves { heard, clip }. */
 async function L_read({ minMs = 800, label = 'I read it! 🗣️', nudge = 'I’m listening… read it out loud!' } = {}) {
   const g = partGen, t0 = Date.now(), box = $('lsSay'); let clip = null;
-  if (mic && box && talkMode() === 'button') {   // Get ready → Speak now → Done
+  if (mic && box && talkMode() === 'button') {   // 🎤 hold to talk (Nov 20: always)
     for (;;) {
       await quiet(); if (g !== partGen) return stale(g); if (!mic) break;
       const r = await speakNow(box, { minMs, maxMs: Math.max(12000, minMs + 9000), what: /read/i.test(label) ? 'Read it now!' : 'Say it now!' });

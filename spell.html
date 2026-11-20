@@ -29,7 +29,7 @@ body.playing .daily-bar { margin-top: 6px; }   /* more room for the letters whil
 
 .app-header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .app-header h1 { margin: 0; font: 700 26px Fredoka, sans-serif; color: var(--navy); }
-.app-header .back { margin-left: auto; font: 600 16px Fredoka, sans-serif; color: #FFFFFF; background: var(--study); border-radius: 999px; padding: 8px 16px; text-decoration: none; }   /* matches the Spelling Helper button on the worksheets page */
+.app-header .back { border: 0; cursor: pointer; margin-left: auto; font: 600 16px Fredoka, sans-serif; color: #FFFFFF; background: var(--study); border-radius: 999px; padding: 8px 16px; text-decoration: none; }   /* matches the Spelling Helper button on the worksheets page */
 .app-header .back:hover { filter: brightness(1.1); }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 18px Fredoka, sans-serif; border: 2px solid var(--line); border-radius: 14px; padding: 10px 18px; min-height: 48px; cursor: pointer; background: var(--surface-2); color: var(--ink); }
@@ -59,7 +59,7 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
 .pe-top .rec.on::before { border-radius: 2px; background: #fff; }
 @keyframes recpulse { 50% { opacity: .65; } }
 .pe .mine { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--good); }
-.pe .mine button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 13px; text-decoration: underline; padding: 0; }
+.pe .mine button { border: 2px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; font: 600 13px Fredoka, sans-serif; padding: 3px 10px; border-radius: 10px; }
 .pe.team b { background: rgba(196, 181, 253, .14); outline: 2px solid rgba(196, 181, 253, .45); border-radius: 8px; padding: 0 6px; }
 .pe.wholeword { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .rec-note { color: var(--try); }
@@ -81,7 +81,7 @@ small.note { display: block; color: var(--muted); font-size: 14px; margin-top: 6
 textarea.big { resize: vertical; min-height: 64px; }
 .check-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 16px; }
 .check-row input { width: 22px; height: 22px; }
-.linkbtn { border: 0; background: none; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+.linkbtn { border: 2px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; font: 600 14px Fredoka, sans-serif; padding: 4px 12px; border-radius: 10px; min-height: 32px; }   /* Nov 20: buttons, not underlined links */
 .last-check { margin-top: 14px; font-size: 15px; color: var(--muted); line-height: 1.5; }
 .last-check b { color: var(--ink); }
 .daily-bar { max-width: 980px; margin: 10px auto 0; padding: 0 16px; display: flex; justify-content: center; }
@@ -147,7 +147,7 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .rv-sec { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
 .rv-sec h4 { margin: 0 0 6px; font: 700 17px Fredoka, sans-serif; }
 .ans { margin-top: 0; }
-.ans-btns { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; margin-top: 8px; }
+.ans-btns { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; margin-top: 8px; } .ans-btns details[open] { flex-basis: 100%; } .ans-h .at { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .replay-btn { font: 600 15px Fredoka, sans-serif; color: #fff; background: var(--study); border: 2px solid var(--study); border-radius: 10px; padding: 5px 12px; cursor: pointer; }
 .replay { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: flex; flex-direction: column; }
 .replay[hidden] { display: none; }
@@ -206,7 +206,7 @@ button.res { width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .rv-sec h4 em.att.redo { background: #2A220B; color: #FDE68A; border-color: #F59E0B; }
 .rv-sec .ln { font-size: 15px; line-height: 1.5; }
 .rv-sec .ok { color: var(--good); } .rv-sec .no { color: var(--try); }
-.rv-sec .del { margin-top: 8px; border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 13px; padding: 0; }
+.rv-sec .del { margin-top: 8px; border: 2px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; font: 600 13px Fredoka, sans-serif; padding: 4px 12px; border-radius: 10px; }
 .rv-empty { color: var(--muted); }
 
 /* ---------- Shared across devices (sign-in) + his start screen ---------- */
@@ -278,22 +278,41 @@ body.kidgrown #acctCard, body.kidgrown #dailyCard { display: none !important; }
 .kid-h { margin: 18px 0 0; font: 700 26px Fredoka, sans-serif; color: var(--navy); }
 .kid-sheets h3 { margin: 10px 0 0; font: 700 26px Fredoka, sans-serif; color: var(--navy); }
 /* worksheet buttons look like Start today's words: big and blue */
-.kid-sheets a { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; font: 700 30px Fredoka, sans-serif; color: #fff; background: var(--study); border: 2px solid var(--study); border-radius: 24px; padding: 20px 40px; min-height: 84px; min-width: min(460px, 90vw); text-align: center; }
-.kid-sheets a.done { background: #1F4F43; border-color: var(--good); }
-.kid-sheets a small { font: 600 17px Fredoka, sans-serif; color: #BBF7D0; white-space: nowrap; }
-.kid-sheets a small.left { color: #FDE68A; }
+.kid-sheets a, .kid-sheets .kbtn { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; font: 700 30px Fredoka, sans-serif; color: #fff; background: var(--study); border: 2px solid var(--study); border-radius: 24px; padding: 20px 40px; min-height: 84px; min-width: min(460px, 90vw); text-align: center; }
+.kid-sheets a.done, .kid-sheets .kbtn.done { background: #1F4F43; border-color: var(--good); }
+.kid-sheets a small, .kid-sheets .kbtn small { font: 600 17px Fredoka, sans-serif; color: #BBF7D0; white-space: nowrap; }
+.kid-sheets a small.left, .kid-sheets .kbtn small.left { color: #FDE68A; }
 /* Nov 10: "2 of 5 done" stars, and the All done shelf (finished ones: smaller, faded, star stamp) */
 .kid-prog { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 2px 0 6px; }
 .kid-prog b { font: 700 24px Fredoka, sans-serif; color: #FDE68A; }
 .kp-stars { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; font-size: 34px; line-height: 1; }
 .kp-stars span { color: #64748B; } .kp-stars span.on { filter: drop-shadow(0 0 6px rgba(250,204,21,.55)); }
-.kid-extra a { background: #7C2D12; border-color: #F59E0B; }   /* 🛠️ Extra help (Fix My Spelling Mistakes): after his worksheets, before sight words */
-.kid-extra a small { color: #FDE68A; }
+.kid-extra a, .kid-extra .kbtn { background: #7C2D12; border-color: #F59E0B; }   /* 🛠️ Extra help (Fix My Spelling Mistakes): after his worksheets, before sight words */
+.kid-extra a small, .kid-extra .kbtn small { color: #FDE68A; }
 .kid-extra h3 { color: #FDBA74; }
 .kid-shelf { margin-top: 10px; gap: 10px; }
-.kid-shelf a.done { position: relative; font-size: 21px; min-height: 0; padding: 12px 64px 12px 28px; min-width: min(400px, 86vw); opacity: .8; border-style: dashed; }
-.kid-shelf a.done span { text-decoration: line-through; text-decoration-color: rgba(187,247,208,.6); text-decoration-thickness: 2px; }
-.kid-shelf a.done small { font-size: 16px; }
+/* Nov 20 revamp: his start screen is all buttons (no links), in a set order with locked steps, worksheets grouped by subject */
+.kid-sheets .kbtn { cursor: pointer; position: relative; box-shadow: 0 5px 0 #1E3A8A; }
+.kid-sheets .kbtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #1E3A8A; }
+.kid-sheets .kbtn.done { box-shadow: none; }
+.kid-sheets .kbtn.locked, #kidStart.locked { background: #273445; border-color: #3A4B60; color: #9AABBF; box-shadow: none; cursor: not-allowed; }
+.kid-sheets .kbtn.locked small, #kidStart small.lk { color: #FDE68A; }
+#kidStart { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; position: relative; }
+#kidStart small.lk { font: 600 17px Fredoka, sans-serif; }
+.kbtn.next, #kidStart.next { outline: 4px solid #FACC15; outline-offset: 4px; animation: kidnext 1.6s ease-in-out infinite; }
+@keyframes kidnext { 0%,100% { outline-color: #FACC15; } 50% { outline-color: rgba(250,204,21,.25); } }
+.kbtn .here, #kidStart .here { position: absolute; top: -14px; right: -10px; background: #FACC15; color: #17201A; font: 700 15px Fredoka, sans-serif; border-radius: 999px; padding: 3px 10px; border: 2px solid #17201A; transform: rotate(4deg); }
+.kbtn.nope, #kidStart.nope { animation: kidnope .45s; } @keyframes kidnope { 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+.kid-sheets .subj { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; margin-top: 4px; }
+.kid-sheets .subj-h { align-self: center; font: 700 18px Fredoka, sans-serif; color: #C7D7EE; background: var(--surface-2); border: 2px solid var(--line); border-radius: 999px; padding: 3px 14px; }
+.kid-quiz .kbtn:not(.locked):not(.done) { background: #6D28D9; border-color: #C4B5FD; box-shadow: 0 5px 0 #3B0764; }
+.kid-test .kbtn:not(.locked):not(.done) { background: #B45309; border-color: #FCD34D; box-shadow: 0 5px 0 #78350F; }
+.kid-mtest .kbtn:not(.locked):not(.done) { background: #A16207; border-color: #FDE047; box-shadow: 0 5px 0 #713F12; }
+.kid-extra .kbtn:not(.locked) { box-shadow: 0 5px 0 #431407; }
+
+.kid-shelf a.done, .kid-shelf .kbtn.done { position: relative; font-size: 21px; min-height: 0; padding: 12px 64px 12px 28px; min-width: min(400px, 86vw); opacity: .8; border-style: dashed; }
+.kid-shelf a.done span, .kid-shelf .kbtn.done span { text-decoration: line-through; text-decoration-color: rgba(187,247,208,.6); text-decoration-thickness: 2px; }
+.kid-shelf a.done small, .kid-shelf .kbtn.done small { font-size: 16px; }
 .kid-shelf .stamp { position: absolute; right: 12px; top: 50%; transform: translateY(-50%) rotate(-12deg); font-style: normal; font-size: 30px; width: 44px; height: 44px; display: grid; place-items: center; border: 3px solid #FACC15; border-radius: 50%; background: #3A2E0C; }
 .kid-again .ka-star { font-size: 64px; line-height: 1; }
 .kid-again .ka-t { font: 600 20px Fredoka, sans-serif; color: #fff; } .kid-again .ka-g { font: 700 22px Fredoka, sans-serif; color: #BBF7D0; }
@@ -365,7 +384,7 @@ body.kidgrown #acctCard, body.kidgrown #dailyCard { display: none !important; }
 .grownup.holding { color: var(--try); }
 .grownup.holding::after { width: 100%; transition: width 2s linear; }
 .summary { font-size: 15px !important; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
-.grownup { font-size: 14px; color: var(--muted); background: none; border: 0; text-decoration: underline; cursor: pointer; margin-top: 8px; }
+.grownup { margin-top: 8px; }
 
 /* ---------- Finished ---------- */
 .done-wrap { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; padding-top: 10px; }
@@ -459,14 +478,15 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 </head>
 <body class="authwait">
 <script src="testclock.js?v=1"></script>
-<script src="listen.js?v=2"></script>
+<script src="listen.js?v=3"></script>
+<script src="study-ui.js?v=1"></script>
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <h1 id="appTitle">Spelling Helper</h1>
   <button class="review-btn pts-btn" id="pointsBtn" hidden>⭐ My points</button>
   <button class="review-btn" id="reviewBtn" title="Hold for 2 seconds">Parent Review</button>
-  <a class="review-btn" id="settingsLink" href="#settings" style="text-decoration:none;margin-left:10px">⚙️ Parent Settings</a>
-  <a class="back" href="./">Back to Worksheets</a>
+  <button type="button" class="review-btn" id="settingsLink" data-href="#settings" style="margin-left:10px">⚙️ Parent Settings</button>
+  <button type="button" class="back" data-href="./">Back to Worksheets</button>
 </header>
 <div class="testbar" id="testBar" hidden><span>🧪 <b>Test day</b>: nothing is saved, so his real day stays the same.</span> <button class="btn btn-small" id="testEnd">End test</button><button class="skip-part" id="testSkip" hidden>⏭ Skip this part (testing)</button></div>
 
@@ -511,8 +531,8 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
     <p class="help" style="margin:0 0 6px">Settings for the whole Study (not one activity). They’re shared with his device.</p>
     <label class="check-row"><input type="checkbox" id="dailyEmail"> Also email me his results (they’re always in Parent Review)</label>
     <div style="margin-top:8px"><b>🎤 When he reads or says something out loud</b>
-      <div class="seg" id="talkSeg" role="group" aria-label="When he reads out loud" style="margin-top:6px"><button data-talk="button">Get ready → Speak now → Done</button><button data-talk="auto">The microphone listens by itself</button></div>
-      <small class="note" style="margin:4px 0 0">Get ready: a 3-2-1 countdown, then 🎤 Speak now while it records, and he taps Done when he’s finished. Done unlocks once the microphone hears his voice (or after 10 seconds, so he’s never stuck). His recordings are in Parent Review either way. Used in Look &amp; Listen, Look &amp; Say and the lesson worksheets.</small></div>
+      <div id="talkSeg"></div>
+      <small class="note" style="margin:4px 0 0">He <b>holds the big red 🎤 button down</b> while he talks and lets go when he’s done (it only records while he holds it). Letting go too soon, or holding it without saying anything, makes him try again; after 2 quiet tries it moves on so he’s never stuck. Every recording is in Parent Review. Used everywhere he reads or says something: Look &amp; Listen, Look &amp; Say, and the lesson worksheets. The microphone sensitivity below decides how loud “saying something” has to be.</small></div>
     <div class="pin-set" style="margin-top:8px"><b>⭐ Monthly points goal</b> <span id="goalState"></span><div class="row" style="align-items:center;margin-top:6px"><input id="goalIn" type="number" inputmode="numeric" min="1" step="10" placeholder="none" style="letter-spacing:0"><button class="btn" id="goalSave">Save goal</button><button class="btn" id="goalOff" hidden>No goal</button></div><small id="goalHelp">His points start over at 0 on the 1st of every month. With a goal, he sees a bar toward it on ⭐ My points; with no goal, there’s no bar.</small></div>
     <div class="pin-set" style="margin-top:8px" id="pinSet"><b>🔒 Grown-up PIN</b> <span id="pinState"></span><div class="row" style="align-items:center;margin-top:6px"><input id="pinIn" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"><button class="btn" id="pinSave">Save PIN</button><button class="btn" id="pinOff" hidden>Remove PIN</button></div><small>On his device, every grown-up button (Parent Help, Grown-up screen, Parent Review, Test day, Switch user, stop) asks for it after the hold.</small></div>
   </div>
@@ -678,13 +698,16 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
   <div class="kid-prog" id="kidProg" hidden></div>
   <div class="kid-sheets" id="kidSheets" hidden></div>
   <div class="kid-sheets kid-extra" id="kidExtra" hidden></div>
+  <div class="kid-sheets kid-quiz" id="kidQuiz" hidden></div>
+  <div class="kid-sheets kid-test" id="kidTests" hidden></div>
   <h3 class="kid-h" id="kidWordsH" hidden>Last: today’s sight words</h3>
   <div class="done-today" id="kidDone" hidden></div>
   <div id="kidMicSlot" style="max-width:560px;margin:0 auto 14px"></div>
   <button class="btn big primary" id="kidStart">Start today’s words</button>
+  <div class="kid-sheets kid-mtest" id="kidMtest" hidden></div>
   <div class="kid-sheets kid-shelf" id="kidShelf" hidden></div>
   <div class="kid-sheets" id="kidChores" hidden></div>
-  <div class="kid-hold"><button class="grownup" id="kidGrown">🔒 Grown-up screen <small>(hold)</small></button><button class="grownup" id="kidSwitch">↺ Switch user <small>(hold)</small></button><button class="grownup" id="kidTest">🧪 Test day <small>(hold)</small></button></div>
+  <div class="kid-hold"><button class="grownup" id="kidGrown">🔒 Grown-up screen <small>(hold)</small></button><button class="grownup" id="kidSwitch">↺ Switch user <small>(hold)</small></button><button class="grownup" id="kidUnlock" hidden>🔓 Any order today <small>(hold)</small></button><button class="grownup" id="kidTest">🧪 Test day <small>(hold)</small></button></div>
 </main>
 
 <!-- Grown-up: Parent Review (recordings + results, by day) -->
@@ -1808,6 +1831,13 @@ const SENTENCES = {
   follow: ['Please ___ me to the park.', 'tree'], baby: ['The ___ is crying.', 'baby'], love: ['I ___ my mom.', 'heart'],
   very: ['An elephant is ___ big.', 'elephant'], talk: ['I like to ___ to Dad.', 'talk']
 };
+if (window.TAPS) TAPS.ctx = () => {   // Nov 20: which screen and word each tap was on (Parent Review → Every tap, in order)
+  const vis = ['look', 'play', 'check', 'done', 'results'].find(x => { const el = document.getElementById(x); return el && !el.hidden; });
+  if (!vis) return { p: '', q: '' };
+  let q = '';
+  try { if (vis === 'look') q = daily.lookOrder[daily.i]; else if (vis === 'play' && plan) q = plan.text; else if (vis === 'check' && daily) q = `word ${(daily.results || []).length + 1}`; } catch (e) { }
+  return { p: { look: 'Look & Listen', play: 'Spelling Helper', check: 'Check (quiz)', done: 'Spelling Helper', results: 'Results' }[vis], q: q || '' };
+};
 let daily = null;   // { words, i, phase: 'practice' | 'check' | 'review', practiced, practice: {word: {tricky, helps}}, order, results }
 
 function parseList(text) {
@@ -1885,6 +1915,7 @@ $('dailyStart').onclick = () => {
   startDaily(words, { practice: $('dailyPractice').checked, sheet: $('dailySheet').checked, look: $('dailyLook').checked, mic: $('dailyMic').checked, keep: $('dailyKeep').checked });
 };
 function startDaily(words, o) {
+  if (window.TAPS) TAPS.start();   // Nov 20: every tap from here to the check goes on the result (Parent Review)
   daily = { only: !!o.only, qid: o.qid || '', words, i: 0, phase: 'practice', practiced: o.practice !== false, sheet: !o.only && o.sheet !== false, looked3: o.look !== false, micWanted: o.mic !== false, keepVoice: o.keep !== false && !TESTDAY(), practice: {}, results: [] };
   if (daily.looked3) startLook(); else afterLook();
 }
@@ -1953,52 +1984,84 @@ function listenForVoice(onLevel, onNudge, keep) {
     }, 40);
   });
 }
-/* "Get ready → Speak now → Done" (Parent Settings: When he reads out loud; default since Nov 9, 2026, Dylan: he rushes and gets
-   frustrated when the microphone decides). A 3-2-1 countdown (the room is measured while he waits, so starting early can't spoil it),
-   then 🎤 Speak now records until he taps Done. Done unlocks once the microphone has heard his voice (and minMs has passed), or after
-   10 s anyway so a quiet voice never leaves him stuck (then heard = false). Stops by itself at maxMs. Resolves { heard, clip, ms },
-   or null if cancelled (listenToken changed, e.g. he tapped Hear the word). */
-const talkMode = () => ((store('spell-settings') || {}).talk === 'auto' ? 'auto' : 'button');
+/* 🎤 Hold to talk (Nov 20, 2026, Dylan: "I want him to hold down a button record audio, so it cannot skip through it. He holds the button
+   down to record from now on, not active listening."). Replaces "Get ready → Speak now → Done" and the microphone listening by itself.
+   A big red 🎤 button: it records only while he holds it down, and stops when he lets go.
+   - Let go before minMs (at least 0.6 s) → nothing is kept: "Keep holding the button the whole time you talk!" and he tries again.
+     The bar along the bottom fills while he holds it and turns green once he has held it long enough.
+   - While he holds it, the microphone checks for a voice louder than the room (the room is measured while the button waits). No voice
+     → "I couldn't hear you…" and he tries again; after 2 quiet tries it's taken anyway (heard: false), so a soft voice never leaves him
+     stuck. The grown-up hears every clip in Parent Review.
+   - Stops by itself at maxMs. Resolves { heard, clip, ms }, or null if cancelled (listenToken changed, e.g. he tapped Hear the word).
+   The tap list for Parent Review gets one line per hold ("🎤 held the talk button 2.4 s"). */
+const talkMode = () => 'button';   // always hold to talk now (the old "listens by itself" setting is ignored)
 function speakNow(box, { minMs = 700, maxMs = 15000, what = 'Speak now!' } = {}) {
   const my = ++listenToken;
+  const minHold = Math.max(600, Math.min(minMs, 8000));
   return new Promise(async res => {
     if (!mic || !box) return res(null);
     if (mic.ctx.state === 'suspended') { try { await mic.ctx.resume(); } catch (e) { } }
-    box.innerHTML = '<div class="talk"><div class="talk-lbl">Get ready…</div><div class="talk-count" id="talkN">3</div></div>';
-    const samples = [];
-    for (const k of [3, 2, 1]) {
-      const el = box.querySelector('#talkN'); if (el) { el.textContent = k; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
-      const t = performance.now(); while (performance.now() - t < 700) { samples.push(micLevel()); await wait(25); if (my !== listenToken) return res(null); }
-    }
-    samples.sort((a, b) => a - b);
-    const th = Math.max(sens().min, (samples[Math.floor(samples.length * 0.3)] || 0) * sens().x);
-    box.innerHTML = `<div class="talk on"><div class="talk-now">🎤 ${what}</div><div class="meter"><i></i></div><button class="btn big primary talk-done" disabled>Done ✓</button><div class="talk-note"></div></div>`;
-    const fill = box.querySelector('.meter i'), done = box.querySelector('.talk-done'), note = box.querySelector('.talk-note');
-    let mr = null, chunks = [];
-    if (window.MediaRecorder) { try { mr = new MediaRecorder(mic.stream, { audioBitsPerSecond: 24000 }); mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); }; mr.start(); } catch (e) { mr = null; } }
-    const start = performance.now(); let last = start, voiced = 0, gap = 0, heard = false, nudged = false, over = false;
-    const finish = (cancel) => {
-      if (over) return; over = true; clearInterval(timer);
-      const ms = Math.round(performance.now() - start);
-      if (cancel) { try { mr && mr.state !== 'inactive' && mr.stop(); } catch (e) { } return res(null); }
-      done.disabled = true; done.textContent = '✓';
-      if (!mr) return res({ heard, clip: null, ms });
-      setTimeout(() => {   // a moment more, so the end of the word isn't cut off
-        mr.onstop = () => { const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' }); if (!blob.size) return res({ heard, clip: null, ms }); const fr = new FileReader(); fr.onload = () => res({ heard, clip: fr.result, ms }); fr.onerror = () => res({ heard, clip: null, ms }); fr.readAsDataURL(blob); };
-        try { mr.stop(); } catch (e) { res({ heard, clip: null, ms }); }
-      }, 300);
+    const verb = /read/i.test(what) ? 'read' : 'talk';
+    box.innerHTML = `<div class="hold-talk"><button type="button" class="ht-btn" aria-label="Hold to ${verb}"><span class="ht-mic">🎤</span><span class="ht-lbl">Hold to ${verb}</span><span class="ht-ring"><i></i></span></button><div class="meter ht-meter"><i></i></div><div class="talk-note">Hold the button down while you ${verb === 'read' ? 'read' : 'say it'}. Let go when you’re done.</div></div>`;
+    const btn = box.querySelector('.ht-btn'), lbl = btn.querySelector('.ht-lbl'), ring = btn.querySelector('.ht-ring i'), fill = box.querySelector('.ht-meter i'), note = box.querySelector('.talk-note');
+    const room = []; let holding = false, over = false, t0 = 0, last = 0, voiced = 0, gap = 0, heard = false, th = sens().min, quietTries = 0, mr = null, chunks = [], pid = null;
+    try { const r = btn.getBoundingClientRect(); if (r.bottom > innerHeight || r.top < 0) btn.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { }   // he can always see the button
+    const setNote = (t, c = '') => { note.textContent = t; note.className = 'talk-note' + (c ? ' ' + c : ''); };
+    const idle = () => { btn.classList.remove('on', 'long'); lbl.textContent = `Hold to ${verb}`; ring.style.transition = 'none'; ring.style.width = '0'; if (fill) fill.style.width = '0'; };
+    const toClip = () => new Promise(r => {
+      if (!mr) return r(null);
+      const m = mr; mr = null;
+      m.onstop = () => { const blob = new Blob(chunks, { type: m.mimeType || 'audio/webm' }); chunks = []; if (!blob.size) return r(null); const fr = new FileReader(); fr.onload = () => r(fr.result); fr.onerror = () => r(null); fr.readAsDataURL(blob); };
+      try { m.state !== 'inactive' ? m.stop() : r(null); } catch (e) { r(null); }
+    });
+    const finish = (val) => { if (over) return; over = true; clearInterval(timer); btn.disabled = true; res(val); };
+    const press = e => {
+      if (over || holding || my !== listenToken) return;
+      if (e && e.cancelable) e.preventDefault();
+      if (e && e.pointerId != null) { pid = e.pointerId; try { btn.setPointerCapture(pid); } catch (x) { } }
+      const s = [...room].sort((a, b) => a - b); th = Math.max(sens().min, (s[Math.floor(s.length * 0.3)] || 0) * sens().x);
+      holding = true; t0 = last = performance.now(); voiced = 0; gap = 0; heard = false; chunks = [];
+      if (window.MediaRecorder) { try { mr = new MediaRecorder(mic.stream, { audioBitsPerSecond: 24000 }); mr.ondataavailable = ev => { if (ev.data && ev.data.size) chunks.push(ev.data); }; mr.start(); } catch (x) { mr = null; } }
+      btn.classList.add('on'); lbl.textContent = verb === 'read' ? 'Reading… keep holding' : 'Talking… keep holding';
+      ring.style.transition = 'none'; ring.style.width = '0'; void ring.offsetWidth; ring.style.transition = `width ${minHold}ms linear`; ring.style.width = '100%';
+      setNote('🔴 Recording…', 'good');
     };
-    done.onclick = () => finish(false);
+    const release = async () => {
+      if (!holding || over) return; holding = false;
+      if (pid != null) { try { btn.releasePointerCapture(pid); } catch (x) { } pid = null; }
+      const ms = Math.round(performance.now() - t0);
+      btn.classList.add('wait'); lbl.textContent = '…';
+      await wait(250);   // a moment more, so the end of the word isn't cut off
+      const clip = await toClip();
+      btn.classList.remove('wait');
+      if (over) return;
+      if (my !== listenToken) return finish(null);
+      try { window.TAPS && TAPS.add(`🎤 held the talk button ${(ms / 1000).toFixed(1)} s${ms < minHold ? ' (let go too soon)' : !heard ? ' (no voice heard)' : ''}`); } catch (x) { }
+      idle();
+      if (ms < minHold) { btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); return setNote('Keep holding the button the whole time you talk! Try again.', 'try'); }
+      if (!heard && quietTries < 2) { quietTries++; return setNote('I couldn’t hear you. Hold the button and say it nice and loud!', 'try'); }
+      setNote(heard ? '✓ Got it!' : '✓ Okay! Next time say it nice and loud.', heard ? 'good' : 'try');
+      finish({ heard, clip, ms });
+    };
+    btn.addEventListener('pointerdown', press);
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => btn.addEventListener(ev, release));
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+    btn.addEventListener('click', e => e.preventDefault());
+    btn.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); press(null); } });
+    btn.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); release(); } });
     const timer = setInterval(() => {
-      if (my !== listenToken) return finish(true);
+      if (my !== listenToken) { if (holding) { holding = false; toClip(); } return finish(null); }
+      if (!mic) return finish(null);
+      const lvl = micLevel();
+      if (!holding) { room.push(lvl); if (room.length > 60) room.shift(); return; }
       const now = performance.now(), dt = now - last; last = now;
-      const lvl = micLevel(); if (fill) { fill.style.width = Math.round(Math.min(1, lvl / (th * 2.5)) * 100) + '%'; fill.style.background = lvl > th ? 'var(--good)' : 'var(--try)'; }
+      if (fill) { fill.style.width = Math.round(Math.min(1, lvl / (th * 2.5)) * 100) + '%'; fill.style.background = lvl > th ? 'var(--good)' : 'var(--try)'; }
       if (lvl > th) { voiced += dt; gap = 0; } else { gap += dt; if (!heard && gap > 450) voiced = 0; }
-      if (!heard && voiced >= sens().ms) { heard = true; note.textContent = 'I hear you! Tap Done when you finish.'; note.className = 'talk-note good'; }
-      const el = now - start;
-      if (done.disabled && ((heard && el >= minMs) || el >= 10000)) done.disabled = false;
-      if (!heard && !nudged && el > 5000) { nudged = true; note.textContent = 'I can’t hear you yet. Say it nice and loud!'; note.className = 'talk-note try'; }
-      if (el >= maxMs) finish(false);
+      if (!heard && voiced >= sens().ms) heard = true;
+      const el = now - t0;
+      if (el >= minHold && !btn.classList.contains('long')) { btn.classList.add('long'); setNote(heard ? '🔴 Recording… let go when you’re done.' : '🔴 Recording… I can’t hear you yet, say it loud!', heard ? 'good' : 'try'); }
+      else if (el >= minHold && heard && /can’t hear/.test(note.textContent)) setNote('🔴 Recording… let go when you’re done.', 'good');
+      if (el >= maxMs) release();
     }, 40);
   });
 }
@@ -2070,8 +2133,8 @@ async function lookWord() {
   const useMic = daily.micOk && mic, btnMode = useMic && talkMode() === 'button';
   $('meter').hidden = !useMic || btnMode; $('micHint').hidden = !useMic || btnMode;
   $('micHint').textContent = '🎤 I’m listening…';
-  $('lookPrompt').textContent = useMic ? 'Read it out loud! 🎤' : 'Read it out loud!';
-  if (daily.round === 1 && daily.i === 0) say(useMic ? 'Look at the word. Read it out loud, so I can hear you.' : 'Look at the word. Read it out loud.', 0.95);
+  $('lookPrompt').textContent = useMic ? 'Hold the 🎤 button and read it out loud!' : 'Read it out loud!';
+  if (daily.round === 1 && daily.i === 0) say(useMic ? 'Look at the word. Hold the red button and read it out loud.' : 'Look at the word. Read it out loud.', 0.95);
   daily.lookTotal++;
   if (!useMic) { lookTimer = setTimeout(() => { if (!$('look').hidden) $('saidIt').hidden = false; }, 2200 + 150 * w.length); return; }   // no mic: the button, after enough time to really read it
   const my = listenToken;
@@ -2184,7 +2247,7 @@ function nextWordGo() {
 function practiceListDone() {
   const d = daily, t = Date.now();
   const items = d.words.map(w => { const p = d.practice[w] || {}; return { part: 'Spelling Helper', label: w, ok: !p.tricky && !p.helps, typed: '', answer: w, word: w }; });
-  const rec = { id: t.toString(36), t, aid: d.qid, tool: 'spell', title: 'Spelling Helper practice', grade: null, right: items.filter(x => x.ok).length, of: items.length, items, missed: [],
+  const rec = { taps: window.TAPS ? TAPS.take() : [], id: t.toString(36), t, aid: d.qid, tool: 'spell', title: 'Spelling Helper practice', grade: null, right: items.filter(x => x.ok).length, of: items.length, items, missed: [],
     parts: d.words.map(w => { const p = d.practice[w] || {}; return [w, p.tricky || p.helps ? `${p.tricky || 0} tricky letter${p.tricky === 1 ? '' : 's'}, ${p.helps || 0} help${p.helps === 1 ? '' : 's'}` : 'spelled it with no help']; }), extra: {}, sent: false };
   const log = store('sheet-log') || []; log.push(rec); putLog('sheet-log', log.slice(-40));
   cloudPutLog('sheet', rec.id, t, rec);
@@ -2368,7 +2431,7 @@ function showResults() {
   const byWord = Object.fromEntries(daily.results.map(r => [r.word, r]));
   const results = daily.words.map(w => byWord[w]).filter(Boolean);
   const right = results.filter(r => r.ok).length, n = results.length;
-  const rec = { id: Date.now().toString(36), t: Date.now(), results, looked3: !!daily.looked3, look: daily.looked3 ? { micWanted: daily.micWanted, micOk: daily.micOk, heard: daily.heard, total: daily.lookTotal, kept: daily.keepVoice, find: daily.find && daily.find.total ? daily.find : null } : null, practiced: daily.practiced, practice: daily.practice, sent: false };
+  const rec = { taps: window.TAPS ? TAPS.take() : [], id: Date.now().toString(36), t: Date.now(), results, looked3: !!daily.looked3, look: daily.looked3 ? { micWanted: daily.micWanted, micOk: daily.micOk, heard: daily.heard, total: daily.lookTotal, kept: daily.keepVoice, find: daily.find && daily.find.total ? daily.find : null } : null, practiced: daily.practiced, practice: daily.practice, sent: false };
   rec.session = daily.session || null;
   store('spell-check-latest', rec);
   if (emailOn()) { const outbox = store('spell-check-outbox') || []; outbox.push(rec); store('spell-check-outbox', outbox.slice(-20)); }
@@ -2516,7 +2579,7 @@ function renderLastCheck() {
   const lg = l.grade || gradeFor(right, l.results.length);
   $('lastCheck').innerHTML = `<b>Last check (${esc(shortDate(l.t))}):</b> ${lg.pct}% ${lg.letter} · ${right} of ${l.results.length} right${missed.length ? ` · missed ${missed.map(r => `${esc(r.word)} (“${esc(r.typed)}”)`).join(', ')}` : ''} · ${l.sent ? 'emailed ✓' : 'not emailed yet'}`
     + (box.length && emailOn() ? ` <button class="linkbtn" id="retrySend">Try sending again</button>` : '')
-    + (missed.length ? ` · <a href="${esc(fixupLink(l))}">Make a Spelling Fix-Up sheet</a>` : '');
+    + (missed.length ? ` <button type="button" class="linkbtn" data-href="${esc(fixupLink(l))}">Make a Spelling Fix-Up sheet</button>` : '');
   const r = document.getElementById('retrySend'); if (r) r.onclick = () => sendOutbox();
 }
 
@@ -2540,12 +2603,30 @@ function answerRows(list) {
     const bank = r.shown && r.shown.bank ? `<div class="ans-ch">Word bank: ${r.shown.bank.map(c => `<span class="${isRight(c) ? 'r' : ''}">${esc(c)}</span>`).join('')}</div>` : '';
     const cg = chunkGroups(r.shown && r.shown.text, picks[0]);
     const tries = cg ? `<div class="ans-picks">He typed each part (wrong letters crossed out): ${cg.map(x => `<b>${esc(x.part)}</b>: ${x.g.map(l => l.ok ? esc(l.c) : `<s class="w">${esc(l.c)}</s>`).join('')}`).join(' → ')}</div>` : picks.length ? `<div class="ans-picks">${ch || r.part === 'Learn It' || r.part === 'Show Me' ? 'He tapped' : letterKeys ? 'He typed these letters, in order' : 'He typed'}: ${picks.map((v, i) => `<span class="${letterKeys || /^line \d/.test(v) ? '' : isRight(v) ? 'r' : 'w'}">${picks.length > 1 ? `${i + 1}. ` : ''}${esc(v.replace(/^letters he typed: /, ''))}</span>`).join(' → ')}</div>` : '';
-    return `<div class="ans-row ${r.ok ? 'ok' : 'no'}"><div class="ans-h"><span class="mk">${r.ok ? '✓' : '✗'}</span><b>${esc(r.part)}</b><span>${esc(r.label)}</span></div>
+    return `<div class="ans-row ${r.ok ? 'ok' : 'no'}"><div class="ans-h"><span class="mk">${r.ok ? '✓' : '✗'}</span><b>${esc(r.part)}</b><span>${esc(r.label)}</span>${r.at ? `<span class="at">answered ${esc(new Date(r.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }))}</span>` : ''}</div>
       ${r.shown && r.shown.text ? `<div class="ans-saw">On his screen: ${esc(r.shown.text)}</div>` : ''}${r.shown && r.shown.img ? `<div class="traces"><figure><img src="${r.shown.img}" alt="What he wrote"><figcaption>written by hand</figcaption></figure></div>` : ''}${chips}${bank}${tries}
       ${r.answer ? `<div class="ans-right">Right answer: <b>${esc(r.answer)}</b></div>` : ''}</div>`;
   }).join('');
 }
-const seeAll = (rows, extraHtml = '', key = '') => rows || extraHtml ? `<div class="ans-btns">${key ? `<button class="replay-btn" data-replay="${esc(key)}">▶ Replay</button>` : ''}<details class="ans"><summary>See every answer</summary>${extraHtml}${rows}</details></div>` : '';
+/* 🕒 Every tap, in order (Nov 20, 2026, Dylan: "I want to see literally what he picked and when he picked it. (ie first second third
+   fourth etc etc)"). Each result saved since then carries `taps` (study-ui.js): the time, the part and question he was on, what he
+   tapped, and ✓/✗ when the button turned green or red. Taps the page ignored because it was still talking are shown faded. */
+const ordinal = n => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+function tapsHtml(key) {
+  const [kind, id] = String(key || '').split(':'); const src = { sheet: 'sheet-log', check: 'spell-check-log', fixup: 'fixup-log' }[kind];
+  const x = src && allLog(src).find(r => String(r.id) === id), T = x && x.taps; if (!T || !T.length) return '';
+  const tm = t => new Date(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  let lastP = null, n = 0, prevT = 0; const real = T.filter(r => !r.blocked).length, blk = T.length - real;
+  const rows = T.map(r => {
+    const head = r.p !== lastP ? `<div class="tp-h">${esc(r.p || 'Start')}</div>` : ''; lastP = r.p;
+    const gap = prevT ? (r.t - prevT) / 1000 : 0; prevT = r.t;
+    const num = r.blocked ? '·' : ordinal(++n);
+    return `${head}<div class="tp${r.ok === 1 ? ' ok' : r.ok === 0 ? ' no' : ''}${r.blocked ? ' blk' : ''}${gap && gap < 0.8 && !r.blocked ? ' fast' : ''}"><span class="n">${num}</span><span class="tm">${esc(tm(r.t))}</span><span class="gap">${gap ? `+${gap < 10 ? gap.toFixed(1) : Math.round(gap)}s` : ''}</span><span class="w">${esc(r.w)}${r.q ? `<q>· ${esc(r.q)}</q>` : ''}</span></div>`;
+  }).join('');
+  const secs = Math.round((T.at(-1).t - T[0].t) / 1000);
+  return `<details class="ans taps"><summary>🕒 Every tap, in order (${real}${blk ? ` + ${blk} while it was talking` : ''} · ${secs >= 60 ? `${Math.floor(secs / 60)} min ${secs % 60} s` : `${secs} s`})</summary><p style="margin:6px 0 0;font-size:13px;color:var(--muted)">1st, 2nd, 3rd… is the order he tapped things. The time is when he tapped it, and +s is how long after the tap before it (yellow = under a second). ✓/✗ = the button turned green or red.</p><div class="tap-list">${rows}</div></details>`;
+}
+const seeAll = (rows, extraHtml = '', key = '') => { const tp = tapsHtml(key); return rows || extraHtml || tp ? `<div class="ans-btns">${key ? `<button class="replay-btn" data-replay="${esc(key)}">▶ Replay</button>` : ''}${rows || extraHtml ? `<details class="ans"><summary>See every answer</summary>${extraHtml}${rows}</details>` : ''}${tp}</div>` : ''; };
 /* ▶ Replay: his screens one at a time, rebuilt from what was recorded, with what he tapped/typed in order */
 /* ⭐ Points screen: total, today, best day, every day's points, and a Review of each gain and loss */
 function openPoints(forParent) {
@@ -2746,7 +2827,7 @@ $('openReview').onclick = () => show('review');
 $('reviewDone').onclick = () => show('setup');
 $('kidSheets').addEventListener('click', e => { const a = e.target.closest('a[href="#spellq"]'); if (!a) return; e.preventDefault(); const q = store('spell-queue'); if (q && q.words && q.words.length) startDaily(q.words, { look: false, practice: true, only: true, qid: q.id }); });
 wireParentHelp(() => daily && daily.order ? daily.order[daily.i] : '');
-$('kidStart').onclick = () => { if (testing) stopMicTest(); const d = store('spell-daily') || {}; const words = d.on === false ? [] : dailyWords(); if (!words.length) return renderKidHome(); startDaily(words, d); };
+$('kidStart').onclick = () => { if ($('kidStart').classList.contains('locked')) return lockedTap($('kidStart')); if (testing) stopMicTest(); const d = store('spell-daily') || {}; const words = d.on === false ? [] : dailyWords(); if (!words.length) return renderKidHome(); startDaily(words, d); };
 holdToOpen($('kidGrown'), 2000, 'grown');
 holdToOpen($('kidSwitch'), 2000, 'signout');   // back to the Parent / Child screen
 /* Test day (grown-up, hold): do his day exactly as he sees it, without saving anything as him.
@@ -3232,6 +3313,19 @@ window.addEventListener('message', e => {
   const f = $('autoSchoolFrame'); if (f) f.remove();
   if (e.data.studyAutoSchool > 0) cloudPull().then(() => { if (!$('kidhome').hidden) renderKidHome(); }).catch(() => { });
 });
+/* Subjects for his start screen (Nov 20: worksheets grouped by subject). A copy of CLASSES in index.html: add new worksheet tools to both. */
+const KID_CLASSES = [
+  { id: 'ela', name: 'ELA', icon: '📖', tools: ['question', 'letter', 'sort', 'respond', 'compare'] },
+  { id: 'math', name: 'Math', icon: '🔢', tools: ['eagles', 'tenmore', 'add3', 'counton'] },
+  { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['spellq', 'sight', 'master', 'mtest', 'fixup', 'fixit', 'sound', 'story', 'readaloud', 'chains', 'heart', 'wsearch', 'fillin', 'silente', 'warmup'] },
+  { id: 'science', name: 'Science', icon: '🔬', tools: ['weather', 'seasons', 'seacycle', 'quiz', 'raingauge', 'raindraw', 'relearn'] },
+  { id: 'social', name: 'Social Studies', icon: '🌎', tools: ['pledge'] },
+  { id: 'music', name: 'Music', icon: '🎵', tools: [] },
+  { id: 'pe', name: 'PE', icon: '🏃', tools: [] },
+  { id: 'every', name: 'Every Day', icon: '📋', tools: ['steps'] },
+  { id: 'other', name: 'More', icon: '📁', tools: [] }
+];
+const kidClassOf = a => KID_CLASSES.find(c => c.tools.includes(a.tool)) || KID_CLASSES.at(-1);
 function renderKidHome() {
   pullTodayResults(); autoSchoolKid();
   const d = store('spell-daily') || {}, words = d.on === false || !isWeekday(ymd(Date.now())) ? [] : dailyWords();   // sight words: Monday to Friday
@@ -3251,20 +3345,77 @@ function renderKidHome() {
   // the "All done" shelf at the bottom, smaller, with a star stamp. Tapping a finished one says so first (kidAgain).
   // Nov 10: Fix My Spelling Mistakes goes in its own "🛠️ Extra help" group, after the worksheets and before the sight words
   const isExtra = a => a.tool === 'fixit' || a.tool === 'relearn' || a.extra;   // Nov 18: planned extra help (lessons.js L_PLANNED) too
-  const todoAll = sheets.filter(a => !doneFor(a)), todo = todoAll.filter(a => !isExtra(a)), extra = todoAll.filter(isExtra), fin = sheets.filter(a => doneFor(a));
-  const wordsDone = words.length > 0 && today.length > 0;
-  $('kidExtra').hidden = !extra.length;
-  $('kidExtra').innerHTML = extra.length ? `<h3 class="kid-h">${todo.length ? 'Next: ' : ''}🛠️ Extra help</h3>` + extra.map(a => { const n = ((a.data && a.data.words) || []).length, nq = ((a.data && a.data.qs) || []).length, ns = ((a.data && a.data.sents) || []).length;
-    return `<a href="${href(a)}"><span>${esc(a.title.replace(/^🛠️\s*/, ''))}</span>${n ? `<small>${n} word${n > 1 ? 's' : ''} to fix</small>` : nq ? `<small>${nq} quiz question${nq > 1 ? 's' : ''} to learn</small>` : ns ? `<small>${ns} sentences</small>` : ''}</a>`; }).join('') : '';
-  $('kidSheets').hidden = !todo.length;
-  $('kidSheets').innerHTML = todo.length ? `<h3 class="kid-h">${words.length && !wordsDone ? 'First: worksheets' : 'Worksheets'}</h3>` + todo.map(a => {
-    const left = a.tool !== 'spellq' && !RECUR.includes(a.tool) && sheetDay(a) < ymd(Date.now()) ? `<small class="left">from ${esc(new Date(sheetDay(a) + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long' }))}</small>` : '';
-    return `<a href="${href(a)}"><span>${esc(a.title)}</span>${left}</a>`; }).join('') : '';
+  /* Nov 20, 2026 (Dylan's Study revamp): his day goes in a set order, and each step stays locked until the one before it is done.
+     "If I label something as a QUIZ, that needs to be done after the worksheets but before sight words. TEST needs to be done after
+     QUIZ. Master Words Test needs to be the last after sight words."
+       1 Worksheets (grouped by subject) → 2 🛠️ Extra help → 3 📝 Quiz (tool quiz, or "quiz" in the title) → 4 🧪 Test ("test" in the
+       title) → 5 Sight words → last ⭐ Mastered Words Test.
+     Only steps that have something on them show. Leftovers from earlier days sit in their step but don't hold up the later ones.
+     A grown-up can hold "🔓 Any order today" (PIN) to unlock everything for the rest of the day (localStorage study-order-unlock). */
+  const t0d = ymd(Date.now());
+  const isQuiz = a => a.tool === 'quiz' || /\bquiz(zes)?\b/i.test(a.title || '');
+  const isTest = a => /\btests?\b/i.test(a.title || '');
+  const stageOf = a => a.tool === 'mtest' ? 'mtest' : isExtra(a) ? 'extra' : isQuiz(a) ? 'quiz' : isTest(a) ? 'test' : 'work';
+  const isLeft = a => a.tool !== 'spellq' && !RECUR.includes(a.tool) && sheetDay(a) < t0d;
+  const todoAll = sheets.filter(a => !doneFor(a)), fin = sheets.filter(a => doneFor(a));
+  const wordsDone = words.length > 0 && today.length > 0, wordsTodo = words.length > 0 && !wordsDone;
+  const unlockedDay = store('study-order-unlock') === t0d;
+  const STAGES = [
+    { k: 'work', el: 'kidSheets', title: 'Worksheets', short: 'worksheets' },
+    { k: 'extra', el: 'kidExtra', title: '🛠️ Extra help', short: 'extra help' },
+    { k: 'quiz', el: 'kidQuiz', title: '📝 Quiz', short: 'quiz' },
+    { k: 'test', el: 'kidTests', title: '🧪 Test', short: 'test' },
+    { k: 'words', title: 'Sight words', short: 'sight words' },
+    { k: 'mtest', el: 'kidMtest', title: '⭐ Mastered Words Test', short: 'Mastered Words Test' }
+  ];
+  STAGES.forEach(st => { st.list = st.k === 'words' ? [] : todoAll.filter(a => stageOf(a) === st.k); st.on = st.k === 'words' ? wordsTodo : st.list.length > 0; });
+  const present = STAGES.filter(st => st.on);
+  let holdUp = null;
+  present.forEach((st, i) => {
+    st.lockedBy = unlockedDay ? null : holdUp;
+    st.label = present.length < 2 ? st.title : `${i === present.length - 1 && i > 0 ? 'Last' : `Step ${i + 1}`}: ${st.title}`;
+    if (!holdUp && (st.k === 'words' ? wordsTodo : st.list.some(a => !isLeft(a)))) holdUp = st;
+  });
+  $('kidUnlock').hidden = unlockedDay || !present.some(st => st.lockedBy);
+  let nextSet = false;
+  const lockLine = st => `🔒 After your ${st.lockedBy.short}`;
+  const subLine = a => { const n = ((a.data && a.data.words) || []).length, nq = ((a.data && a.data.qs) || []).length, ns = ((a.data && a.data.sents) || []).length;
+    const left = isLeft(a) ? `<small class="left">from ${esc(new Date(sheetDay(a) + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long' }))}</small>` : '';
+    return isExtra(a) ? (n ? `<small>${n} word${n > 1 ? 's' : ''} to fix</small>` : nq ? `<small>${nq} quiz question${nq > 1 ? 's' : ''} to learn</small>` : ns ? `<small>${ns} sentences</small>` : '') + left : left; };
+  const kbtn = (a, st) => {
+    const locked = !!st.lockedBy, here = !locked && !nextSet; if (here) nextSet = true;
+    const title = isExtra(a) ? a.title.replace(/^🛠️\s*/, '') : a.title;
+    return `<button type="button" class="kbtn${locked ? ' locked' : ''}${here ? ' next' : ''}" data-href="${esc(href(a))}"${locked ? ` aria-disabled="true" data-lock="${esc(st.lockedBy.short)}"` : ''}><span>${esc(title)}</span>${subLine(a)}${locked ? `<small class="lk">${esc(lockLine(st))}</small>` : ''}${here ? '<b class="here">Start here ➜</b>' : ''}</button>`;
+  };
+  present.forEach(st => {
+    if (st.k === 'words') return;
+    let body = '';
+    if (st.k === 'work') {   // grouped by subject (Dylan: "categorizes them by the subject")
+      const groups = [];
+      st.list.forEach(a => { const c = kidClassOf(a); let g = groups.find(x => x.c.id === c.id); if (!g) groups.push(g = { c, list: [] }); g.list.push(a); });
+      groups.sort((x, y) => KID_CLASSES.indexOf(x.c) - KID_CLASSES.indexOf(y.c));
+      body = groups.map(g => `<div class="subj"><span class="subj-h">${g.c.icon} ${esc(g.c.name)}</span>${g.list.map(a => kbtn(a, st)).join('')}</div>`).join('');
+    } else body = st.list.map(a => kbtn(a, st)).join('');
+    $(st.el).innerHTML = `<h3 class="kid-h">${esc(st.label)}</h3>${body}`;
+  });
+  STAGES.forEach(st => { if (st.el) $(st.el).hidden = !st.on; });
+  // sight words: the Start button, locked until the steps before it are done
+  const ws = STAGES.find(st => st.k === 'words');
+  $('kidWordsH').textContent = ws.label || 'Today’s sight words';
+  $('kidWordsH').hidden = !wordsTodo || present.length < 2;
+  const wLocked = wordsTodo && !!ws.lockedBy, wHere = wordsTodo && !wLocked && !nextSet; if (wHere) nextSet = true;
+  $('kidStart').hidden = !wordsTodo;
+  $('kidStart').classList.toggle('locked', wLocked); $('kidStart').classList.toggle('next', wHere);
+  $('kidStart').dataset.lock = wLocked ? ws.lockedBy.short : '';
+  $('kidStart').setAttribute('aria-disabled', wLocked ? 'true' : 'false');
+  $('kidStart').innerHTML = wLocked ? `🔒 Start today’s words<small class="lk">After your ${esc(ws.lockedBy.short)}</small>` : `Start today’s words${wHere && present.length > 1 ? '<b class="here">Start here ➜</b>' : ''}`;
+  $('kidMicSlot').hidden = !wordsTodo || wLocked;
+  const href2 = a => a.tool === 'weather' ? '#weather' : href(a);
   const doneLine = (a, d) => { const g = d.grade; return g ? `${g.letter} (${g.pct}%)` : a.tool === 'weather' ? `day ${d.extra && d.extra.day} done today` : ''; };
   const shelf = [...(wordsDone ? [(() => { const r = today.at(-1), g = r.grade || gradeFor(r.results.filter(x => x.ok).length, r.results.length);
-      return `<a class="done" href="#words" data-title="${esc('📝 Today’s sight words')}" data-line="${esc(`${g.letter} (${g.pct}%)`)}"><span>📝 Today’s sight words</span><small>Done! ⭐ ${esc(`${g.letter} (${g.pct}%)`)}</small><i class="stamp" aria-hidden="true">⭐</i></a>`; })()] : []),
+      return `<button type="button" class="kbtn done" data-again="#words" data-title="${esc('📝 Today’s sight words')}" data-line="${esc(`${g.letter} (${g.pct}%)`)}"><span>📝 Today’s sight words</span><small>Done! ⭐ ${esc(`${g.letter} (${g.pct}%)`)}</small><i class="stamp" aria-hidden="true">⭐</i></button>`; })()] : []),
     ...fin.map(a => { const d = doneFor(a), line = doneLine(a, d);
-      return `<a class="done" href="${a.tool === 'weather' ? '#weather' : href(a)}" data-title="${esc(a.title)}" data-line="${esc(line)}"><span>${esc(a.title)}</span><small>Done! ⭐${line ? ' ' + esc(line) : ''}</small><i class="stamp" aria-hidden="true">⭐</i></a>`; })];
+      return `<button type="button" class="kbtn done" data-again="${esc(href2(a))}" data-title="${esc(a.title)}" data-line="${esc(line)}"><span>${esc(a.title)}</span><small>Done! ⭐${line ? ' ' + esc(line) : ''}</small><i class="stamp" aria-hidden="true">⭐</i></button>`; })];
   $('kidShelf').hidden = !shelf.length;
   $('kidShelf').innerHTML = shelf.length ? `<h3 class="kid-h">✓ All done</h3>` + shelf.join('') : '';
   // "2 of 5 done" with a star for each thing on his day (chores aren't counted)
@@ -3272,24 +3423,21 @@ function renderKidHome() {
   $('kidProg').hidden = !total;
   $('kidProg').innerHTML = total ? `<div class="kp-stars" aria-hidden="true">${Array.from({ length: total }, (_, i) => `<span class="${i < nDone ? 'on' : ''}">${i < nDone ? '⭐' : '☆'}</span>`).join('')}</div><b>${nDone === total ? 'All done for today! 🎉' : `${nDone} of ${total} done`}</b>` : '';
   if (total && nDone === total) $('kidMsg').textContent = 'You did everything today. Great job!';
-  else if (wordsDone && todo.length) $('kidMsg').textContent = 'Here’s what’s left for today. Take your time and try your best!';
+  else if (present.length > 1) $('kidMsg').textContent = `Do them in order: ${present.map(st => st.short).join(' → ')}. Take your time and try your best!`;
+  else if (nDone && present.length) $('kidMsg').textContent = 'Here’s what’s left for today. Take your time and try your best!';
   recordAgenda(words, sheets);
   // Chore chart (chores.html): grown-ups check chores off on their devices; here he just sees how he's doing
   const ch = store('study-chores');
   $('kidChores').hidden = !(ch && ch.chores && ch.chores.length);
   if (ch && ch.chores) { const mk = ymd(Date.now()).slice(0, 7), lim = ch.limit || 8, xs = Object.keys(ch.marks || {}).filter(s => s.slice(0, 7) === mk).reduce((n, s) => n + Object.values(ch.marks[s]).filter(m => m && m.s === 'x').length, 0);
-    $('kidChores').innerHTML = `<h3 class="kid-h">My chores</h3><a href="chores.html"><span>🧹 My Chores</span><small>${xs >= lim ? `No ${esc(ch.reward || 'reward')} this month` : `${esc(ch.reward || 'Reward')}: still on · ${xs} X${xs === 1 ? '' : '’s'} this month`}</small></a>`; }
-  // sight words done today: they're on the All done shelf instead (tap there to do them again)
-  $('kidWordsH').hidden = !(words.length && sheets.length) || wordsDone;
-  $('kidStart').hidden = !words.length || wordsDone;
-  $('kidMicSlot').hidden = wordsDone;
+    $('kidChores').innerHTML = `<h3 class="kid-h">My chores</h3><button type="button" class="kbtn" data-href="chores.html"><span>🧹 My Chores</span><small>${xs >= lim ? `No ${esc(ch.reward || 'reward')} this month` : `${esc(ch.reward || 'Reward')}: still on · ${xs} X${xs === 1 ? '' : '’s'} this month`}</small></button>`; }
   $('kidDone').hidden = true;
 }
 /* Tapping something he already finished: "You already did this one!" with OK, or Do it again (Dylan is fine with redos;
    Parent Review shows each one as First attempt / Redo 1 / Redo 2…). Weather is once a day, so no redo. */
 function kidAgain(a) {
   const w = document.createElement('div'); w.className = 'ph-wrap'; w.setAttribute('role', 'dialog');
-  const kind = a.getAttribute('href'), redo = kind !== '#weather';
+  const kind = a.dataset.again || a.getAttribute('href'), redo = kind !== '#weather';
   w.innerHTML = `<div class="ph-box kid-again"><div class="ka-star" aria-hidden="true">⭐</div><h3>You already did this one! 🎉</h3><p class="ka-t">${esc(a.dataset.title)}</p>${a.dataset.line ? `<p class="ka-g">${esc(a.dataset.line)}</p>` : ''}
     ${redo ? '' : '<p>Come back tomorrow for the next day.</p>'}
     <button class="btn big primary" data-k="ok">OK 👍</button>${redo ? '<button class="btn" data-k="redo">↺ Do it again</button>' : ''}</div>`;
@@ -3304,7 +3452,18 @@ function kidAgain(a) {
     location.href = kind;
   };
 }
-$('kidShelf').addEventListener('click', e => { const a = e.target.closest('a.done'); if (!a) return; e.preventDefault(); kidAgain(a); });
+$('kidShelf').addEventListener('click', e => { const a = e.target.closest('.kbtn.done'); if (!a) return; e.preventDefault(); kidAgain(a); });
+/* Nov 20: a step that isn't open yet says what comes first (and wiggles) instead of opening */
+function lockedTap(b) {
+  const what = b.dataset.lock || 'other work';
+  b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope');
+  say(`First finish your ${what}. Then this one opens.`, 0.95);
+  const n = document.querySelector('#kidhome .kbtn.next, #kidStart.next'); if (n) n.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+$('kidhome').addEventListener('click', e => { const b = e.target.closest('.kbtn.locked'); if (!b) return; e.preventDefault(); e.stopPropagation(); lockedTap(b); }, true);
+$('kidUnlock').addEventListener('pointerdown', e => { e.preventDefault(); const b = $('kidUnlock'); b.classList.add('holding'); b._t = setTimeout(() => { b.classList.remove('holding'); askPin().then(ok => { if (!ok) return; store('study-order-unlock', ymd(Date.now())); renderKidHome(); }); }, 2000); });
+['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => $('kidUnlock').addEventListener(ev, () => { clearTimeout($('kidUnlock')._t); $('kidUnlock').classList.remove('holding'); }));
+$('kidUnlock').addEventListener('contextmenu', e => e.preventDefault());
 
 renderRecent();
 renderSetup();

@@ -3,9 +3,11 @@
    Loaded by do.html, fixup.html and spell.html (spell.html only locks on his login, not for a grown-up).
    While the page is talking (computer voice or a recording), taps, presses and typing are ignored, buttons dim, and a "👂 Listen first…"
    note shows. Not locked: the letter he hears after tapping a key (keySay's keyUtt; also the Spelling Helper's letter after a right pick), the header (Back / Reload), grown-up "Skip this part".
+   Nov 20: letting go of the 🎤 hold-to-talk button is never blocked; ignored taps are noted for Parent Review (study-ui.js TAPS).
    If the voice gets stuck "speaking" for 20 s straight, it lets go (iPads sometimes never say they finished). */
 (function () {
-  const FREE = '.app-header, .skip-part, #skipPart, [data-free], body > nav, .tod-bar, #grownDone, .ph-wrap';
+  const FREE = '.app-header, .skip-part, #skipPart, [data-free], body > nav, .tod-bar, #grownDone, .ph-wrap, #studyReload, #reloadBtn';
+  const RELEASE = /^(pointerup|pointercancel|mouseup|touchend|touchcancel|lostpointercapture)$/;   // Nov 20: letting go of the hold-to-talk button always works
   const MAX_MS = 20000;
   const playing = new Set();
   const P = HTMLMediaElement.prototype, play0 = P.play;
@@ -65,11 +67,13 @@
     if (!isOn()) return;
     const t = e.target;
     if (t && t.closest && t.closest(FREE)) return;
+    if (RELEASE.test(e.type) && t && t.closest && t.closest('.ht-btn.on')) return;
+    if ((e.type === 'pointerdown' || e.type === 'keydown') && window.__tapBlocked) { try { window.__tapBlocked(e); } catch (x) { } }   // Parent Review: "tapped while the page was talking"
     if (e.type === 'keydown' && (e.metaKey || e.ctrlKey || e.altKey || /^(Tab|Shift|Control|Alt|Meta|F\d+)$/.test(e.key))) return;
     e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
     if (note) { note.classList.remove('nudge'); void note.offsetWidth; note.classList.add('nudge'); }
   };
-  ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'click', 'keydown', 'keypress', 'input', 'beforeinput'].forEach(ev =>
+  ['pointerdown', 'pointerup', 'pointercancel', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'click', 'keydown', 'keypress', 'input', 'beforeinput'].forEach(ev =>
     window.addEventListener(ev, stop, { capture: true, passive: false }));
   const css = document.createElement('style');
   css.textContent = `
