@@ -311,6 +311,18 @@ body.kidgrown #acctCard, body.kidgrown #dailyCard { display: none !important; }
   .kid-shelf .kbtn.done { font-size: 18px; padding: 10px 56px 10px 16px; min-height: 0; }
   #kidChores { max-width: 460px; }
 }
+/* 🐞 bug reports (Nov 20) */
+.bug-tag { display: inline-block; font: 700 12px Fredoka, sans-serif; letter-spacing: .03em; color: #fff; background: #B91C1C; border-radius: 999px; padding: 2px 9px; margin: 0 6px; vertical-align: middle; }
+.bug-tag.fixed { background: #1F4F43; color: #BBF7D0; }
+.bug-sec { border: 2px solid #F87171 !important; background: #2A1414 !important; } .bug-sec.fixed { border-color: var(--line) !important; background: var(--surface) !important; opacity: .8; }
+.bug-banner { background: #3A1717; border: 2px solid #F87171; border-radius: 14px; padding: 10px 14px; margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 600 16px Fredoka, sans-serif; }
+#bugView .bv-body { flex: 1; overflow: auto; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; padding: 14px; align-items: start; }
+@media (max-width: 860px) { #bugView .bv-body { grid-template-columns: 1fr; } }
+#bugView .bv-frame { position: relative; width: 100%; overflow: hidden; border: 3px solid #F87171; border-radius: 12px; background: #0E151D; }
+#bugView .bv-frame iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; background: #0E151D; }
+#bugView .bv-side { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+#bugView .bv-what { background: #2A1414; border: 2px solid #F87171; border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+#bugView .bv-sounds { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; } #bugView .bv-sounds .btn { display: block; text-align: left; font-size: 15px; line-height: 1.35; } #bugView .bv-sounds .btn span { color: var(--muted); font-size: 12px; } #bugView .bv-sounds .btn.last { border-color: #FACC15; }
 /* Nov 20 revamp: his start screen is all buttons (no links), in a set order with locked steps, worksheets grouped by subject */
 .kid-sheets .kbtn { cursor: pointer; position: relative; box-shadow: 0 5px 0 #1E3A8A; }
 .kid-sheets .kbtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #1E3A8A; }
@@ -499,7 +511,7 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 <body class="authwait">
 <script src="testclock.js?v=1"></script>
 <script src="listen.js?v=4"></script>
-<script src="study-ui.js?v=1"></script>
+<script src="study-ui.js?v=2"></script>
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <h1 id="appTitle">Spelling Helper</h1>
@@ -2767,6 +2779,7 @@ async function renderReview(noPull) {
   checks.forEach(x => add(x.t, { t: x.t, kind: 'check', x }));
   fixes.forEach(x => add(x.t, { t: x.t, kind: 'fix', x }));
   sheets.forEach(x => add(x.t, { t: x.t, kind: 'sheet', x }));
+  const BUGS = bugList(); BUGS.forEach(x => add(x.t, { t: x.t, kind: 'bug', x }));
   const order = Object.values(days).sort((a, b) => b.t - a.t).filter(d => ymd(d.t) === calSel);   // only the day picked on the calendar
   const agendas = store('study-days') || {}, cm = calMonth.review || (calMonth.review = [new Date().getFullYear(), new Date().getMonth()]);
   $('reviewCal').innerHTML = monthCal(cm[0], cm[1], ds => { const s = dayStatus(ds, agendas); return { ...s, cls: s.cls + (ds === calSel ? ' sel' : '') }; }, 'review') + `<div class="cal-key"><span class="done">Done</span><span class="miss">Not done</span><span class="none">Nothing assigned</span><small>Gold ring = today. Tap a day to see what he did that day.</small></div>`;
@@ -2778,8 +2791,9 @@ async function renderReview(noPull) {
   const asgHtml = asg.length ? `<div class="rv-asg"><h4>Assigned for this day</h4>${asg.map(a => {
       const all = allLogs.filter(l => l.aid === a.id && (RECUR.includes(a.tool) ? ymd(l.t) === calSel : ymd(l.t) <= calSel)).sort((x, y) => y.t - x.t), d = all[0], g = d && d.grade;
       const st = d ? `<span class="ok">✓ done${g ? `: ${esc(g.letter)} (${g.pct}%)` : ''}${all.length > 1 ? ` · ${all.length} tries (1 + ${all.length - 1} redo${all.length > 2 ? 's' : ''})` : ''}</span>` : OPTIONAL.includes(a.tool) ? '<span class="wait">extra (not required)</span>' : calSel < td ? '<span class="no">✗ Not completed</span>' : calSel === td ? '<span class="wait">not done yet</span>' : '<span class="wait">coming up</span>';
-      return `<div class="rv-asg-row"><span>${esc(a.title)}</span>${st}</div>`; }).join('')}</div>` : '';
-  if (!order.length) { $('reviewList').innerHTML = asgHtml + (asgHtml ? '' : '<p class="rv-empty">Nothing on this day.</p>'); return; }
+      return `<div class="rv-asg-row"><span>${esc(a.title)}${bugTag(a.id)}</span>${st}</div>`; }).join('')}</div>` : '';
+  const bugBanner = bugBannerHtml(BUGS);
+  if (!order.length) { $('reviewList').innerHTML = bugBanner + asgHtml + (asgHtml ? '' : '<p class="rv-empty">Nothing on this day.</p>'); return; }
   // Nov 10 (Dylan: "First attempt" then "Redo 1", "Redo 2"…): number each try at the same assignment, in time order.
   // Worksheets / Fix-Ups by assignment id (Daily Steps by assignment and day), the sight word check by day.
   const attempts = {}, tryOf = (grp, list) => list.sort((a, b) => a.t - b.t).forEach((x, i) => { attempts[grp + x.id] = { n: i + 1, of: list.length, g: grp + (list[0].id), all: list }; });
@@ -2801,6 +2815,7 @@ async function renderReview(noPull) {
   };
   const one = it => {
       const x = it.x;
+      if (it.kind === 'bug') return bugCard(x);
       if (it.kind === 'look') return `<div class="rv-sec"><h4>Look &amp; Listen<span>${esc(timeOf(x.t))}</span></h4>
         <div class="ln">${x.micOk === false && x.find ? `No microphone, so he did Look &amp; Find: ${findLine(x.find)}.` : x.micOk === false && x.micWanted ? 'The microphone wasn’t available, so it couldn’t check.' : x.total ? `Said out loud: ${x.heard} of ${x.total}` : ''}</div>
         ${x.clips && x.clips.length ? `<div class="clips">${clipButtons(x)}</div><button class="del" data-delsess="${x.session}">Delete these recordings</button>` : '<div class="ln rv-empty">No recordings saved.</div>'}</div>`;
@@ -2808,7 +2823,7 @@ async function renderReview(noPull) {
         return `<div class="rv-sec"><h4>Sight word check${tryTag('check:' + x.id)}<span>${esc(timeOf(x.t))} · ${g.pct}% ${g.letter} · ${right} of ${x.results.length} right${x.sent ? ' · emailed ✓' : ''}</span></h4><div class="ln">${wordList(x.results)}</div>${seeAll(answerRows(x.results.map(r => ({ part: 'Check', label: r.word, ok: r.ok, answer: r.word, shown: { text: 'He heard the word and a sentence. The word wasn’t shown.' }, picks: [r.typed] }))), '', 'check:' + x.id)}</div>`; }
       if (it.kind === 'sheet') {
         const wrong = (x.items || []).filter(r => !r.ok);
-        return `<div class="rv-sec"><h4>${esc(x.title)}${tryTag('sheet:' + x.id)}<span>${esc(timeOf(x.t))}${x.grade ? ` · ${x.grade.pct}% ${x.grade.letter} · ${x.right} of ${x.of} right the first time` : ' · done'}${x.sent ? ' · emailed ✓' : ''}</span></h4>
+        return `<div class="rv-sec"><h4>${esc(x.title)}${bugTag(x.aid)}${tryTag('sheet:' + x.id)}<span>${esc(timeOf(x.t))}${x.grade ? ` · ${x.grade.pct}% ${x.grade.letter} · ${x.right} of ${x.of} right the first time` : ' · done'}${x.sent ? ' · emailed ✓' : ''}</span></h4>
           ${wrong.length ? `<div class="ln">${wrong.map(r => `<span class="no">✗ ${esc(r.part)}: ${esc(r.label)}${r.typed ? ` (put “${esc(r.typed)}”)` : ''} → ${esc(r.answer)}</span>`).join(' · ')}</div>` : (x.items || []).length ? '<div class="ln"><span class="ok">Everything right the first time ✓</span></div>' : ''}
           ${x.extra && x.extra.marks ? `<div class="ln">Quarters: ${x.extra.marks.map((m, i) => `${i + 1} ${m === 'has' ? '🦅' : '✗'}`).join(' · ')}</div>` : ''}
           ${x.extra && x.extra.stepTimes ? `<div class="ln">Steps done at ${x.extra.stepTimes.map(t => esc(timeOf(t))).join(', ')}</div>` : ''}
@@ -2816,7 +2831,7 @@ async function renderReview(noPull) {
           ${seeAll(answerRows(x.items || []), x.extra && x.extra.traces ? `<div class="ans-row"><div class="ans-h"><b>Trace</b><span>what he traced with his finger</span></div><div class="traces">${x.extra.traces.map(tr => `<figure><img src="${tr.img}" alt="His tracing of ${esc(tr.word)}"><figcaption>${esc(tr.word)}${tr.redo ? ` · traced more ${tr.redo}×` : ''}</figcaption></figure>`).join('')}</div></div>` : '', 'sheet:' + x.id)}</div>`;
       }
       const right = x.test.filter(r => r.ok).length;
-      return `<div class="rv-sec"><h4>Spelling Fix-Up${tryTag('fix:' + x.id)}<span>${esc(timeOf(x.t))} · Practice Test ${x.grade.pct}% ${x.grade.letter} · ${right} of ${x.test.length} right</span></h4>
+      return `<div class="rv-sec"><h4>Spelling Fix-Up${bugTag(x.cid)}${tryTag('fix:' + x.id)}<span>${esc(timeOf(x.t))} · Practice Test ${x.grade.pct}% ${x.grade.letter} · ${right} of ${x.test.length} right</span></h4>
         <div class="ln">${wordList(x.test)}</div><div class="ln" style="color:var(--muted)">${x.parts.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')}</div>${seeAll(answerRows(x.detail || x.test.map(r => ({ part: 'Practice Test', label: r.word, ok: r.ok, answer: r.word, picks: [r.typed] }))), '', 'fixup:' + x.id)}</div>`;
   };
   const stackHtml = it => {   // Nov 10 (Dylan: "stack the tries together"): every try at the same thing that day, in one box, oldest first
@@ -2825,9 +2840,93 @@ async function renderReview(noPull) {
     const n = it.kids.length;
     return `<div class="rv-tries"><div class="rv-tries-h">↺ ${n} ${n === 1 ? 'try' : 'tries'} this day${other(a.all.filter(x => ymd(x.t) < calSel), 'earlier')}${other(a.all.filter(x => ymd(x.t) > calSel), 'later')}</div>${it.html}</div>`;
   };
-  $('reviewList').innerHTML = asgHtml + order.map(d => `<div class="rv-day" id="rv-${ymd(d.t)}">` + stackTries(d.items.sort((a, b) => a.t - b.t)).map(it => it.stack ? stackHtml(it) : one(it)).join('') + '</div>').join('');
+  $('reviewList').innerHTML = bugBanner + asgHtml + order.map(d => `<div class="rv-day" id="rv-${ymd(d.t)}">` + stackTries(d.items.sort((a, b) => a.t - b.t)).map(it => it.stack ? stackHtml(it) : one(it)).join('') + '</div>').join('');
+}
+
+/* ---- 🐞 Bug reports (Nov 20, 2026; study-ui.js sends them from his pages) ----
+   Dylan: "Under the parent review, I want something to show 'BUG REPORTED' for each assignment so I can see and go to listen."
+   Each report: a red card on its day (what he picked, the part, the last thing the page said), a 🐞 BUG REPORTED tag on that
+   assignment everywhere in Parent Review, a banner at the top listing reports not marked fixed (last 30 days), and 👀 See his screen:
+   his screen as it looked (scroll it), every sound the page made just before (🔊 to hear each one), his voice, his last taps,
+   page errors, ▶ Open it myself (the same worksheet at the same place, nothing saved) and ✓ Mark fixed. */
+function bugList() {
+  const m = new Map();
+  [...(store('study-bugs') || []), ...(LOG_MEM.bugs || []), ...(store('study-bugs-fixed') || []).map(f => ({ id: f.id, fixed: f.fixed, fixedAt: f.at, _local: 1 }))].forEach(b => { if (b && b.id) m.set(b.id, { ...(m.get(b.id) || {}), ...b }); });
+  return [...m.values()].filter(b => b.t).sort((a, b) => a.t - b.t);
+}
+const bugTag = aid => aid && bugList().some(b => b.aid === aid && !b.fixed) ? '<b class="bug-tag">🐞 BUG REPORTED</b>' : aid && bugList().some(b => b.aid === aid) ? '<b class="bug-tag fixed">🐞 bug fixed</b>' : '';
+function bugBannerHtml(all) {
+  const open = all.filter(b => !b.fixed && b.t > Date.now() - 30 * 864e5);
+  if (!open.length) return '';
+  const days = [...new Set(open.map(b => ymd(b.t)))].sort().reverse();
+  return `<div class="bug-banner">🐞 <b>${open.length} bug report${open.length > 1 ? 's' : ''} to check</b>${days.map(d => ` <button class="linkbtn" data-goday="${d}">${esc(new Date(d + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }))} (${open.filter(b => ymd(b.t) === d).length}) →</button>`).join('')}</div>`;
+}
+function bugCard(b) {
+  return `<div class="rv-sec bug-sec${b.fixed ? ' fixed' : ''}"><h4><b class="bug-tag${b.fixed ? ' fixed' : ''}">🐞 ${b.fixed ? 'BUG FIXED' : 'BUG REPORTED'}</b> ${esc(b.title || b.page || '')}<span>${esc(timeOf(b.t))}${b.testing ? ' · from a Try it / Test day' : ''}</span></h4>
+    <div class="ln"><b>${esc(b.label || 'Something is wrong')}</b>${b.part ? ` · ${esc(b.part)}` : ''}${b.q ? ` · ${esc(b.q)}` : ''}${b.voice ? ' · 🎤 he recorded what’s wrong' : ''}</div>
+    ${b.lastSaid ? `<div class="ln" style="color:var(--muted)">Last thing the page said: “${esc(b.lastSaid.length > 140 ? b.lastSaid.slice(0, 138) + '…' : b.lastSaid)}”</div>` : ''}
+    <div class="row" style="margin-top:8px"><button class="btn" data-bugview="${esc(b.id)}">👀 See his screen &amp; listen</button><button class="btn" data-bugfix="${esc(b.id)}" data-fixed="${b.fixed ? '1' : ''}">${b.fixed ? '↺ Not fixed yet' : '✓ Mark fixed'}</button></div></div>`;
+}
+async function bugSetFixed(id, fixed) {
+  const L = (store('study-bugs-fixed') || []).filter(f => f.id !== id); L.push({ id, fixed, at: Date.now() }); store('study-bugs-fixed', L.slice(-100));
+  const b = bugList().find(x => x.id === id); if (!b || !cloudMember()) return;
+  const { _local, ...clean } = { ...b, fixed, fixedAt: Date.now() };
+  try { await cloud.sb.from('study_log').upsert({ key: 'bug:' + id, kind: 'bug', t: new Date(b.t).toISOString(), data: clean }); (LOG_MEM.bugs || []).forEach(x => { if (x.id === id) { x.fixed = fixed; } }); } catch (e) { }
+}
+async function bugSnap(id) {
+  for (const x of (store('study-bug-outbox') || [])) if (x.snap && x.snap.id === id) return x.snap;   // this device, not sent yet
+  if (!cloudMember()) return null;
+  try { const { data } = await cloud.sb.from('study_log').select('data').eq('key', 'bugsnap:' + id).maybeSingle(); return data ? data.data : null; } catch (e) { return null; }
+}
+let bugAudio = null;
+async function openBugView(id) {
+  const b = bugList().find(x => x.id === id); if (!b) return;
+  let w = $('bugView'); if (!w) { w = document.createElement('div'); w.id = 'bugView'; w.className = 'replay'; w.setAttribute('role', 'dialog'); document.body.appendChild(w); }
+  w.hidden = false;
+  w.innerHTML = `<div class="rp-top"><b>🐞 ${esc(b.title || 'Bug report')}</b><span>${esc(new Date(b.t).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</span><button class="btn" id="bvClose">✕ Close</button></div><div class="bv-body"><p class="rv-empty">Loading his screen…</p></div>`;
+  const close = () => { w.hidden = true; w.innerHTML = ''; try { speechSynthesis.cancel(); } catch (e) { } if (bugAudio) bugAudio.pause(); };
+  $('bvClose').onclick = close;
+  const s = await bugSnap(id);
+  if (w.hidden) return;
+  const body = w.querySelector('.bv-body');
+  if (!s) { body.innerHTML = '<p class="rv-empty">His screen copy isn’t here yet. It may still be on his device waiting for the internet; it sends the next time he opens the Study.</p>'; return; }
+  const tm = t => new Date(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  const sounds = [];   // the same line repeated right away shows once, with ×N
+  (s.sounds || []).forEach(x => { const p = sounds.at(-1); if (p && x.say != null && p.say === x.say && x.t - p.last < 2500) { p.n = (p.n || 1) + 1; p.last = x.t; } else sounds.push({ ...x, last: x.t }); });
+  const taps = (s.taps || []).slice(-25);
+  body.innerHTML = `<div class="bv-screen"><div class="bv-frame" id="bvFrame"></div><div class="row" style="justify-content:center;margin-top:8px"><button class="btn btn-small" id="bvTall">📜 Show the whole page</button></div><p class="rv-empty" style="font-size:13px">This is a copy of his screen when he tapped 🐞 (scroll inside it). Buttons in the copy don’t work; use ▶ Open it myself to try it for real.</p></div>
+    <div class="bv-side">
+      <div class="bv-what"><b class="bug-tag${b.fixed ? ' fixed' : ''}">🐞 ${esc(b.label || 'Something is wrong')}</b><div>${esc([s.page, b.part, b.q].filter(Boolean).join(' · '))}</div></div>
+      ${s.voice ? `<div><b>🎤 What he said</b><audio controls src="${s.voice}" style="width:100%;margin-top:4px"></audio></div>` : ''}
+      <div><b>🔊 What the page said or played just before</b> <small>(oldest first, tap to hear)</small>${sounds.length ? `<div class="bv-sounds">${sounds.map((x, i) => `<button class="btn btn-small${i === sounds.length - 1 ? ' last' : ''}" data-bvsnd="${i}"><span>${esc(tm(x.t))}</span> ${x.say != null ? `🔊 “${esc(x.say.length > 90 ? x.say.slice(0, 88) + '…' : x.say)}”${x.n > 1 ? ` <small>×${x.n}</small>` : ''}${x.rate && Math.abs(x.rate - 1) > 0.01 ? ` <small>speed ${(+x.rate).toFixed(2)}</small>` : ''}` : x.src ? `▶ ${x.rec ? 'a recording' : esc(x.src.split('/').pop().slice(0, 40))}` : '▶ a recording (too big to keep)'}${i === sounds.length - 1 ? ' <small>← last</small>' : ''}</button>`).join('')}</div>` : '<p class="rv-empty">Nothing was said in the last moments.</p>'}<p class="rv-empty" style="font-size:12px">The computer voice here can sound a little different from his iPad’s. Recordings play exactly as he heard them.</p></div>
+      ${taps.length ? `<details class="ans" open><summary>His last ${taps.length} taps</summary><div class="tap-list">${taps.map((r, i) => `<div class="tp${r.ok === 1 ? ' ok' : r.ok === 0 ? ' no' : ''}${r.blocked ? ' blk' : ''}"><span class="n">${r.blocked ? '·' : i + 1}</span><span class="tm">${esc(tm(r.t))}</span><span class="gap"></span><span class="w">${esc(r.w)}${r.q ? `<q>· ${esc(r.q)}</q>` : ''}</span></div>`).join('')}</div></details>` : ''}
+      ${(s.errors || []).length ? `<details class="ans"><summary>⚠️ Page errors (${s.errors.length}) for fixing</summary><div style="font:12px monospace;white-space:pre-wrap;margin-top:6px">${s.errors.map(e => esc(`${tm(e.t)} ${e.m} (${e.at})`)).join('\n')}</div></details>` : ''}
+      <details class="ans"><summary>Device</summary><div style="font-size:12px;margin-top:6px">${esc(`${s.vw}×${s.vh} · ${s.ua || ''}`)}</div></details>
+      <div class="row">${s.A ? '<button class="btn primary" id="bvOpen">▶ Open it myself</button>' : ''}<button class="btn" id="bvFix">${b.fixed ? '↺ Not fixed yet' : '✓ Mark fixed'}</button></div>
+    </div>`;
+  // his screen, scaled to fit
+  const holder = $('bvFrame'), fr = document.createElement('iframe');
+  fr.setAttribute('sandbox', 'allow-same-origin'); fr.title = 'His screen'; fr.srcdoc = s.html || '<p style="font:16px sans-serif;padding:20px">No screen copy (it was too big to keep on his device).</p>';
+  const vw = s.vw || 1024, vh = s.vh || 768; let tall = false;
+  const fit = () => { const sc = Math.min(1, holder.clientWidth / vw); let h = vh; if (tall) { try { h = Math.max(vh, fr.contentDocument.documentElement.scrollHeight); } catch (e) { } } fr.style.width = vw + 'px'; fr.style.height = h + 'px'; fr.style.transform = `scale(${sc})`; holder.style.height = Math.round(h * sc) + 'px'; };
+  fr.onload = () => { try { fr.contentWindow.scrollTo(0, s.sy || 0); } catch (e) { } fit(); };
+  holder.appendChild(fr); fit(); window.addEventListener('resize', fit, { once: true });
+  $('bvTall').onclick = () => { tall = !tall; $('bvTall').textContent = tall ? '🖥️ Show just his screen' : '📜 Show the whole page'; fit(); if (!tall) try { fr.contentWindow.scrollTo(0, s.sy || 0); } catch (e) { } };
+  body.querySelectorAll('[data-bvsnd]').forEach(btn => btn.onclick = () => {
+    const x = sounds[+btn.dataset.bvsnd]; try { speechSynthesis.cancel(); } catch (e) { } if (bugAudio) bugAudio.pause();
+    if (x.say != null) { const u = new SpeechSynthesisUtterance(x.say); u.rate = x.rate || 1; if (voice) u.voice = voice; speechSynthesis.speak(u); }
+    else if (x.src) { bugAudio = new Audio(x.src); bugAudio.play().catch(() => { }); }
+  });
+  if ($('bvOpen')) $('bvOpen').onclick = () => {
+    store('study-sheet-try', { ...s.A, id: 'try' });
+    if (s.prog) try { localStorage.setItem('sheet-progress', JSON.stringify({ ...s.prog, aid: 'try', day: new Date().toDateString(), t: Date.now() })); } catch (e) { }
+    window.open('do.html?try=1', '_blank');
+  };
+  $('bvFix').onclick = async () => { $('bvFix').disabled = true; await bugSetFixed(id, !b.fixed); close(); renderReview(true); };
 }
 $('reviewList').addEventListener('click', async e => {
+  const bv = e.target.closest('[data-bugview]'); if (bv) return openBugView(bv.dataset.bugview);
+  const bf = e.target.closest('[data-bugfix]'); if (bf) { bf.disabled = true; await bugSetFixed(bf.dataset.bugfix, bf.dataset.fixed !== '1'); return renderReview(true); }
   const rpb = e.target.closest('[data-replay]'); if (rpb) return openReplay(rpb.dataset.replay);
   const gd = e.target.closest('[data-goday]'); if (gd) { calSel = gd.dataset.goday; calMonth.review = [+calSel.slice(0, 4), +calSel.slice(5, 7) - 1]; renderReview(true); window.scrollTo(0, 0); return; }   // a try on another day
   const c = e.target.closest('[data-clip]'); if (c) return playLogClip(c.dataset.clip);
@@ -3049,7 +3148,7 @@ async function cloudPullLogs() {
   if (!cloudMember()) return;
   try {
     const since = new Date(Date.now() - 30 * 864e5).toISOString();
-    const { data, error } = await cloud.sb.from('study_log').select('key,kind,t,data').gte('t', since).order('t');
+    const { data, error } = await cloud.sb.from('study_log').select('key,kind,t,data').neq('kind', 'bugsnap').gte('t', since).order('t');   // bug screen copies are big: loaded only when opened
     if (error) throw error;
     const merge = (localKey, kind, idOf) => {
       const mine = store(localKey) || [], ids = new Set();
@@ -3058,6 +3157,7 @@ async function cloudPullLogs() {
       return out.sort((a, b) => a.t - b.t);
     };
     const mc = merge('spell-check-log', 'check', x => x.id), mf = merge('fixup-log', 'fixup', x => x.id), ms = merge('sheet-log', 'sheet', x => x.id);
+    LOG_MEM.bugs = (data || []).filter(r => r.kind === 'bug').map(r => r.data);   // 🐞 bug reports (Nov 20)
     LOG_MEM['spell-check-log'] = mc; LOG_MEM['fixup-log'] = mf; LOG_MEM['sheet-log'] = ms;   // all 30 days, in memory only (see allLog)
     putLog('spell-check-log', mc.slice(-30));
     putLog('fixup-log', mf.slice(-30));

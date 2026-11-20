@@ -387,7 +387,7 @@ body.schoolmode .tabs { display: none; }
     <div class="preview" id="preview" aria-label="Worksheet preview"></div>
   </div>
 </main>
-<script src="study-ui.js?v=1"></script>
+<script src="study-ui.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 /* First Grade Fun Worksheets — built-in data.
@@ -1298,7 +1298,7 @@ async function openDay(ds) {
   try {
     const { data: st } = await sb.from('study_state').select('key,data').in('key', ['daily', 'sheets', 'spellq', 'sightbank', 'points', 'profile', 'chores']);
     const S = Object.fromEntries((st || []).map(r => [r.key, r.data]));
-    const { data: logs } = await sb.from('study_log').select('kind,t,data').gte('t', new Date(Date.parse(addDays(ds < td ? ds : td, -31) + 'T00:00:00')).toISOString());
+    const { data: logs } = await sb.from('study_log').select('kind,t,data').neq('kind', 'bugsnap').gte('t', new Date(Date.parse(addDays(ds < td ? ds : td, -31) + 'T00:00:00')).toISOString());
     if (dayView !== ds) return;   // he moved to another day while this loaded
     const L = (logs || []).map(r => ({ kind: r.kind, ...r.data, t: r.data.t || Date.parse(r.t) }));
     const today = x => dayOf(x.t) === ds;

@@ -31,15 +31,28 @@
     location.replace(u.href);
   };
   const EMBED = new URLSearchParams(location.search).get('embed') === '1' && window.parent !== window;
+  const PAGE = location.pathname.split('/').pop() || 'index.html';
   function addReload() {
-    if (EMBED || document.getElementById('studyReload')) return;
+    if (EMBED || document.getElementById('studyTools')) return;
+    const tools = document.createElement('div'); tools.id = 'studyTools'; tools.setAttribute('data-free', '');
+    if (PAGE !== 'index.html') {   // the grown-up-only Worksheets page doesn't need it
+      const g = document.createElement('button'); g.type = 'button'; g.id = 'bugBtn'; g.innerHTML = '🐞 Something wrong?'; g.title = 'Send this screen to your grown-up';
+      g.onclick = () => window.openBugReport && window.openBugReport();
+      tools.appendChild(g);
+    }
     const own = document.getElementById('reloadBtn');
-    if (own) { own.hidden = false; own.onclick = e => { e.preventDefault(); window.hardReload(); }; own.setAttribute('data-free', ''); return; }
-    const b = document.createElement('button');
-    b.type = 'button'; b.id = 'studyReload'; b.setAttribute('data-free', ''); b.title = 'Load the newest version of this page';
-    b.innerHTML = '↻ Reload';
-    b.onclick = () => window.hardReload();
-    document.body.appendChild(b); document.body.classList.add('has-reload');
+    if (own) { own.hidden = false; own.onclick = e => { e.preventDefault(); window.hardReload(); }; own.setAttribute('data-free', ''); }
+    else {
+      const b = document.createElement('button');
+      b.type = 'button'; b.id = 'studyReload'; b.title = 'Load the newest version of this page';
+      b.innerHTML = '↻ Reload';
+      b.onclick = () => window.hardReload();
+      tools.appendChild(b);
+    }
+    if (!tools.children.length) return;
+    document.body.appendChild(tools);
+    const pad = () => { const n = document.getElementById('tod-nav'); if (n) n.style.paddingRight = (tools.offsetWidth + 24) + 'px'; };
+    pad(); setTimeout(pad, 300); window.addEventListener('load', pad);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addReload); else addReload();   // after the page's own header exists
   // do.html shows its own Reload later (after the worksheet loads): make sure it's always the hard kind
@@ -86,7 +99,7 @@
   document.addEventListener('click', e => {
     if (!e.isTrusted) return;
     const el = e.target.closest && e.target.closest(PICK); if (!el) return;
-    if (el.closest('#studyReload, #reloadBtn, .ht-btn, .replay, #replay, .rp-top, #tod-nav')) return;
+    if (el.closest('#studyTools, #bugWrap, #reloadBtn, .ht-btn, .replay, #replay, .rp-top, #tod-nav')) return;
     const kpick = el.closest('.key'); const isKey = !!kpick || el.classList.contains('kpick');
     let what = labelOf(el);
     if (el.classList.contains('ksnd')) what = '🔊 heard the letter ' + (kpick && kpick.dataset.k ? kpick.dataset.k : what);
@@ -104,13 +117,158 @@
     TAPS.add(labelOf(el), { blocked: 1 });
   };
 
+
+  /* ---------- 5. 🐞 Something's wrong? (Nov 20, 2026) ----------
+     Dylan: "a button on each page of the study for the child… I want it to show me what he sees like an interactable page. If a sound
+     is wrong, I want to be able to see that on my side. If it messes up, I want to see that… send his current page and what's wrong
+     to me. Under the parent review… 'BUG REPORTED' for each assignment so I can see and go listen."
+     Tapping 🐞 copies his screen right away (the page as it looks, with drawings as pictures, no scripts), the last things the page
+     said or played (text + recordings), his last taps, any page errors, the worksheet and his place in it. He picks what's wrong
+     (big buttons, read out loud), can hold 🎤 to say it, and sends it. Saved in the Study database: study_log `bug:<id>` (small, kind
+     'bug', shown in Parent Review) + `bugsnap:<id>` (the screen copy, kind 'bugsnap', only loaded when a grown-up opens it).
+     Not sent yet → localStorage study-bug-outbox, tried again on every Study page. Never locked by listen.js (data-free). */
+  const SOUNDS = [], ERRS = [];
+  const keepSound = o => { SOUNDS.push({ t: Date.now(), ...o }); if (SOUNDS.length > 20) SOUNDS.shift(); };
+  try {
+    if ('speechSynthesis' in window) { const ss = speechSynthesis, sp = ss.speak.bind(ss); ss.speak = u => { try { if (!(bugOpen && u.__bug)) keepSound({ say: String(u.text || '').slice(0, 300), rate: u.rate || 1 }); } catch (e) { } return sp(u); }; }
+    const P = HTMLMediaElement.prototype, pl = P.play;
+    P.play = function () { try { const src = this.currentSrc || this.src || ''; keepSound({ src: src.startsWith('data:') ? (src.length < 400000 ? src : '') : src, rec: src.startsWith('data:') }); } catch (e) { } return pl.apply(this, arguments); };
+  } catch (e) { }
+  window.addEventListener('error', e => { ERRS.push({ t: Date.now(), m: String(e.message || e.error || '').slice(0, 300), at: `${(e.filename || '').split('/').pop()}:${e.lineno || ''}` }); if (ERRS.length > 10) ERRS.shift(); });
+  window.addEventListener('unhandledrejection', e => { ERRS.push({ t: Date.now(), m: String((e.reason && (e.reason.message || e.reason)) || '').slice(0, 300), at: 'promise' }); if (ERRS.length > 10) ERRS.shift(); });
+  let bugOpen = false;
+  const sbGet = () => {
+    try { if (typeof sbClient === 'function') { const c = sbClient(); if (c) return c; } } catch (e) { }
+    try { if (typeof cloud !== 'undefined' && cloud.sb) return cloud.sb; } catch (e) { }
+    try { if (window.__bugSb) return window.__bugSb; if (window.supabase && typeof SB_URL !== 'undefined') return (window.__bugSb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'study-auth', persistSession: true, autoRefreshToken: false } })); } catch (e) { }
+    return null;
+  };
+  function screenCopy() {
+    document.querySelectorAll('input, textarea, select').forEach(el => { try { if (el.type === 'checkbox' || el.type === 'radio') el.toggleAttribute('checked', el.checked); else if (el.tagName === 'TEXTAREA') el.textContent = el.value; else if (el.tagName !== 'SELECT') el.setAttribute('value', el.value); } catch (e) { } });
+    const live = [...document.querySelectorAll('canvas')], pics = live.map(c => { try { return c.width * c.height ? c.toDataURL('image/png') : ''; } catch (e) { return ''; } });
+    const root = document.documentElement.cloneNode(true);
+    root.querySelectorAll('script, iframe, noscript, #bugWrap, #listenNote, #studyTools').forEach(n => n.remove());
+    [...root.querySelectorAll('canvas')].forEach((c, i) => { const im = document.createElement('img'); im.src = pics[i] || ''; im.className = c.className; const r = live[i] && live[i].getBoundingClientRect(); im.setAttribute('style', (c.getAttribute('style') || '') + (r ? `;width:${Math.round(r.width)}px;height:${Math.round(r.height)}px` : '')); c.replaceWith(im); });
+    const b = root.querySelector('body'); if (b) b.classList.remove('listening', 'reloading');
+    root.querySelectorAll('[on]').forEach(n => n.removeAttribute('on'));
+    root.querySelectorAll('*').forEach(n => [...n.attributes].forEach(a => { if (/^on/i.test(a.name)) n.removeAttribute(a.name); }));
+    const head = root.querySelector('head'); if (head) { const base = document.createElement('base'); base.href = location.href; head.prepend(base); }
+    return '<!DOCTYPE html>' + root.outerHTML;
+  }
+  function placeInfo() {
+    const out = { page: location.pathname.split('/').pop() || 'index.html', url: location.pathname.split('/').pop() + location.search, title: document.title };
+    try { if (typeof A !== 'undefined' && A) { out.aid = A.id; out.atitle = A.title; out.tool = A.tool; out.A = JSON.parse(JSON.stringify(A)); } } catch (e) { }
+    try { if (typeof PARTS !== 'undefined' && typeof partIdx !== 'undefined' && typeof A !== 'undefined' && A && typeof RESUMABLE === 'function' && RESUMABLE(A)) out.prog = { partIdx, step: typeof stepNo !== 'undefined' ? stepNo : 0, seed: typeof progSeed !== 'undefined' ? progSeed : null, items: typeof items !== 'undefined' ? items : [], partSum: typeof partSum !== 'undefined' ? partSum : [], extra: typeof extra !== 'undefined' ? extra : {} }; } catch (e) { }
+    try { const q = new URLSearchParams(location.search); if (!out.aid && q.get('cid')) { out.aid = q.get('cid'); out.atitle = q.get('from') || 'Spelling Fix-Up'; out.tool = 'fixup'; } } catch (e) { }
+    try { const c = ctxNow(); out.part = c.p || ''; out.q = c.q || ''; } catch (e) { }
+    if (!out.atitle) out.atitle = out.part || document.title;
+    return out;
+  }
+  const WHAT = [['sound', '🔊', 'A sound is wrong'], ['stuck', '😕', 'It’s stuck or broken'], ['right', '❌', 'It said I was wrong, but I was right'], ['other', '❓', 'Something else']];
+  function bugSay(t) { try { const u = new SpeechSynthesisUtterance(t); u.rate = 0.95; u.__bug = true; speechSynthesis.speak(u); } catch (e) { } }
+  async function openBug() {
+    if (bugOpen) return;
+    let html = '', info = {}, sounds = SOUNDS.slice(), taps = [];
+    try { html = screenCopy(); } catch (e) { html = ''; }
+    try { info = placeInfo(); } catch (e) { }
+    try { taps = TAPS.take().slice(-40); } catch (e) { }
+    const shot = { html, sounds, taps, errors: ERRS.slice(), vw: innerWidth, vh: innerHeight, sy: Math.round(scrollY), ua: navigator.userAgent, ...info };
+    try { speechSynthesis.cancel(); } catch (e) { }
+    document.querySelectorAll('audio, video').forEach(a => { try { a.pause(); } catch (e) { } });
+    bugOpen = true;
+    const w = document.createElement('div'); w.id = 'bugWrap'; w.setAttribute('data-free', ''); w.setAttribute('role', 'dialog');
+    w.innerHTML = `<div class="bug-box"><h3>🐞 Tell your grown-up what’s wrong</h3>
+      <div class="bug-picks">${WHAT.map(([k, ic, t]) => `<button type="button" data-bug="${k}"><span>${ic}</span>${t}</button>`).join('')}</div>
+      <div class="bug-rec"><button type="button" class="bug-hold">🎤 Hold and tell me <small>(you can skip this)</small></button><div class="bug-recnote"></div></div>
+      <div class="bug-acts"><button type="button" class="bug-cancel">✕ Never mind</button><button type="button" class="bug-send" disabled>📨 Send it</button></div></div>`;
+    document.body.appendChild(w);
+    bugSay('Something wrong? Tap what happened, then send it to your grown-up.');
+    let what = '', voice = null, mr = null, chunks = [], stream = null, t0 = 0;
+    const close = () => { bugOpen = false; try { speechSynthesis.cancel(); } catch (e) { } try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) { } w.remove(); };
+    w.querySelector('.bug-cancel').onclick = close;
+    w.querySelector('.bug-picks').onclick = e => { const b = e.target.closest('[data-bug]'); if (!b) return; what = b.dataset.bug; w.querySelectorAll('[data-bug]').forEach(x => x.classList.toggle('on', x === b)); w.querySelector('.bug-send').disabled = false; try { speechSynthesis.cancel(); } catch (x) { } bugSay(b.textContent.replace(/^\S+/, '')); };
+    const hold = w.querySelector('.bug-hold'), note = w.querySelector('.bug-recnote');
+    const stopRec = () => { if (!mr) return; const m = mr; mr = null; hold.classList.remove('on'); hold.innerHTML = '🎤 Hold and tell me again'; const ms = Date.now() - t0;
+      m.onstop = () => { const blob = new Blob(chunks, { type: m.mimeType || 'audio/webm' }); if (ms < 500 || !blob.size) { note.textContent = 'Hold the button the whole time you talk.'; return; } const fr = new FileReader(); fr.onload = () => { voice = fr.result; note.textContent = `✓ Got it (${(ms / 1000).toFixed(1)} s)`; }; fr.readAsDataURL(blob); };
+      try { m.stop(); } catch (e) { } };
+    hold.addEventListener('pointerdown', async e => {
+      e.preventDefault(); if (mr) return;
+      try { speechSynthesis.cancel(); } catch (x) { }
+      try { if (!stream) stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (x) { note.textContent = 'The microphone isn’t working, but you can still send it.'; return; }
+      try { chunks = []; mr = new MediaRecorder(stream, { audioBitsPerSecond: 24000 }); mr.ondataavailable = ev => ev.data && ev.data.size && chunks.push(ev.data); mr.start(); t0 = Date.now(); hold.classList.add('on'); hold.innerHTML = '🔴 Talking… let go when done'; note.textContent = ''; setTimeout(() => { if (mr && Date.now() - t0 >= 29000) stopRec(); }, 30000); } catch (x) { mr = null; }
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => hold.addEventListener(ev, stopRec));
+    hold.addEventListener('contextmenu', e => e.preventDefault());
+    w.querySelector('.bug-send').onclick = async () => {
+      if (mr) stopRec(); await new Promise(r => setTimeout(r, 300));
+      const id = Date.now().toString(36), t = Date.now(), lab = (WHAT.find(x => x[0] === what) || WHAT[3])[2];
+      let testing = false; try { testing = sessionStorage.getItem('study-testday') === '1' || new URLSearchParams(location.search).get('try') === '1'; } catch (e) { }
+      const sum = { id, t, what, label: lab, aid: shot.aid || '', title: shot.atitle || '', tool: shot.tool || '', page: shot.page, part: shot.part || '', q: shot.q || '', lastSaid: (sounds.filter(x => x.say).at(-1) || {}).say || '', voice: !!voice, testing, who: (() => { try { return localStorage.getItem('study-role') || ''; } catch (e) { return ''; } })() };
+      const snap = { ...shot, id, voice };
+      const box = w.querySelector('.bug-box'); box.innerHTML = '<h3>📨 Sending…</h3>';
+      const ok = await sendBug(sum, snap);
+      try { const L = JSON.parse(localStorage.getItem('study-bugs') || '[]'); L.push(sum); localStorage.setItem('study-bugs', JSON.stringify(L.slice(-30))); } catch (e) { }
+      box.innerHTML = `<div class="bug-done">✓</div><h3>${ok ? 'Sent! Your grown-up will look at it.' : 'Saved! It will send when the internet is back.'}</h3><p>Thank you for telling me.</p><button type="button" class="bug-send">OK 👍</button>`;
+      bugSay(ok ? 'Sent! Thank you for telling me. Your grown-up will look at it.' : 'Saved! Thank you for telling me.');
+      box.querySelector('.bug-send').onclick = close; setTimeout(() => { if (w.isConnected) close(); }, 6000);
+    };
+  }
+  async function putBug(sum, snap) {
+    const sb = sbGet(); if (!sb) return false;
+    try {
+      const { data } = await sb.auth.getSession(); if (!data || !data.session) return false;
+      const iso = new Date(sum.t).toISOString();
+      const r1 = await sb.from('study_log').upsert({ key: 'bugsnap:' + sum.id, kind: 'bugsnap', t: iso, data: snap }); if (r1.error) throw r1.error;
+      const r2 = await sb.from('study_log').upsert({ key: 'bug:' + sum.id, kind: 'bug', t: iso, data: sum }); if (r2.error) throw r2.error;
+      return true;
+    } catch (e) { console.warn('bug report', e); return false; }
+  }
+  async function sendBug(sum, snap) {
+    if (await putBug(sum, snap)) return true;
+    const box = (() => { try { return JSON.parse(localStorage.getItem('study-bug-outbox') || '[]'); } catch (e) { return []; } })();
+    box.push({ sum, snap });
+    for (const keep of [box.slice(-5), box.slice(-5).map(x => ({ sum: x.sum, snap: { ...x.snap, html: '' } })), box.slice(-5).map(x => ({ sum: x.sum, snap: { id: x.snap.id, sounds: x.snap.sounds, taps: x.snap.taps, errors: x.snap.errors } }))]) {
+      try { localStorage.setItem('study-bug-outbox', JSON.stringify(keep)); break; } catch (e) { }
+    }
+    return false;
+  }
+  window.__bugRetry = async () => {
+    let box; try { box = JSON.parse(localStorage.getItem('study-bug-outbox') || '[]'); } catch (e) { return; }
+    if (!box.length) return;
+    const left = [];
+    for (const x of box) if (!(await putBug(x.sum, x.snap))) left.push(x);
+    try { localStorage.setItem('study-bug-outbox', JSON.stringify(left)); } catch (e) { }
+  };
+  setTimeout(() => window.__bugRetry(), 5000);
+  window.addEventListener('online', () => window.__bugRetry());
+  window.openBugReport = openBug;
+
   /* ---------- 4. Styles ---------- */
   const css = document.createElement('style');
   css.textContent = `
-    #studyReload { position:absolute; top:6px; right:10px; z-index:45; font:700 15px Fredoka, Figtree, system-ui, sans-serif; color:#17201A; background:#F5B400;
+    #studyTools { position:absolute; top:6px; right:10px; z-index:45; display:flex; gap:8px; }
+    #bugBtn { font:700 15px Fredoka, Figtree, system-ui, sans-serif; color:#fff; background:#B91C1C; border:2px solid #17201A; border-radius:999px; padding:6px 12px; min-height:36px; cursor:pointer; box-shadow:0 2px 0 #17201A; }
+    body.listening #studyTools button, body.listening #bugWrap button { opacity:1 !important; }
+    #bugBtn:active { transform:translateY(2px); box-shadow:none; }
+    #bugWrap { position:fixed; inset:0; z-index:99990; background:rgba(5,10,16,.78); display:flex; align-items:center; justify-content:center; padding:16px; }
+    #bugWrap .bug-box { background:#16202B; color:#E5ECF4; border:3px solid #F87171; border-radius:24px; padding:18px 20px; width:min(620px, 100%); max-height:94vh; overflow:auto; text-align:center; font-family:Fredoka, system-ui, sans-serif; }
+    #bugWrap h3 { margin:2px 0 12px; font:700 26px Fredoka, sans-serif; }
+    #bugWrap .bug-picks { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    #bugWrap .bug-picks button { display:flex; flex-direction:column; align-items:center; gap:4px; font:700 19px Fredoka, sans-serif; color:#E5ECF4; background:#1C2836; border:3px solid #2B3A4D; border-radius:18px; padding:14px 8px; cursor:pointer; }
+    #bugWrap .bug-picks button span { font-size:36px; line-height:1; }
+    #bugWrap .bug-picks button.on { border-color:#FACC15; background:#33270C; }
+    #bugWrap .bug-rec { margin:14px 0 6px; }
+    #bugWrap .bug-hold { font:700 19px Fredoka, sans-serif; color:#fff; background:#3A1717; border:3px solid #F87171; border-radius:18px; padding:12px 18px; cursor:pointer; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:none; }
+    #bugWrap .bug-hold.on { background:#B91C1C; } #bugWrap .bug-hold small { font-size:13px; opacity:.8; }
+    #bugWrap .bug-recnote { min-height:1.3em; color:#34D399; font-weight:700; margin-top:6px; }
+    #bugWrap .bug-acts { display:flex; justify-content:space-between; gap:12px; margin-top:12px; }
+    #bugWrap .bug-acts button, #bugWrap .bug-send { font:700 20px Fredoka, sans-serif; border-radius:16px; padding:12px 20px; cursor:pointer; border:2px solid #2B3A4D; background:#1C2836; color:#E5ECF4; }
+    #bugWrap .bug-send { background:#3C7DD9; border-color:#3C7DD9; color:#fff; } #bugWrap .bug-send:disabled { opacity:.45; cursor:default; }
+    #bugWrap .bug-done { font-size:64px; color:#34D399; line-height:1; }
+    @media (max-width: 520px) { #bugBtn { font-size:13px; padding:5px 9px; } #studyReload { font-size:13px; padding:5px 10px; } }
+    #studyReload { font:700 15px Fredoka, Figtree, system-ui, sans-serif; color:#17201A; background:#F5B400;
       border:2px solid #17201A; border-radius:999px; padding:6px 14px; min-height:36px; cursor:pointer; box-shadow:0 2px 0 #17201A; }
     #studyReload:active { transform:translateY(2px); box-shadow:none; }
-    body.has-reload #tod-nav { padding-right:118px !important; }
     body.reloading::after { content:'↻ Getting the newest version…'; position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center;
       background:rgba(14,21,29,.86); color:#FDE68A; font:700 28px Fredoka, system-ui, sans-serif; }
     /* hold to talk */
