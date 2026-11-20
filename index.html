@@ -351,7 +351,10 @@ body.schoolmode .tabs { display: none; }
   <button role="tab" data-tool="seasons">Four Seasons</button>
   <button role="tab" data-tool="seacycle">Seasonal Cycle</button>
   <button role="tab" data-tool="quiz">Quiz</button>
+  <button role="tab" data-tool="raingauge">🌧️ Rain Catcher</button>
+  <button role="tab" data-tool="raindraw">Rain Gauge Drawing</button>
   <button role="tab" data-tool="relearn">🧠 Learn It Again</button>
+  <button role="tab" data-tool="pledge">🇺🇸 Pledge of Allegiance</button>
   <button role="tab" data-tool="tenmore">10 More or Less</button>
   <button role="tab" data-tool="add3">Add Three Numbers</button>
   <button role="tab" data-tool="counton">Count On</button>
@@ -942,7 +945,9 @@ function countEagles() {
 
 </script>
 <script src="lessons.js?v=21"></script>
-<script src="science.js?v=6"></script>
+<script src="science.js?v=7"></script>
+<script src="rain.js?v=1"></script>
+<script src="social.js?v=1"></script>
 <script>
 /* First Grade Fun Worksheets — the page you use to make worksheets. */
 
@@ -1237,8 +1242,8 @@ const CLASSES = [
   { id: 'music', name: 'Music', icon: '🎵', tools: [] },
   { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['daily', 'helper', 'sight', 'master', 'fixup', 'fixit', 'sound', 'story', 'readaloud', 'chains', 'heart', 'wsearch', 'fillin', 'silente'] },
   { id: 'pe', name: 'PE', icon: '🏃', tools: [] },
-  { id: 'science', name: 'Science', icon: '🔬', tools: ['weather', 'seasons', 'seacycle', 'quiz', 'relearn'] },
-  { id: 'social', name: 'Social Studies', icon: '🌎', tools: ['relearn'] },
+  { id: 'science', name: 'Science', icon: '🔬', tools: ['weather', 'seasons', 'seacycle', 'quiz', 'raingauge', 'raindraw', 'relearn'] },
+  { id: 'social', name: 'Social Studies', icon: '🌎', tools: ['pledge', 'relearn'] },
   { id: 'every', name: 'Every Day', icon: '📋', tools: ['steps', 'chores'] }
 ];
 const classOf = t => (CLASSES.find(c => c.tools.includes(t)) || CLASSES[3]).id;

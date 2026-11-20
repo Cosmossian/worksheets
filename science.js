@@ -19,12 +19,18 @@ function S_art(k, size = 120) {
   if (k === 'earth') return `<svg ${v} aria-label="Earth"><circle cx="60" cy="60" r="40" fill="#3B82F6" stroke="#1E3A8A" stroke-width="3"/><path d="M38 40 q12 -8 20 2 q-4 10 -14 8 q-8 6 -6 -10z M64 62 q14 -6 20 6 q-6 16 -18 10z" fill="#22C55E"/></svg>`;
   if (k === 'clock') return `<svg ${v} aria-label="Clock"><circle cx="60" cy="60" r="44" fill="#fff" stroke="#1E3A5F" stroke-width="5"/><line x1="60" y1="60" x2="60" y2="30" stroke="#1E3A5F" stroke-width="5" stroke-linecap="round"/><line x1="60" y1="60" x2="80" y2="70" stroke="#1E3A5F" stroke-width="4" stroke-linecap="round"/></svg>`;
   if (k === 'calendar') return `<svg ${v} aria-label="Calendar"><rect x="18" y="24" width="84" height="80" rx="8" fill="#fff" stroke="#1E3A5F" stroke-width="4"/><rect x="18" y="24" width="84" height="20" rx="6" fill="#DC2626"/>${Array.from({ length: 12 }, (_, i) => `<rect x="${26 + (i % 4) * 19}" y="${52 + Math.floor(i / 4) * 16}" width="12" height="10" fill="#CBD5E1"/>`).join('')}</svg>`;
+  if (k === 'gauge') return `<svg ${v} aria-label="Rain gauge"><path d="M30 14 H90 L66 40 H54Z" fill="#BFDBFE" stroke="#1E3A8A" stroke-width="3"/><path d="M40 38 V100 Q40 110 50 110 H70 Q80 110 80 100 V38" fill="#E0F2FE" stroke="#1E3A8A" stroke-width="3"/><path d="M42 72 H78 V100 Q78 108 70 108 H50 Q42 108 42 100Z" fill="#60A5FA"/>${[50, 62, 74, 86, 98].map(y => `<line x1="66" y1="${y}" x2="80" y2="${y}" stroke="#1E3A8A" stroke-width="2.5"/>`).join('')}</svg>`;
+  if (k === 'thermo') return `<svg ${v} aria-label="Thermometer"><rect x="50" y="10" width="20" height="82" rx="10" fill="#fff" stroke="#1E3A5F" stroke-width="4"/><circle cx="60" cy="96" r="16" fill="#DC2626" stroke="#1E3A5F" stroke-width="4"/><rect x="56" y="40" width="8" height="56" fill="#DC2626"/>${[24, 36, 48, 60, 72].map(y => `<line x1="72" y1="${y}" x2="84" y2="${y}" stroke="#1E3A5F" stroke-width="3"/>`).join('')}</svg>`;
+  if (k === 'vane') return `<svg ${v} aria-label="Wind vane"><line x1="60" y1="40" x2="60" y2="112" stroke="#334155" stroke-width="5"/><path d="M18 40 H92" stroke="#1F2937" stroke-width="5"/><path d="M92 30 L112 40 L92 50Z" fill="#1F2937"/><path d="M18 26 L34 40 L18 54Z" fill="#F59E0B"/><text x="60" y="80" text-anchor="middle" font-family="Fredoka" font-size="16" font-weight="700" fill="#334155">N</text></svg>`;
+  if (k === 'cloud') return `<svg ${v} aria-label="Cloudy and windy"><g fill="#CBD5E1" stroke="#64748B" stroke-width="3"><path d="M24 70 Q14 50 36 46 Q40 24 64 30 Q84 20 92 44 Q112 46 104 70Z"/></g><g stroke="#38BDF8" stroke-width="4" stroke-linecap="round" fill="none"><path d="M16 86 H80 q12 0 12 -10"/><path d="M28 100 H96 q12 0 12 10"/></g></svg>`;
   if (k === 'tilt') return `<svg ${v} aria-label="Tilted Earth getting sunlight"><circle cx="18" cy="60" r="14" fill="#FACC15"/><g stroke="#FACC15" stroke-width="3">${[44, 60, 76].map(y => `<line x1="34" y1="${y}" x2="62" y2="${y}"/>`).join('')}</g><circle cx="84" cy="60" r="26" fill="#3B82F6" stroke="#1E3A8A" stroke-width="3"/><line x1="70" y1="28" x2="98" y2="92" stroke="#1F2937" stroke-width="3"/></svg>`;
   return '';
 }
 // a picture for a quiz choice: by the words in it
 function S_choicePic(t) {
   const x = String(t).toLowerCase();
+  if (/rain gauge|how much rain/.test(x)) return 'gauge'; if (/thermometer|how hot/.test(x)) return 'thermo'; if (/wind vane/.test(x)) return 'vane';   // Nov 20 (The Rain Catcher)
+  if (/cloudy|windy/.test(x)) return 'cloud';
   if (/\bsummer\b/.test(x)) return 'summer'; if (/\b(fall|autumn)\b/.test(x)) return 'fall'; if (/\bwinter\b/.test(x)) return 'winter'; if (/\bspring\b/.test(x)) return 'spring';
   if (/tip|tilt/.test(x)) return 'tilt'; if (/\bsun\b/.test(x)) return 'sun'; if (/moon/.test(x)) return 'moon'; if (/mars/.test(x)) return 'mars';
   if (/day|hour/.test(x)) return 'clock'; if (/week|year|month/.test(x)) return 'calendar'; if (/earth/.test(x)) return 'earth';
@@ -89,6 +95,11 @@ Object.assign(LT, {
         'What season is very cold and snowy? | summer | winter | spring | winter // Winter is the cold, snowy season.',
         'The weather gets warmer and it rains more during which season? | fall | winter | spring | spring // In spring it gets warmer and rains more.',
         'The weather gets cooler and leaves change colors during which season? | spring | fall | summer | fall // In fall it gets cooler and the leaves change colors.'
+      ].join('\n') }) },
+      '2026-11-20': { note: 'The 3 questions of “The Rain Catcher” Lesson Assessment, with the answer key’s answers. The wrong choices are ours. Question 3 (“accept any reasonable answer”) has him say his own weather observations out loud first (recorded for you), then tap the one that is about the weather.', set: () => ({ heading: 'The Rain Catcher Quiz', questions: [
+        'What is the name of this tool you made? | a thermometer | a rain gauge | a wind vane | a rain gauge // It’s a rain gauge. It catches rain so we can measure how much fell.',
+        'What are the markings on the side of the rain gauge used for? | to measure how much rain fell | to tell how hot it is | to make it look nice | to measure how much rain fell // The marks measure how much rain has fallen, in centimeters.',
+        '!What are some of the weather observations you made today? Say yours, then tap the one that is about the weather. | It is cloudy and windy | I ate cereal | My shoes are blue | It is cloudy and windy // A weather observation tells about the weather: sun, clouds, rain, wind, hot or cold.'
       ].join('\n') }) }
     },
     own: () => ({ heading: 'My Quiz', questions: 'What season comes after winter? | spring | fall | summer | spring // Spring comes after winter.\nWhat do we see in the sky at night? | the moon | the sun | spring | the moon' }),
@@ -348,6 +359,10 @@ function S_whyFor(q) {
 // what a (wrong) choice really means, so he learns from his pick
 function S_factFor(c) {
   const x = String(c || '').toLowerCase();
+  if (/thermometer|how hot/.test(x)) return 'A thermometer measures how hot or cold it is. A rain gauge measures rain.';   // Nov 20 (The Rain Catcher)
+  if (/wind vane/.test(x)) return 'A wind vane shows which way the wind is blowing. A rain gauge measures rain.';
+  if (/look nice/.test(x)) return 'The marks aren’t there to look nice. Each mark is one centimeter, so we can count how much rain fell.';
+  if (/cereal|shoes/.test(x)) return 'That isn’t about the weather. A weather observation tells about the sky, rain, wind, or how hot or cold it is.';
   if (/week/.test(x)) return 'One week is 7 days. The Earth spins 7 times in one week.';
   if (/year|365/.test(x)) return 'One year is how long the Earth takes to go all the way around the sun. That’s 365 days, much longer than one spin!';
   if (/month/.test(x)) return 'One month is about 30 days.';
