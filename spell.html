@@ -511,7 +511,7 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 <body class="authwait">
 <script src="testclock.js?v=1"></script>
 <script src="listen.js?v=4"></script>
-<script src="study-ui.js?v=2"></script>
+<script src="study-ui.js?v=3"></script>
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
   <h1 id="appTitle">Spelling Helper</h1>
@@ -2863,7 +2863,7 @@ function bugBannerHtml(all) {
 }
 function bugCard(b) {
   return `<div class="rv-sec bug-sec${b.fixed ? ' fixed' : ''}"><h4><b class="bug-tag${b.fixed ? ' fixed' : ''}">🐞 ${b.fixed ? 'BUG FIXED' : 'BUG REPORTED'}</b> ${esc(b.title || b.page || '')}<span>${esc(timeOf(b.t))}${b.testing ? ' · from a Try it / Test day' : ''}</span></h4>
-    <div class="ln"><b>${esc(b.label || 'Something is wrong')}</b>${b.part ? ` · ${esc(b.part)}` : ''}${b.q ? ` · ${esc(b.q)}` : ''}${b.voice ? ' · 🎤 he recorded what’s wrong' : ''}</div>
+    <div class="ln"><b>${esc(b.label || 'Something is wrong')}</b>${b.part ? ` · ${esc(b.part)}` : ''}${b.q ? ` · ${esc(b.q)}` : ''}${b.voice ? ' · 🎤 he recorded what’s wrong' : ''}${b.auto ? (b.skipped ? ' · <b>he tapped Skip</b>' : ' · he didn’t skip') : ''}</div>
     ${b.lastSaid ? `<div class="ln" style="color:var(--muted)">Last thing the page said: “${esc(b.lastSaid.length > 140 ? b.lastSaid.slice(0, 138) + '…' : b.lastSaid)}”</div>` : ''}
     <div class="row" style="margin-top:8px"><button class="btn" data-bugview="${esc(b.id)}">👀 See his screen &amp; listen</button><button class="btn" data-bugfix="${esc(b.id)}" data-fixed="${b.fixed ? '1' : ''}">${b.fixed ? '↺ Not fixed yet' : '✓ Mark fixed'}</button></div></div>`;
 }
@@ -3006,6 +3006,9 @@ async function parentTestDay() {
   askTestKind(() => { sessionStorage.removeItem('study-testday-parent'); location.href = 'index.html'; }, day);
 }
 /* Test day: "Skip this part" in his daily routine (Look & Listen → practice → Sight Word Practice → quiz) */
+/* ⏱️ Stuck 5 minutes (study-ui.js): on during Look & Listen and practice on his device (not the quiz, where skipping would mark words wrong) */
+window.STUCK_ON = () => { try { return !!daily && window.LISTEN_ON() && (daily.phase === 'look' || daily.phase === 'practice') && ['look', 'play'].some(x => !$(x).hidden); } catch (e) { return false; } };
+window.STUCK_SKIP = () => skipDailyPart();
 function skipDailyPart() {
   if (!daily) return;
   talkGen++; sayEpoch++; if (canTalk) speechSynthesis.cancel();

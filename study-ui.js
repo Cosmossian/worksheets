@@ -243,6 +243,63 @@
   window.addEventListener('online', () => window.__bugRetry());
   window.openBugReport = openBug;
 
+  /* ---------- 6. ⏱️ Stuck for 5 minutes → Skip + automatic bug report (Nov 20, 2026) ----------
+     Dylan: "a skip button to appear if he's been on the same page for 5 minutes with nothing being accomplished. So if it's stuck…
+     I want to get a 'BUG REPORT' so I can see it exactly as it is and see what wasn't working… That way he doesn't have to bother me."
+     Pages say when he's mid-work (window.STUCK_ON) and how to skip (window.STUCK_SKIP). "Something accomplished" = the screen moved on
+     (part, question number, step, answers saved, letters filled, a green answer) or he drew on a pad. Taps alone don't count. Time only
+     counts while the page is on screen (an iPad asleep doesn't add up). At 5 minutes: a bug report is sent by itself (his screen exactly
+     as it is, the sounds, taps, errors; label "Stuck for 5 minutes") and a big ⏭ Skip button shows. Tapping it skips the part and adds
+     "he skipped it" to the report. If he gets going again, the button goes away. */
+  const STUCK_MS = (() => { try { return +sessionStorage.getItem('study-stuck-ms') || 5 * 60 * 1000; } catch (e) { return 5 * 60 * 1000; } })();   // sessionStorage study-stuck-ms only for testing
+  let stuckSig = '', stuckFor = 0, stuckLast = Date.now(), stuckBug = null, drew = 0;
+  document.addEventListener('pointermove', e => { if (e.buttons && e.target && e.target.tagName === 'CANVAS') drew = Date.now(); }, true);
+  function sigNow() {
+    const q = sel => { const el = document.querySelector(sel); return el ? el.textContent.trim().slice(0, 60) : ''; };
+    let x = location.search + '|' + q('#app .part-title h2, main:not([hidden]) .part-title h2') + '|' + q('#app .count, main:not([hidden]) .count') + '|' + q('#app .big-word');
+    try { if (typeof partIdx !== 'undefined') x += '|p' + partIdx; } catch (e) { }
+    try { if (typeof stepNo !== 'undefined') x += '|s' + stepNo; } catch (e) { }
+    try { if (typeof items !== 'undefined' && items) x += '|i' + items.length; } catch (e) { }
+    try { if (typeof daily !== 'undefined' && daily) x += `|d${daily.phase}${daily.i}.${(daily.results || []).length}.${daily.wi || 0}`; } catch (e) { }
+    try { x += '|' + [...document.querySelectorAll('.lbox')].map(b => b.textContent.trim()).join(''); } catch (e) { }
+    try { x += '|ok' + TAPS.list.filter(r => r.ok === 1).length; } catch (e) { }
+    return x;
+  }
+  function hideSkip() { const b = document.getElementById('stuckSkip'); if (b) b.remove(); }
+  async function stuckFire() {
+    let info = {}, html = ''; try { html = screenCopy(); } catch (e) { } try { info = placeInfo(); } catch (e) { }
+    const id = Date.now().toString(36), t = Date.now();
+    let testing = false; try { testing = sessionStorage.getItem('study-testday') === '1' || new URLSearchParams(location.search).get('try') === '1'; } catch (e) { }
+    const sounds = SOUNDS.slice();
+    stuckBug = { id, t, what: 'stuck', label: '⏱️ Stuck for 5 minutes (sent by itself)', auto: true, aid: info.aid || '', title: info.atitle || '', tool: info.tool || '', page: info.page, part: info.part || '', q: info.q || '', lastSaid: (sounds.filter(x => x.say).at(-1) || {}).say || '', voice: false, testing, who: (() => { try { return localStorage.getItem('study-role') || ''; } catch (e) { return ''; } })() };
+    const snap = { html, sounds, taps: (() => { try { return TAPS.take().slice(-40); } catch (e) { return []; } })(), errors: ERRS.slice(), vw: innerWidth, vh: innerHeight, sy: Math.round(scrollY), ua: navigator.userAgent, ...info, id, voice: null };
+    try { const L = JSON.parse(localStorage.getItem('study-bugs') || '[]'); L.push(stuckBug); localStorage.setItem('study-bugs', JSON.stringify(L.slice(-30))); } catch (e) { }
+    const b = document.createElement('button'); b.type = 'button'; b.id = 'stuckSkip'; b.setAttribute('data-free', '');
+    b.innerHTML = '⏭ Stuck? Skip this part<small>Your grown-up will see what happened</small>';
+    b.onclick = async () => {
+      b.disabled = true; b.innerHTML = '⏭ Skipping…';
+      try { TAPS.add('⏭ Skipped this part (stuck 5 minutes)'); } catch (e) { }
+      if (stuckBug) { stuckBug.skipped = true; stuckBug.skippedAt = Date.now(); try { const L = JSON.parse(localStorage.getItem('study-bugs') || '[]').map(x => x.id === stuckBug.id ? stuckBug : x); localStorage.setItem('study-bugs', JSON.stringify(L)); } catch (e) { } putBugSum(stuckBug); }
+      hideSkip(); stuckFor = 0; stuckSig = '';
+      try { window.STUCK_SKIP && window.STUCK_SKIP(); } catch (e) { console.warn(e); }
+    };
+    document.body.appendChild(b);
+    sendBug(stuckBug, snap);
+  }
+  async function putBugSum(sum) {   // update just the summary (he skipped)
+    const sb = sbGet(); if (!sb) return;
+    try { await sb.from('study_log').upsert({ key: 'bug:' + sum.id, kind: 'bug', t: new Date(sum.t).toISOString(), data: sum }); } catch (e) { }
+  }
+  setInterval(() => {
+    const now = Date.now(), dt = now - stuckLast; stuckLast = now;
+    let on = false; try { on = typeof window.STUCK_ON === 'function' && !!window.STUCK_ON(); } catch (e) { }
+    if (!on || document.hidden || bugOpen) { if (!on) { stuckFor = 0; stuckSig = ''; hideSkip(); } return; }
+    const sig = sigNow();
+    if (sig !== stuckSig || now - drew < 5000) { stuckSig = sig; stuckFor = 0; if (document.getElementById('stuckSkip')) { hideSkip(); stuckBug = null; } return; }
+    if (dt < 15000) stuckFor += dt;   // a long gap = the iPad was asleep
+    if (stuckFor >= STUCK_MS && !document.getElementById('stuckSkip')) stuckFire();
+  }, 2000);
+
   /* ---------- 4. Styles ---------- */
   const css = document.createElement('style');
   css.textContent = `
@@ -250,6 +307,10 @@
     #bugBtn { font:700 15px Fredoka, Figtree, system-ui, sans-serif; color:#fff; background:#B91C1C; border:2px solid #17201A; border-radius:999px; padding:6px 12px; min-height:36px; cursor:pointer; box-shadow:0 2px 0 #17201A; }
     body.listening #studyTools button, body.listening #bugWrap button { opacity:1 !important; }
     #bugBtn:active { transform:translateY(2px); box-shadow:none; }
+    #stuckSkip { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:9000; display:flex; flex-direction:column; align-items:center; gap:2px;
+      font:700 24px Fredoka, sans-serif; color:#17201A; background:#FACC15; border:3px solid #17201A; border-radius:20px; padding:12px 26px; cursor:pointer; box-shadow:0 5px 0 #17201A; animation:stuckin .4s ease-out; }
+    #stuckSkip small { font:600 14px Fredoka, sans-serif; } #stuckSkip:active { transform:translateX(-50%) translateY(3px); box-shadow:0 2px 0 #17201A; }
+    @keyframes stuckin { from { transform:translateX(-50%) translateY(120%); } }
     #bugWrap { position:fixed; inset:0; z-index:99990; background:rgba(5,10,16,.78); display:flex; align-items:center; justify-content:center; padding:16px; }
     #bugWrap .bug-box { background:#16202B; color:#E5ECF4; border:3px solid #F87171; border-radius:24px; padding:18px 20px; width:min(620px, 100%); max-height:94vh; overflow:auto; text-align:center; font-family:Fredoka, system-ui, sans-serif; }
     #bugWrap h3 { margin:2px 0 12px; font:700 26px Fredoka, sans-serif; }
