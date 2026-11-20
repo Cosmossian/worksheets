@@ -291,6 +291,26 @@ body.kidgrown #acctCard, body.kidgrown #dailyCard { display: none !important; }
 .kid-extra a small, .kid-extra .kbtn small { color: #FDE68A; }
 .kid-extra h3 { color: #FDBA74; }
 .kid-shelf { margin-top: 10px; gap: 10px; }
+/* Nov 20 (Dylan: "if things can fit in columns like side by side that's fine too"): on a wide screen (his iPad sideways, a computer)
+   the start screen spreads out: Step 1's subjects side by side across the top, then the later steps as columns of cards.
+   Narrow screens (phones, iPad upright) stay one column. */
+.kid-steps { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; }
+@media (min-width: 900px) {
+  .kidhome { max-width: 1240px; }
+  .kidhome > p, .kid-prog { max-width: 760px; }
+  .kid-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: start; gap: 18px; }
+  .kid-steps > .kid-sheets { max-width: none; background: var(--surface); border: 2px solid var(--line); border-radius: 22px; padding: 6px 14px 18px; height: 100%; }
+  .kid-steps > .kid-work { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; align-items: start; }
+  .kid-steps > .kid-work > h3 { grid-column: 1 / -1; }
+  .kid-steps .kbtn, .kid-steps #kidStart, .kid-shelf .kbtn { min-width: 0 !important; width: 100%; font-size: 24px; padding: 16px 18px; min-height: 76px; }
+  .kid-steps .kbtn small, .kid-steps #kidStart small { white-space: normal; }
+  .kid-steps .kid-h { font-size: 22px; margin-top: 8px; }
+  .kid-steps #kidMicSlot { max-width: 100% !important; }
+  .kid-shelf { max-width: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  .kid-shelf > h3 { grid-column: 1 / -1; }
+  .kid-shelf .kbtn.done { font-size: 18px; padding: 10px 56px 10px 16px; min-height: 0; }
+  #kidChores { max-width: 460px; }
+}
 /* Nov 20 revamp: his start screen is all buttons (no links), in a set order with locked steps, worksheets grouped by subject */
 .kid-sheets .kbtn { cursor: pointer; position: relative; box-shadow: 0 5px 0 #1E3A8A; }
 .kid-sheets .kbtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #1E3A8A; }
@@ -478,7 +498,7 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 </head>
 <body class="authwait">
 <script src="testclock.js?v=1"></script>
-<script src="listen.js?v=3"></script>
+<script src="listen.js?v=4"></script>
 <script src="study-ui.js?v=1"></script>
 <script>try { if (localStorage.getItem('study-role') === 'kid') document.body.classList.add('kid'); } catch (e) { }   /* his login: no links out of the Study in the top bar */</script>
 <header class="app-header">
@@ -696,15 +716,19 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
   <h2 id="kidHi">Hi! 👋</h2>
   <p id="kidMsg">Today’s words are ready.</p>
   <div class="kid-prog" id="kidProg" hidden></div>
-  <div class="kid-sheets" id="kidSheets" hidden></div>
+  <div class="kid-steps" id="kidSteps">
+  <div class="kid-sheets kid-work" id="kidSheets" hidden></div>
   <div class="kid-sheets kid-extra" id="kidExtra" hidden></div>
   <div class="kid-sheets kid-quiz" id="kidQuiz" hidden></div>
   <div class="kid-sheets kid-test" id="kidTests" hidden></div>
+  <div class="kid-sheets kid-words" id="kidWordsBox">
   <h3 class="kid-h" id="kidWordsH" hidden>Last: today’s sight words</h3>
   <div class="done-today" id="kidDone" hidden></div>
   <div id="kidMicSlot" style="max-width:560px;margin:0 auto 14px"></div>
   <button class="btn big primary" id="kidStart">Start today’s words</button>
+  </div>
   <div class="kid-sheets kid-mtest" id="kidMtest" hidden></div>
+  </div>
   <div class="kid-sheets kid-shelf" id="kidShelf" hidden></div>
   <div class="kid-sheets" id="kidChores" hidden></div>
   <div class="kid-hold"><button class="grownup" id="kidGrown">🔒 Grown-up screen <small>(hold)</small></button><button class="grownup" id="kidSwitch">↺ Switch user <small>(hold)</small></button><button class="grownup" id="kidUnlock" hidden>🔓 Any order today <small>(hold)</small></button><button class="grownup" id="kidTest">🧪 Test day <small>(hold)</small></button></div>
@@ -1372,7 +1396,7 @@ if (!canTalk) $('voiceWarn').hidden = false;
 
 let grownMode = false;
 // listen.js (Nov 18): lock taps while the page talks only on his login (or a grown-up's Test day), not on grown-up screens
-window.LISTEN_ON = () => { try { return (cloud.role === 'kid' && !grownMode) || sessionStorage.getItem('study-testday-parent') === '1'; } catch (e) { return false; } };
+window.LISTEN_ON = () => { try { const kid = cloud.role === 'kid' || (!cloud.role && localStorage.getItem('study-role') === 'kid'); return (kid && !grownMode) || sessionStorage.getItem('study-testday-parent') === '1'; } catch (e) { return false; } };   // Nov 20: also his device when the sign-in hasn't answered yet (offline), so the lock never quietly turns off
 $('grownDone').onclick = () => { grownMode = false; show('kidhome'); window.scrollTo(0, 0); };
 function placeMicTest(id) {   // his start screen gets the same mic test (sensitivity is per device), when Look & Listen uses the mic
   const d = store('spell-daily') || {}, onKid = id === 'kidhome' && d.on !== false && d.look !== false && d.mic !== false && dailyWords().length > 0;
@@ -3410,6 +3434,7 @@ function renderKidHome() {
   $('kidStart').setAttribute('aria-disabled', wLocked ? 'true' : 'false');
   $('kidStart').innerHTML = wLocked ? `🔒 Start today’s words<small class="lk">After your ${esc(ws.lockedBy.short)}</small>` : `Start today’s words${wHere && present.length > 1 ? '<b class="here">Start here ➜</b>' : ''}`;
   $('kidMicSlot').hidden = !wordsTodo || wLocked;
+  $('kidWordsBox').hidden = !wordsTodo;
   const href2 = a => a.tool === 'weather' ? '#weather' : href(a);
   const doneLine = (a, d) => { const g = d.grade; return g ? `${g.letter} (${g.pct}%)` : a.tool === 'weather' ? `day ${d.extra && d.extra.day} done today` : ''; };
   const shelf = [...(wordsDone ? [(() => { const r = today.at(-1), g = r.grade || gradeFor(r.results.filter(x => x.ok).length, r.results.length);

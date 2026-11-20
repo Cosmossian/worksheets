@@ -8,7 +8,7 @@
 (function () {
   const FREE = '.app-header, .skip-part, #skipPart, [data-free], body > nav, .tod-bar, #grownDone, .ph-wrap, #studyReload, #reloadBtn';
   const RELEASE = /^(pointerup|pointercancel|mouseup|touchend|touchcancel|lostpointercapture)$/;   // Nov 20: letting go of the hold-to-talk button always works
-  const MAX_MS = 20000;
+  const MAX_MS = 45000;   // Nov 20: was 20 s, which unlocked long read-alouds (the Pledge, a story page) part way. Each spoken line already has its own time limit.
   const playing = new Set();
   const P = HTMLMediaElement.prototype, play0 = P.play;
   P.play = function () {
@@ -31,8 +31,11 @@
         const off = () => { utts.delete(u); clearTimeout(u.__lfT); };
         const guess = () => 900 + String(u.text || '').length * 85 / Math.max(0.3, u.rate || 1);
         u.addEventListener('end', off); u.addEventListener('error', off);
-        u.addEventListener('start', () => { clearTimeout(u.__lfT); u.__lfT = setTimeout(off, guess() + 1500); });
-        u.__lfT = setTimeout(off, guess() + 4000);
+        // Nov 20: a line waiting in line behind another one (word, then its sentence) stays locked until it has played too.
+        // Before, its timer could run out while it waited, so the second line played with the buttons already unlocked.
+        u.addEventListener('start', () => { u.__lfOn = true; utts.add(u); clearTimeout(u.__lfT); u.__lfT = setTimeout(off, guess() * 2 + 2000); });   // Nov 20: roomier (a slow voice used to unlock before it finished); its end still unlocks right away
+        const notYet = () => { if (u.__lfOn || !utts.has(u)) return; if ([...utts].some(x => x !== u && x.__lfOn)) { u.__lfT = setTimeout(notYet, 1000); return; } off(); };
+        u.__lfT = setTimeout(notYet, guess() + 4000);
         utts.add(u);
       } catch (e) { }
       return speak0(u);
@@ -41,7 +44,17 @@
   }
   window.LISTEN_ON = () => true;   // pages can replace this (spell.html: only his login)
   const echo = () => { try { return typeof keyUtt !== 'undefined' && !!keyUtt; } catch (e) { return false; } };   // the letter after a key tap
+  /* Nov 20 (Dylan: "all audio LISTENED to before you can push a button… without creating long gaps. Just a 'wait and listen'"):
+     the lock stays on for a short moment (TAIL) after the audio stops. Pages often play two things with a tiny pause between them
+     (a word, then its sentence; "a", then "ape"), and a tap in that pause used to skip the second one. */
+  const TAIL = 400;
+  let lastTalk = 0;
   const talking = () => {
+    const t = talking0();
+    if (t) { lastTalk = Date.now(); return true; }
+    return !echo() && Date.now() - lastTalk < TAIL;
+  };
+  const talking0 = () => {
     if (echo()) return false;
     const tts = utts.size > 0;   // not speechSynthesis.speaking: it sticks on iPads (see above)
     for (const a of [...playing]) if (a.paused || a.ended) playing.delete(a);
