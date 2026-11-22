@@ -228,7 +228,8 @@ const LT = {
       '2026-11-16': { note: 'Same letter, words and sentences as the school sheet “Lowercase s”.', set: () => ({ letter: 's', words: 'see, sub, snap', trace: 'The shop sells salt.', copy: 'Sally the seal sings a song.' }) },
       '2026-11-17': { note: 'Same letter, words and sentences as the school sheet “Uppercase S”.', set: () => ({ letter: 'S', words: 'Sam, Sophia, Sal', trace: 'Sean sat in the snow.', copy: 'Silly Steve spits seeds.' }) },
       '2026-11-18': { note: 'Same letter, words and sentences as the school sheet “Lowercase x”.', set: () => ({ letter: 'x', words: 'x-ray, xylophone, xerox', trace: 'Xu has an extra axe.', copy: 'Xavier has a wax fox.' }) },
-      '2026-11-19': { note: 'Same letter, names and sentences as the school sheet “Uppercase X”.', set: () => ({ letter: 'X', words: 'Xander, Xena, Xu', trace: 'Xena x-rayed a fish.', copy: 'Xaiden xeroxed a text.' }) }
+      '2026-11-19': { note: 'Same letter, names and sentences as the school sheet “Uppercase X”.', set: () => ({ letter: 'X', words: 'Xander, Xena, Xu', trace: 'Xena x-rayed a fish.', copy: 'Xaiden xeroxed a text.' }) },
+      '2026-11-23': { note: 'Same letter, words and sentences as the school sheet “Lowercase v”.', set: () => ({ letter: 'v', words: 'very, visit, van', trace: 'Vera likes vanilla.', copy: 'The violet vase is velvet.' }) }
     },
     own: () => ({ letter: 'R', words: 'Rosa, Ryan, Rudy', trace: 'Rex ran to the rug.', copy: 'Rita reads a red book.' }),
     fields: () => [
@@ -246,6 +247,7 @@ const LT = {
     name: 'Spelling Sort', cls: 'ela',
     help: 'Sort spelling words under headings (like the endings –ff, –ll, –ss, –zz), spell each one when he hears it, then say sentences with 3 of them out loud. Printed, it has word cards to cut out, the chart and the activity.',
     schools: {
+      '2026-11-23': { note: 'Same headings and words as the school sheet “The Wonderful Brocade” (B): Apply Spelling List 4. Page 1: the 8 new words (clock, lack, flock, rack, sick, stuck, tick, truck): he spells each one when he hears it and puts it in the chart. Page 2: the 12 Spelling List 4 cutouts go into a second chart by dragging (the sheet’s “glue”).', set: () => ({ heading: 'Spelling List 4: Sort the New Words', heads: '–ack, –ick, –ock, –uck', words: 'clock, lack, flock, rack, sick, stuck, tick, truck', glue2: 'lock, luck, pack, pick, back, quack, buck, quick, dock, rock, lick, tuck', spell: true, say: false }) },
       '2026-11-19': { note: 'Same headings and words as the school sheet “The Wonderful Brocade” (A): Practice Spelling List 4. He spells each word, sorts it by its ending, then says sentences with 3 of the words (the sheet’s “Say sentences” choice).', set: () => ({ heading: 'Spelling List 4', heads: '–ack, –ick, –ock, –uck', words: 'lock, luck, pack, pick, back, quack, buck, quick, dock, rock, lick, tuck', spell: true, say: true }) },
       '2026-11-12': { need: c => String(c.hunt || '').trim() ? '' : 'Paste the word hunt paragraph from the school sheet.', note: 'Same headings and words as the school sheet “The Poor Man’s Reward” (C): Apply Spelling List 3: the word hunt, then sort and glue the chart. The word hunt paragraph isn’t built in: copy it from the school PDF into the Word hunt box.', set: () => ({ heading: 'Spelling List 3: Word Hunt', heads: '–ff, –ll, –ss, –zz', words: 'miss, off, pass, pull, boss, buzz, fizz, less, small, still, stuff, tell', hunt: '', spell: false, glue: true, say: false }) },
       '2026-11-10': { note: 'Same headings and words as the school sheet “The Poor Man’s Reward” (B): Practice Spelling List 3.', set: () => ({ heading: 'Spelling List 3', heads: '–ff, –ll, –ss, –zz', words: 'miss, off, pass, pull, boss, buzz, fizz, less, small, still, stuff, tell', spell: true, say: true }) }
@@ -255,6 +257,7 @@ const LT = {
       { k: 'heading', label: 'Title', type: 'text' },
       { k: 'heads', label: 'Headings', type: 'text', help: 'Separate with commas. Endings like –ff (or ff) match words that end with those letters; anything else matches words that have them.' },
       { k: 'words', label: 'Spelling words', type: 'area', rows: 3, help: 'Separate with commas.' },
+      { k: 'glue2', label: 'Spelling cutouts for a second chart (optional)', type: 'area', rows: 2, help: 'Separate with commas. After the first chart, he drags each of these into a new chart under its heading (no spelling). Leave empty to skip.' },
       { k: 'hunt', label: 'Word hunt paragraph (optional)', type: 'area', rows: 4, help: 'He taps every word that ends like a heading. Leave empty to skip.' },
       { k: 'spell', label: 'Spell each word when he hears it, then drag it into the chart', type: 'check' },
       { k: 'glue', label: 'Drag each word into the chart (without spelling it first)', type: 'check' },
@@ -265,9 +268,9 @@ const LT = {
     data: c => {
       const heads = L_list(c.heads).map(h => ({ label: h, end: /^[-–—]/.test(h), k: h.replace(/^[-–—]\s*/, '').toLowerCase() })).filter(h => h.k);
       const of = w => { const x = w.toLowerCase(); let i = heads.findIndex(h => h.end && x.endsWith(h.k)); if (i < 0) i = heads.findIndex(h => !h.end && x.includes(h.k)); return i; };
-      return { heading: LT.sort.title(c), heads: heads.map(h => h.label), words: L_list(c.words).map(w => ({ w: w.toLowerCase(), h: of(w) })), hunt: String(c.hunt || '').trim(), spell: !!c.spell, glue: !!c.glue, say: !!c.say };
+      return { heading: LT.sort.title(c), heads: heads.map(h => h.label), words: L_list(c.words).map(w => ({ w: w.toLowerCase(), h: of(w) })), glue2: L_list(c.glue2 || '').map(w => ({ w: w.toLowerCase(), h: of(w) })), hunt: String(c.hunt || '').trim(), spell: !!c.spell, glue: !!c.glue, say: !!c.say };
     },
-    check: d => d.heads.length < 2 ? 'Type at least 2 headings.' : !d.words.length ? 'Type the spelling words.' : (d.words.filter(x => x.h < 0).length ? `These don’t fit a heading: ${d.words.filter(x => x.h < 0).map(x => x.w).join(', ')}.` : '')
+    check: d => { const bad = [...d.words, ...(d.glue2 || [])].filter(x => x.h < 0); return d.heads.length < 2 ? 'Type at least 2 headings.' : !d.words.length ? 'Type the spelling words.' : (bad.length ? `These don’t fit a heading: ${bad.map(x => x.w).join(', ')}.` : ''); }
   },
   readaloud: {
     name: 'Read Story for Class Recording', cls: 'phonics',
@@ -316,7 +319,8 @@ const LT = {
     name: 'Draw and Write', cls: 'ela',
     help: 'He draws a picture about a story, then finishes each sentence starter in his own words: he says it out loud first (saved), then writes it on the lines. Nothing is graded; you see his drawing, his voice and his writing in Parent Review.',
     schools: {
-      '2026-11-17': { note: 'Same task as the school sheet “Respond: The Water of Life” (B): draw your favorite character, then finish the two sentences.', set: () => ({ heading: 'Respond: “The Water of Life”', prompt: 'Draw a picture of your favorite character from the story.', starters: 'My favorite character is ___.\nI like this character because ___.', say: true }) }
+      '2026-11-17': { note: 'Same task as the school sheet “Respond: The Water of Life” (B): draw your favorite character, then finish the two sentences.', set: () => ({ heading: 'Respond: “The Water of Life”', prompt: 'Draw a picture of your favorite character from the story.', starters: 'My favorite character is ___.\nI like this character because ___.', say: true }) },
+      '2026-11-23': { note: 'Same task as the school sheet “Respond: The Wonderful Brocade” (B): draw the brocade he would make. The sheet is only the drawing; the one sentence after it (“My brocade has ___.”, said out loud, then written) is ours so you hear him describe it. Clear the Sentence starters box to leave it out.', set: () => ({ heading: 'Respond: “The Wonderful Brocade”', prompt: 'The old woman weaves a beautiful brocade. If you made a brocade, what would it look like? Draw a picture of your brocade.', starters: 'My brocade has ___.', say: true }) }
     },
     own: () => ({ heading: 'My Favorite Part', prompt: 'Draw a picture of your favorite part of the story.', starters: 'My favorite part is when ___.\nI liked it because ___.', say: true }),
     fields: () => [
@@ -671,7 +675,13 @@ LT.sort.print = (d, exact) => {
     + `<div style="font-size:21px;line-height:1.5;padding-left:40px"><p><b>🎭 Act it out.</b> Pick three spelling words and act each one out. Can someone guess the word?</p><p><b>🗣️ Say sentences.</b> Pick three spelling words. Make up a sentence with each one and say it out loud to someone.</p></div>`;
   const p0 = d.hunt ? L_sheetOf(nameDate() + title(d.heading, 'Word Hunt', star('#0F766E'), star('#DB2777')) + L_h(1, '#0F766E', `Word hunt! Circle the words that end with ${L_esc(d.heads.join(', '))}.`)
     + `<div style="font:400 30px/2 Andika,sans-serif;padding:10px 30px">${L_esc(d.hunt)}</div>`, exact, { gap: 14 }) : '';
-  return p0 + L_sheetOf(p1, exact, { gap: 14 }) + L_sheetOf(p2, exact, { gap: 14 });
+  // Nov 22, 2026: the (B) sheet's second chart: cut out the spelling words (glue2), sort them, glue them under the headings
+  const g = d.glue2 || [], gper = d.heads.map((_, hi) => g.filter(x => x.h === hi).length), grows = Math.max(3, ...gper) + 1;
+  const p3 = g.length ? L_sheetOf(nameDate() + L_h(3, '#0F766E', 'Cut out your spelling words. Sort them by the word family at the end of each word.')
+    + `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">${g.map(x => card(x.w)).join('')}</div>`
+    + L_h(4, '#1D4ED8', 'Glue each spelling word under the correct heading.')
+    + `<table style="width:100%;border-collapse:collapse;font:700 26px Fredoka,sans-serif"><tr>${d.heads.map((h, hi) => `<th style="border:2px solid #1F2937;padding:8px;color:${L_COL[hi % 8]}">${L_esc(h)}</th>`).join('')}</tr>${Array.from({ length: grows }, () => `<tr>${d.heads.map(() => '<td style="border:2px solid #1F2937;height:54px"></td>').join('')}</tr>`).join('')}</table>`, exact, { gap: 14 }) : '';
+  return p0 + L_sheetOf(p1, exact, { gap: 14 }) + L_sheetOf(p2, exact, { gap: 14 }) + p3;
 };
 /* Fix My Spelling Mistakes: the words he missed spelling on his on-screen worksheets (what each result calls `missed`, with what he
    typed), from the Study database and this device. days = 0 → today only. */
@@ -1791,7 +1801,7 @@ function L_dragTo(word, sel, right, hint, { names = null, prompt = null, sayIt =
 }
 LT.sort.run = () => {
   const d = SD, H = d.heads, run = Date.now().toString(36);
-  const chart = filled => `<div class="ls-grid small" id="sortChart" style="margin-top:12px">${H.map((h, hi) => `<div class="c" data-h="${hi}"><b style="background:${L_COL[hi % 8]}">${L_esc(h)}</b>${d.words.filter(x => x.h === hi).map(x => `<span>${filled.has(x.w) ? L_esc(x.w) : '&nbsp;'}</span>`).join('')}</div>`).join('')}</div>`;
+  const chart = (filled, W = d.words) => `<div class="ls-grid small" id="sortChart" style="margin-top:12px">${H.map((h, hi) => `<div class="c" data-h="${hi}"><b style="background:${L_COL[hi % 8]}">${L_esc(h)}</b>${W.filter(x => x.h === hi).map(x => `<span>${filled.has(x.w) ? L_esc(x.w) : '&nbsp;'}</span>`).join('')}</div>`).join('')}</div>`;
   const ending = x => H[x.h].replace(/^[-–—]\s*/, '');
   const sortP = async () => {
     const pool = L_shuf(d.words);
@@ -1804,26 +1814,27 @@ LT.sort.run = () => {
     }));
     partDone(firstTry('Sort the Words') + '.');
   };
-  const spellP = async () => {
-    const pool = L_shuf(d.words), filled = new Set();
+  // Nov 22, 2026: also runs for the second chart (glue2, the (B) sheet's spelling cutouts): W = those words, spell off, own part name
+  const spellP = async (W = d.words, spell = d.spell, PN = PN1) => {
+    const pool = L_shuf(W), filled = new Set();
     await each(pool.length, i => new Promise(async done => {
       const x = pool[i];
-      app.innerHTML = L_exactTag() + head(d.spell ? 'Listen to the word, then spell it. It goes in the chart!' : 'Put each spelling word in the chart, under the right heading.') + L_count(i, pool.length, 'Word') + (d.spell ? `<div class="hidden-word">Listen 👂</div>` : '') + `<button class="btn" id="hearW">${SPK}Hear the word</button><div id="io"></div>` + chart(filled);
+      app.innerHTML = L_exactTag() + head(spell ? 'Listen to the word, then spell it. It goes in the chart!' : 'Put each spelling word in the chart, under the right heading.') + L_count(i, pool.length, 'Word') + (spell ? `<div class="hidden-word">Listen 👂</div>` : '') + `<button class="btn" id="hearW">${SPK}Hear the word</button><div id="io"></div>` + chart(filled, W);
       $('hearW').onclick = () => playWord(x.w); playWord(x.w);
-      if (d.spell) {
+      if (spell) {
         const r = await freeType({ answer: x.w, hint: t => { const m = L_soundAlike(t, x.w); return m ? `Good listening, ${t} sounds right! But it’s spelled with ${m.want}.` : 'Not quite. Say it slowly and listen to the end of the word. Try again.'; } });
         mark(PN, `Spell “${x.w}”`, r.ok, r.typed, x.w, x.w, { text: `He heard “${x.w}” and spelled it.` }, r.attempts);
       }
       const picks = await L_placeBubble(x.w, H, x.h, `Look at how ${x.w} ends: ${ending(x)}.`);
-      filled.add(x.w); app.querySelector('#sortChart').outerHTML = chart(filled);
-      mark(PN, `Put “${x.w}” in its column`, picks.length === 1, picks[0], H[x.h], null, { text: d.spell ? `He spelled “${x.w}”, then put it under a heading.` : `He put “${x.w}” under a heading.`, choices: H }, picks);
+      filled.add(x.w); app.querySelector('#sortChart').outerHTML = chart(filled, W);
+      mark(PN, `Put “${x.w}” in its column`, picks.length === 1, picks[0], H[x.h], null, { text: spell ? `He spelled “${x.w}”, then put it under a heading.` : `He put “${x.w}” under a heading.`, choices: H }, picks);
       await wait(700); done();
     }));
-    app.innerHTML = L_exactTag() + head('Your chart is done!') + chart(new Set(d.words.map(x => x.w)));
+    app.innerHTML = L_exactTag() + head('Your chart is done!') + chart(new Set(W.map(x => x.w)), W);
     await wait(1500);
     partDone(firstTry(PN) + '.');
   };
-  const PN = d.spell ? 'Write the Chart' : 'Glue the Chart';
+  const PN1 = d.spell ? 'Write the Chart' : 'Glue the Chart';
   // Word Hunt (the (C) sheet): tap every word in the paragraph that ends like one of the headings
   const huntP = async () => {
     const toks = d.hunt.split(/\s+/).filter(Boolean), ends = H.map(h => h.replace(/^[-–—]\s*/, '').toLowerCase());
@@ -1870,7 +1881,8 @@ LT.sort.run = () => {
   PARTS = [];
   if (d.hunt) PARTS.push({ name: 'Word Hunt', run: huntP });
   PARTS.push({ name: 'Sort the Words', run: sortP });
-  if (d.spell || d.glue) PARTS.push({ name: PN, run: spellP });   // spell it, then drag it into its column (Nov 9: "put the word into a little draggable bubble")
+  if (d.spell || d.glue) PARTS.push({ name: PN1, run: () => spellP() });   // spell it, then drag it into its column (Nov 9: "put the word into a little draggable bubble")
+  if (d.glue2 && d.glue2.length) PARTS.push({ name: 'Glue the Spelling Words', run: () => spellP(d.glue2, false, 'Glue the Spelling Words') });
   if (d.say) PARTS.push({ name: 'Say Sentences', run: sayP });
   return { intro: 'Sort your spelling words!' };
 };
