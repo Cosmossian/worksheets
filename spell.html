@@ -298,10 +298,16 @@ body.kidgrown #acctCard, body.kidgrown #dailyCard { display: none !important; }
 @media (min-width: 900px) {
   .kidhome { max-width: 1240px; }
   .kidhome > p, .kid-prog { max-width: 760px; }
-  .kid-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: start; gap: 18px; }
-  .kid-steps > .kid-sheets { max-width: none; background: var(--surface); border: 2px solid var(--line); border-radius: 22px; padding: 6px 14px 18px; height: 100%; }
-  .kid-steps > .kid-work { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; align-items: start; }
-  .kid-steps > .kid-work > h3 { grid-column: 1 / -1; }
+  /* Nov 23, 2026 (Dylan: iPad sideways "makes it look weird": one subject sat in a thin column on the left, sight words under it):
+     flex rows, centered. Step 1 is as wide as its subjects need (1 subject ≈ one card, 2 ≈ two, 3+ = the whole row), so later
+     steps can sit beside it when there's room. */
+  .kid-steps { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 18px; }
+  .kid-steps > .kid-sheets { flex: 1 1 260px; max-width: 420px; background: var(--surface); border: 2px solid var(--line); border-radius: 22px; padding: 6px 14px 18px; }
+  .kid-steps > .kid-work { flex: 1 1 100%; max-width: none; display: flex; flex-flow: row wrap; justify-content: center; gap: 14px; align-items: flex-start; }
+  .kid-steps > .kid-work:not(:has(.subj ~ .subj)) { flex-basis: 420px; max-width: 480px; }
+  .kid-steps > .kid-work:has(.subj ~ .subj):not(:has(.subj ~ .subj ~ .subj)) { max-width: 900px; }
+  .kid-steps > .kid-work > h3 { flex: 0 0 100%; text-align: center; }
+  .kid-steps > .kid-work > .subj { flex: 1 1 260px; max-width: 420px; }
   .kid-steps .kbtn, .kid-steps #kidStart, .kid-shelf .kbtn { min-width: 0 !important; width: 100%; font-size: 24px; padding: 16px 18px; min-height: 76px; }
   .kid-steps .kbtn small, .kid-steps #kidStart small { white-space: normal; }
   .kid-steps .kid-h { font-size: 22px; margin-top: 8px; }
