@@ -2796,10 +2796,19 @@ async function renderReview(noPull) {
   // done (with its grade) or ✗ Not completed once the day is over. From the assigned list, plus the list his device saved that day.
   const td = ymd(Date.now()), listA = (store('study-sheets') || {}).list || [], ag = (agendas[calSel] || {}).items || [], allLogs = [...sheets, ...fixes.map(f => ({ ...f, aid: f.cid }))];
   const asg = [...listA.filter(a => a.tool !== 'mtest' && (sheetDay(a) === calSel || (a.tool === 'weather' && sheetDay(a) <= calSel && calSel <= td && allLogs.some(l => l.aid === a.id && ymd(l.t) === calSel)))).map(a => ({ id: a.id, tool: a.tool, title: a.title })), ...ag.filter(it => it.tool !== 'check' && it.tool !== 'spellq' && it.title && !listA.some(a => a.id === it.id))];
-  const asgHtml = asg.length ? `<div class="rv-asg"><h4>Assigned for this day</h4>${asg.map(a => {
+  // Nov 24, 2026 (Dylan: "doesn't show sight words here though"): the day's sight words get a line too, last, like on his day.
+  // Today / coming days: from the current words (on, Monday to Friday). Past days: if his device saved them on that day's list or he did a check.
+  const swD = store('spell-daily') || {}, swCk = checks.filter(x => ymd(x.t) === calSel && (calSel !== td || x.t > (swD.resetAt || 0))).sort((x, y) => y.t - x.t);
+  const swNow = calSel >= td && swD.on !== false && isWeekday(calSel) ? dailyWords() : [];
+  const swRow = (swNow.length || swCk.length || ag.some(it => it.tool === 'check')) ? (() => {
+    const r = swCk[0], g = r && (r.grade || gradeFor(r.results.filter(x => x.ok).length, r.results.length));
+    const ws = swNow.length ? swNow : r ? r.results.map(x => x.word) : [];
+    const st = r ? `<span class="ok">✓ done: ${esc(g.letter)} (${g.pct}%)${swCk.length > 1 ? ` · ${swCk.length} tries (1 + ${swCk.length - 1} redo${swCk.length > 2 ? 's' : ''})` : ''}</span>` : calSel < td ? '<span class="no">✗ Not completed</span>' : calSel === td ? '<span class="wait">not done yet</span>' : '<span class="wait">coming up</span>';
+    return `<div class="rv-asg-row"><span>📝 ${calSel === td ? 'Today’s sight words' : 'Sight words'}${ws.length ? ` · ${ws.length}<br><small>${esc(ws.join(', '))}</small>` : ''}</span>${st}</div>`; })() : '';
+  const asgHtml = asg.length || swRow ? `<div class="rv-asg"><h4>Assigned for this day</h4>${asg.map(a => {
       const all = allLogs.filter(l => l.aid === a.id && (RECUR.includes(a.tool) ? ymd(l.t) === calSel : ymd(l.t) <= calSel)).sort((x, y) => y.t - x.t), d = all[0], g = d && d.grade;
       const st = d ? `<span class="ok">✓ done${g ? `: ${esc(g.letter)} (${g.pct}%)` : ''}${all.length > 1 ? ` · ${all.length} tries (1 + ${all.length - 1} redo${all.length > 2 ? 's' : ''})` : ''}</span>` : OPTIONAL.includes(a.tool) ? '<span class="wait">extra (not required)</span>' : calSel < td ? '<span class="no">✗ Not completed</span>' : calSel === td ? '<span class="wait">not done yet</span>' : '<span class="wait">coming up</span>';
-      return `<div class="rv-asg-row"><span>${esc(a.title)}${bugTag(a.id)}</span>${st}</div>`; }).join('')}</div>` : '';
+      return `<div class="rv-asg-row"><span>${esc(a.title)}${bugTag(a.id)}</span>${st}</div>`; }).join('')}${swRow}</div>` : '';
   const bugBanner = bugBannerHtml(BUGS);
   if (!order.length) { $('reviewList').innerHTML = bugBanner + asgHtml + (asgHtml ? '' : '<p class="rv-empty">Nothing on this day.</p>'); return; }
   // Nov 10 (Dylan: "First attempt" then "Redo 1", "Redo 2"…): number each try at the same assignment, in time order.
