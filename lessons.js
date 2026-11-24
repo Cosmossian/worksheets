@@ -237,11 +237,12 @@ const LT = {
       { k: 'letter', label: 'Letter', type: 'text', help: 'A capital (Q) or a small letter (q).' },
       { k: 'words', label: 'Words to trace, then write', type: 'text' },
       { k: 'trace', label: 'Sentence to trace', type: 'text' },
-      { k: 'copy', label: 'Sentence to copy', type: 'text' }
+      { k: 'copy', label: 'Sentence to copy', type: 'text' },
+      { k: 'strict', label: 'Check his writing (tracing, staying on the lines, capitals) and ask him to fix it', type: 'check', help: 'Off: Done takes whatever he writes, and Parent Review notes anything the checks would have asked about, so you can go over it with him.' }
     ],
     acts: () => [],
     title: c => { const l = (String(c.letter || '').trim()[0] || 'A'); return `${l === l.toUpperCase() ? 'Uppercase' : 'Lowercase'} ${l}`; },
-    data: c => ({ letter: String(c.letter || '').trim()[0] || 'A', words: L_list(c.words).slice(0, 4), trace: (c.trace || '').trim(), copy: (c.copy || '').trim() }),
+    data: c => ({ letter: String(c.letter || '').trim()[0] || 'A', words: L_list(c.words).slice(0, 4), trace: (c.trace || '').trim(), copy: (c.copy || '').trim(), strict: !!c.strict }),
     check: d => /[a-z]/i.test(d.letter) ? '' : 'Type a letter.'
   },
   sort: {
@@ -1048,12 +1049,16 @@ function L_padNote(r, guide) {
   if (w.lines) bits.push(`${x(w.lines)} it asked him to keep his letters on the lines`);
   if (w.short) bits.push(`${x(w.short)} it asked him to write all of it`);
   if (!bits.length && r.redo) bits.push(`${x(r.redo)} it asked him to fix it`);
-  let t = bits.length ? ` Before it was right, ${bits.join('; ')}.` : ' Right the first time he tapped Done.';
+  let t = r.loose ? ` No writing checks on this sheet: Done took it as he wrote it.${r.loose.length ? ` The checks would have said ${r.loose.join('; ')}.` : ' The checks found nothing to fix.'}`
+    : bits.length ? ` Before it was right, ${bits.join('; ')}.` : ' Right the first time he tapped Done.';
   if (r.more) t += guide ? ` He tapped ➕ Need more space ${x(r.more)} for bigger letters (the tracing started over).` : ` He tapped ➕ Need more space ${x(r.more)} (${r.rows || r.more + 1} lines; it starts with 1).`;
   else if (!guide) t += ' He used the 1 line it starts with.';
   return t;
 }
-async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, label = '', check = true, rows: rows0 = 0 }) {
+/* loose (Nov 24, 2026, Dylan: "the writing restrictions taken away. Sometimes its too harsh. On the V, he wrote a V but it didn't count it.
+   I'll go over the problems with him"): Done always takes his writing. The checks still run, but only to note in Parent Review
+   what they would have asked (`r.loose`); nothing turns orange and he isn't asked to fix anything. */
+async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, label = '', check = true, rows: rows0 = 0, loose = false }) {
   try { await document.fonts.load(`700 ${fsMax}px Andika`); } catch (e) { }
   // Free writing of a sentence (Nov 9, 2026, Dylan: "make sure he is writing in his grids… Need more space"): big rows like a
   // single word's, starting with 2, and ➕ Need more space adds another (up to 5). Every pad has ↶ Undo (the last line he drew).
@@ -1154,6 +1159,7 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
           if (coreD[o] > 100) { const s = spans.findIndex(z => z.r === r && px >= z.a && px < z.b); if (s >= 0) { per[s][1]++; if (isInk) per[s][0]++; } }
         } }
         const missed = spans.filter((s, k) => per[k][1] && per[k][0] / per[k][1] < need);
+        if (loose) { const n = []; if ((all ? out / all : 1) > 0.4) n.push('a lot of his tracing was off the gray letters'); else if (missed.length) n.push(`${missed.length} letter${missed.length > 1 ? 's were' : ' was'} not traced all the way`); return finishPad({ loose: n }); }
         orange = new Set(missed);
         if ((all ? out / all : 1) > 0.4) { redo++; why.off++; draw(); setMsg('Stay on the gray letters. Tap ↶ Undo or Start over and trace them carefully.', 'try'); fb('Stay on the gray letters.', 0.95); return; }
         if (missed.length) { redo++; why.missed++; draw(); setMsg(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 'try'); fb(`Trace the orange letter${missed.length > 1 ? 's' : ''} too.`, 0.95); return; }
@@ -1164,6 +1170,15 @@ async function L_pad({ text, guide = true, fsMax = 150, H = 230, need = 0.45, la
       const inBand = ([, y]) => { const g = geo(rowOf(y)), xh = g.base - g.mid; return y >= g.top - xh * 0.45 && y <= g.base + xh * 1.1; };
       offLines = new Set(strokes.filter(st => st.filter(p => !inBand(p)).length > st.length * 0.5));
       const outFrac = pts.filter(p => !inBand(p)).length / pts.length;
+      if (loose) {
+        const n = []; offLines.clear();
+        if (outFrac > 0.25) n.push('some letters were off the lines');
+        let lw = 0; for (let r = 0; r < nRows; r++) { const xs = pts.filter(p => rowOf(p[1]) === r).map(p => p[0]); if (xs.length > 2) lw += Math.max(...xs) - Math.min(...xs); }
+        if (lw < Math.min(tw, (Wd - 48) * nRows) * (multi ? 0.35 : 0.45) || pts.length < 40) n.push('it looked shorter than all of it');
+        let cf = [];
+        if (check && typeof hcCheck === 'function') { const dense = hcDense(strokes), rows = Array.from({ length: nRows }, (_, r) => ({ ...geo(r), pts: dense.filter(p => rowOf(p[1]) === r) })); cf = hcCheck(rows, text); }
+        return finishPad({ loose: n, ...(cf.length ? { caseFlags: cf.map(f => `${f.ch} in “${f.word}” (${f.want === 'small' ? 'looked like a capital' : 'looked small'})`) } : {}) });
+      }
       if (outFrac > 0.25) { redo++; why.lines++; draw(); setMsg('Keep your letters on the lines: tall letters touch the top line, and every letter sits on the bottom line. Tap ↶ Undo to fix the orange ones.', 'try'); fb('Keep your letters on the lines.', 0.95); return; }
       offLines.clear();
       let width = 0, n = pts.length;
@@ -1743,8 +1758,8 @@ LT.letter.run = () => {
     for (let i = 0; i < n; i++) {
       if (stepSkip()) continue;   // done before a reload
       app.innerHTML = L_exactTag() + head(sub) + (n > 1 ? L_count(i, n, 'Time') : '') + extraTop + '<div id="lsPad"></div>';
-      const r = await L_pad({ text, guide, fsMax: text.length <= 1 ? 190 : 150, H: text.length <= 1 ? 250 : 230 });
-      mark(part, `${text}${n > 1 ? ` (${i + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `${guide ? 'Tracing' : 'Writing'} “${text}”${/[.!?]$/.test(text) ? '' : '.'}${L_padNote(r, guide)}${r.caseFlags ? ` The capital-letter check asked about ${r.caseFlags.join(', ')}, and he kept it.` : ''}` }, []); L_free(); stepDone();
+      const r = await L_pad({ text, guide, fsMax: text.length <= 1 ? 190 : 150, H: text.length <= 1 ? 250 : 230, loose: !d.strict });
+      mark(part, `${text}${n > 1 ? ` (${i + 1})` : ''}`, r.redo === 0, '', '', null, { img: r.img, text: `${guide ? 'Tracing' : 'Writing'} “${text}”${/[.!?]$/.test(text) ? '' : '.'}${L_padNote(r, guide)}${r.caseFlags ? r.loose ? ` The capital-letter check noticed ${r.caseFlags.join(', ')}.` : ` The capital-letter check asked about ${r.caseFlags.join(', ')}, and he kept it.` : ''}` }, []); L_free(); stepDone();
     }
   };
   const P = [
