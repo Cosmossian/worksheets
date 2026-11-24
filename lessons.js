@@ -229,7 +229,8 @@ const LT = {
       '2026-11-17': { note: 'Same letter, words and sentences as the school sheet “Uppercase S”.', set: () => ({ letter: 'S', words: 'Sam, Sophia, Sal', trace: 'Sean sat in the snow.', copy: 'Silly Steve spits seeds.' }) },
       '2026-11-18': { note: 'Same letter, words and sentences as the school sheet “Lowercase x”.', set: () => ({ letter: 'x', words: 'x-ray, xylophone, xerox', trace: 'Xu has an extra axe.', copy: 'Xavier has a wax fox.' }) },
       '2026-11-19': { note: 'Same letter, names and sentences as the school sheet “Uppercase X”.', set: () => ({ letter: 'X', words: 'Xander, Xena, Xu', trace: 'Xena x-rayed a fish.', copy: 'Xaiden xeroxed a text.' }) },
-      '2026-11-23': { note: 'Same letter, words and sentences as the school sheet “Lowercase v”.', set: () => ({ letter: 'v', words: 'very, visit, van', trace: 'Vera likes vanilla.', copy: 'The violet vase is velvet.' }) }
+      '2026-11-23': { note: 'Same letter, words and sentences as the school sheet “Lowercase v”.', set: () => ({ letter: 'v', words: 'very, visit, van', trace: 'Vera likes vanilla.', copy: 'The violet vase is velvet.' }) },
+      '2026-11-24': { note: 'Same letter, names and sentences as the school sheet “Uppercase V”.', set: () => ({ letter: 'V', words: 'Vin, Vanna, Victor', trace: 'Veda is a vet.', copy: 'Vince the viper votes.' }) }
     },
     own: () => ({ letter: 'R', words: 'Rosa, Ryan, Rudy', trace: 'Rex ran to the rug.', copy: 'Rita reads a red book.' }),
     fields: () => [
@@ -456,13 +457,15 @@ const LT = {
     name: 'Compare Chart', cls: 'ela',
     help: 'A chart that compares characters in a story: one row per character, one question per column. For a yes/no or good/bad question he taps the answer (checked if you give the answer). For the others he says his answer out loud first (saved), then writes a few words. You see his chart, his voice and his writing in Parent Review.',
     schools: {
-      '2026-11-18': { note: 'Same chart as the school sheet “Make Connections: The Water of Life” (C): the older brothers and the youngest brother, four questions. The yes/no and good/bad answers are filled in from the story; he writes the other two in his own words.', set: () => ({ heading: 'Make Connections: “The Water of Life”', inst: 'Fill in the chart to compare the brothers in “The Water of Life.”', cols: 'What words describe the characters?\nHow do the characters treat the dwarf?\nDo the characters lie to the king? | yes | no\nIs the ending good or bad for the characters? | good | bad', rows: 'Older brothers | | | yes | bad\nYoungest brother | | | no | good', bank: 'rude, mean, greedy, kind, nice, polite, helpful, brave', say: true }) }
+      '2026-11-18': { note: 'Same chart as the school sheet “Make Connections: The Water of Life” (C): the older brothers and the youngest brother, four questions. The yes/no and good/bad answers are filled in from the story; he writes the other two in his own words.', set: () => ({ heading: 'Make Connections: “The Water of Life”', inst: 'Fill in the chart to compare the brothers in “The Water of Life.”', cols: 'What words describe the characters?\nHow do the characters treat the dwarf?\nDo the characters lie to the king? | yes | no\nIs the ending good or bad for the characters? | good | bad', rows: 'Older brothers | | | yes | bad\nYoungest brother | | | no | good', bank: 'rude, mean, greedy, kind, nice, polite, helpful, brave', say: true }) },
+      '2026-11-24': { note: 'Same questions as the school sheet “Make Connections: The Wonderful Brocade” (C), which compares it with “The Water of Life”. On paper the questions go down the side and the stories across the top; here each story is a row and each question a column, so he does one story at a time. “Which brother finds what he is looking for?” is a tap answer (the youngest brother in both stories); he says and writes the other four in his own words.', set: () => ({ heading: 'Make Connections: “The Wonderful Brocade”', inst: 'Fill in the chart to compare and contrast two stories.', rowHead: 'Stories', cols: 'What is the setting?\nWhat are the brothers looking for?\nWho are the brothers trying to help?\nWhich brother finds what he is looking for? | the older brothers | the youngest brother\nWhat happens to the youngest brother at the end?', rows: '“The Wonderful Brocade” | | | | the youngest brother\n“The Water of Life” | | | | the youngest brother', bank: 'China, village, mountain, kingdom, castle, brocade, water, mother, father, king, sick, youngest, married, princess, fairy, home, happy', say: true }) }
     },
     own: () => ({ heading: 'Compare the Characters', inst: 'Fill in the chart to compare the characters.', cols: 'What words describe the character?\nWhat does the character want?\nIs the character kind? | yes | no', rows: 'The tortoise | | | yes\nThe hare | | | no', bank: '', say: true }),
     fields: () => [
       { k: 'heading', label: 'Title', type: 'text' },
       { k: 'inst', label: 'What to do', type: 'text' },
       { k: 'cols', label: 'Questions (one column each)', type: 'area', rows: 4, help: 'One per line. For a question he answers by tapping, add the choices after |: Do the characters lie to the king? | yes | no' },
+      { k: 'rowHead', label: 'First column heading (optional)', type: 'text', help: 'Leave empty for “Characters”. Use “Stories” when each row is a story.' },
       { k: 'rows', label: 'Characters (one row each)', type: 'area', rows: 3, help: 'One per line. To check a tapping answer, add the answers after | in column order, leaving his-own-words columns empty: Older brothers | | | yes | bad' },
       { k: 'bank', label: 'Word box to help his spelling (optional)', type: 'text', help: 'Separate with commas. Shown when he writes. Leave empty for none.' },
       { k: 'say', label: 'Say each written answer out loud first (microphone)', type: 'check' }
@@ -472,7 +475,7 @@ const LT = {
     data: c => {
       const cols = L_lines(c.cols).map(l => { const p = l.split('|').map(x => x.trim()); return { q: p[0], choices: p.slice(1).filter(Boolean) }; }).filter(x => x.q);
       const rows = L_lines(c.rows).map(l => { const p = l.split('|').map(x => x.trim()); return { name: p[0], ans: cols.map((col, k) => { const a = p[k + 1] || ''; return col.choices.length ? (col.choices.find(ch => ch.toLowerCase() === a.toLowerCase()) || '') : ''; }) }; }).filter(x => x.name);
-      return { heading: LT.compare.title(c), inst: (c.inst || '').trim(), cols, rows, bank: L_list(c.bank), say: !!c.say };
+      return { heading: LT.compare.title(c), inst: (c.inst || '').trim(), rowHead: (c.rowHead || '').trim() || 'Characters', cols, rows, bank: L_list(c.bank), say: !!c.say };
     },
     check: d => !d.cols.length ? 'Type at least one question.' : !d.rows.length ? 'Type at least one character.' : ''
   },
@@ -762,7 +765,7 @@ LT.counton.print = (d, exact) => {
 LT.compare.print = (d, exact) => {
   const th = 'border:2px solid #1F2937;padding:8px;font:700 17px Fredoka,sans-serif;background:#E0F2FE;vertical-align:bottom';
   return L_sheetOf(nameDate() + title(d.heading, d.inst || 'Fill in the chart.', star('#0F766E'), star('#7E22CE'), 34)
-    + `<table style="width:100%;border-collapse:collapse;table-layout:fixed"><tr><th style="${th};width:16%">Characters</th>${d.cols.map(c => `<th style="${th}">${L_esc(c.q)}</th>`).join('')}</tr>`
+    + `<table style="width:100%;border-collapse:collapse;table-layout:fixed"><tr><th style="${th};width:16%">${L_esc(d.rowHead || 'Characters')}</th>${d.cols.map(c => `<th style="${th}">${L_esc(c.q)}</th>`).join('')}</tr>`
     + d.rows.map(r => `<tr><td style="border:2px solid #1F2937;padding:8px;font:700 22px Andika,sans-serif;height:230px">${L_esc(r.name)}</td>${d.cols.map(c => `<td style="border:2px solid #1F2937;vertical-align:${c.choices.length ? 'middle' : 'top'};text-align:center">${c.choices.length ? c.choices.map(ch => `<div style="font:400 24px Andika,sans-serif;margin:8px 0">${L_esc(ch)}</div>`).join('') + '<div style="font-size:13px;color:#64748B">circle one</div>' : ''}</td>`).join('')}</tr>`).join('') + '</table>'
     + (d.bank.length ? `<div style="font:400 20px Andika,sans-serif;color:#475569;text-align:center">Words that may help: ${d.bank.map(L_esc).join(', ')}</div>` : ''), exact, { gap: 14 });
 };
@@ -2385,7 +2388,7 @@ function L_pick(choices) {
 }
 LT.compare.run = () => {
   const d = SD, run = Date.now().toString(36), got = d.rows.map(() => d.cols.map(() => null));
-  const chart = (ri, ci) => `<table class="ls-cmp"><tr><th>Characters</th>${d.cols.map((c, k) => `<th class="${k === ci ? 'now' : ''}">${L_esc(c.q)}</th>`).join('')}</tr>${d.rows.map((r, i) => `<tr><td class="nm${i === ri ? ' now' : ''}">${L_esc(r.name)}</td>${d.cols.map((c, k) => { const g = got[i][k]; return `<td class="${i === ri && k === ci ? 'cur' : ''}">${g ? (g.img ? `<img src="${g.img}" alt="his writing">` : L_esc(g.text)) : ''}</td>`; }).join('')}</tr>`).join('')}</table>`;
+  const chart = (ri, ci) => `<table class="ls-cmp"><tr><th>${L_esc(d.rowHead || 'Characters')}</th>${d.cols.map((c, k) => `<th class="${k === ci ? 'now' : ''}">${L_esc(c.q)}</th>`).join('')}</tr>${d.rows.map((r, i) => `<tr><td class="nm${i === ri ? ' now' : ''}">${L_esc(r.name)}</td>${d.cols.map((c, k) => { const g = got[i][k]; return `<td class="${i === ri && k === ci ? 'cur' : ''}">${g ? (g.img ? `<img src="${g.img}" alt="his writing">` : L_esc(g.text)) : ''}</td>`; }).join('')}</tr>`).join('')}</table>`;
   const rowPart = ri => async () => {
     const r = d.rows[ri], who = r.name, nC = d.cols.length;
     if (d.say) await L_mic();
