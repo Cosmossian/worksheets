@@ -1468,7 +1468,9 @@ function schoolDay(since) {   // 1 on the first school day a word is on his list
 function nextSchoolDay() { const d = new Date(ymd(Date.now()) + 'T12:00'); do d.setDate(d.getDate() + 1); while (!isSchool(d)); return ymd(d); }
 const wordPoints = since => Math.max(1, 6 - schoolDay(since));   // day 1 = 5 points … day 5 and after = 1
 const sightBank = () => { const b = store('sight-bank'); return b && Array.isArray(b.current) ? b : null; };
-const dailyWords = () => { const b = sightBank(); return b ? b.current.map(x => x.w) : parseList((store('spell-daily') || {}).words || ''); };
+// Nov 24, 2026: an empty word-bank list falls back to the typed words, the same as Review Child's Day (index.html bankWords).
+// Before this, an empty bank list hid his sight words here while Review Child's Day still showed the typed ones.
+const dailyWords = () => { const b = sightBank(); return b && b.current.length ? b.current.map(x => x.w) : parseList((store('spell-daily') || {}).words || ''); };
 function bankSetCurrent(words) {   // the grown-up typed today's words: keep each word's start day, new ones start today
   const b = sightBank(); if (!b) return;
   const keep = Object.fromEntries(b.current.map(x => [x.w, x.since]));
