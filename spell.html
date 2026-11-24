@@ -910,8 +910,13 @@ const DIGRAPHS = ['tch', 'ch', 'sh', 'th', 'wh', 'ph', 'ck', 'ng', 'gh', 'qu', '
 const ONSETS = new Set('ch sh th wh ph qu kn wr bl br cl cr dr fl fr gl gr pl pr sc sk sl sm sn sp st sw tr tw scr spl spr str thr shr squ'.split(' '));
 const isV = (w, i) => 'aeiou'.includes(w[i]) || (w[i] === 'y' && i > 0 && !'aeiou'.includes(w[i - 1]));
 /* Simple first-grade syllable rules. The grown-up can override with dashes. */
+/* Nov 24, 2026 (his bug report "A sound is wrong" on everything): the rules split it e · ve · ry · thing, so Say it slow said
+   "ee… vee… ry… thing". Words the rules get wrong are split by hand here; PART_SAY says how the computer voice says those parts. */
+const SYL_FIX = { every: 'ev-ery', everything: 'ev-ery-thing', everyone: 'ev-ery-one', everywhere: 'ev-ery-where', everyday: 'ev-ery-day' };
+const PART_SAY = { ev: 'ehv', ery: 'ree' };
 function syllables(word) {
   const w = word.toLowerCase();
+  if (SYL_FIX[w]) { let i = 0; return SYL_FIX[w].split('-').map(x => { const o = word.slice(i, i + x.length); i += x.length; return o; }); }
   if (w.length <= 3) return [word];
   let end = w.length;
   if (/[^aeiou]le$/.test(w) && w.length > 4) end = w.length - 3;        // lit-tle, ta-ble
@@ -1147,7 +1152,7 @@ function buildPlan(input) {
   });
   return { text: text.replace(/-/g, ''), parts, letters, bySound: parts.some(p => p.unit) };
 }
-const partSay = p => p.say || (p.unit ? unitPhrase(p.unit) : p.text.length === 1 ? letterName(p.text.toLowerCase()) : p.text.toLowerCase());
+const partSay = p => p.say || (p.unit ? unitPhrase(p.unit) : p.text.length === 1 ? letterName(p.text.toLowerCase()) : PART_SAY[p.text.toLowerCase()] || p.text.toLowerCase());
 
 /* ================= Playing: a grown-up's recording if there is one, else the computer voice ================= */
 let nowAudio = null;
