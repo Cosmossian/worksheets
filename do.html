@@ -600,10 +600,12 @@ const seedOf = words => words.join('').split('').reduce((a, c) => a + c.charCode
 const COLORS = ['#3C7DD9', '#0F9F8F', '#8B5CF6', '#EA580C', '#DB2777', '#16A34A', '#6366F1', '#D97706'];
 </script>
 <script src="handcheck.js?v=2"></script>
-<script src="lessons.js?v=25"></script>
+<script src="lessons.js?v=26"></script>
 <script src="science.js?v=7"></script>
 <script src="rain.js?v=1"></script>
 <script src="social.js?v=1"></script>
+<script src="dailyskills.js?v=1"></script>
+<script src="skills.js?v=1"></script>
 <script>
 /* ============ Talking, keys, little helpers (same as the Fix-Up page) ============ */
 const canTalk = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
@@ -1046,6 +1048,7 @@ async function loadAssignment() {
   let a = ((store('study-sheets') || {}).list || []).find(x => x.id === id);
   if (!a && id.startsWith('fixit-auto-')) { const fx = store('study-fixit-auto'); if (fx && fx.id === id) a = fx; }
   if (!a && /^(master|mtest)-auto-/.test(id)) { const fr = store('study-friday-auto'); a = ((fr && fr.list) || []).find(x => x.id === id); }   // Fridays (spell.html autoFriday)
+  if (!a && /^(coins|clock)-auto-/.test(id)) { const dk = store('study-dk-auto'); a = ((dk && dk.list) || []).find(x => x.id === id); }   // 🪙 Money / 🕒 Telling Time, every school day (spell.html autoSkills)
   if (!a && id.startsWith('relearn-auto-')) { const rl = store('study-relearn-auto'); if (rl && rl.id === id) a = rl; }   // 🧠 Learn It Again (spell.html autoRelearn)   // 🛠️ Extra help that put itself on his day (spell.html autoFixit)
   if (!a) {
     try {

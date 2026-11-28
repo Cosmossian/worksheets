@@ -845,6 +845,7 @@ body.advancing main button, body.advancing main .key { pointer-events: none; }
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="dailyskills.js?v=1"></script>
 <script>
 /* ============ Talking ============ */
 const canTalk = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
@@ -3065,7 +3066,7 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const KID_DOMAIN = 'kids.thatonedrawer.com';   // usernames become <username>@kids.thatonedrawer.com behind the scenes (never emailed)
 const loginEmail = id => { id = id.trim().toLowerCase(); return id.includes('@') ? id : `${id}@${KID_DOMAIN}`; };
 const shownName = email => email.endsWith('@' + KID_DOMAIN) ? email.slice(0, -KID_DOMAIN.length - 1) : email;
-const SYNC = { 'study-wordfix': 'wordfix', 'sight-bank': 'sightbank', 'study-points': 'points', 'study-profile': 'profile', 'spell-queue': 'spellq', 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent', 'study-sheets': 'sheets', 'study-chores': 'chores' };   // sheets: on-screen worksheets assigned from the Worksheets page
+const SYNC = { 'study-wordfix': 'wordfix', 'sight-bank': 'sightbank', 'study-points': 'points', 'study-profile': 'profile', 'spell-queue': 'spellq', 'spell-daily': 'daily', 'spell-settings': 'settings', 'spell-sounds': 'sounds', 'spell-history': 'history', 'spell-recent': 'recent', 'study-sheets': 'sheets', 'study-chores': 'chores', 'study-routines': 'routines', 'study-skills': 'skills' };   // routines/skills: daily Money + Telling Time (Nov 28; dailyskills.js)   // sheets: on-screen worksheets assigned from the Worksheets page
 const cloud = { sb: null, user: null, role: null, pulling: false, timers: {} };
 const cloudMember = () => !!(cloud.sb && cloud.user && cloud.role);
 function cloudClient() {
@@ -3113,7 +3114,7 @@ window.addEventListener('online', () => cloudFlush());
 // store() calls this for every write; synced keys go up (debounced), except while pulling
 function cloudOnStore(k) {
   if (!SYNC[k] || cloud.pulling || !cloud.sb || TESTDAY()) return;
-  if (cloud.role === 'kid' && ['spell-daily', 'spell-settings', 'spell-sounds', 'study-sheets', 'spell-queue', 'study-profile', 'study-chores'].includes(k)) return;   // set from the grown-up's device
+  if (cloud.role === 'kid' && ['spell-daily', 'spell-settings', 'spell-sounds', 'study-sheets', 'spell-queue', 'study-profile', 'study-chores', 'study-routines'].includes(k)) return;   // set from the grown-up's device
   clearTimeout(cloud.timers[k]);
   cloud.timers[k] = setTimeout(() => {
     let data = store(k);
@@ -3357,6 +3358,23 @@ function autoFriday(ds, assigned) {
   store('study-friday-auto', P);
   return P.list;
 }
+/* Nov 28, 2026 (Dylan: a daily thing for money "like his sight words… automatically… monday through friday until I say otherwise",
+   and the same for telling time on an analog clock): 🪙 Money Practice and 🕒 Telling Time put themselves on his day every Monday to
+   Friday, under Math, unless a grown-up turned one off (Math tab → ✓ On / ○ Off; study state "routines"). His finished ones move his
+   level up (2 good days in a row; dailyskills.js DK_update), saved as study state "skills" from his device. Skipped on a day a
+   grown-up assigned that tool by hand. Saved as study-dk-auto for do.html. */
+function autoSkills(ds, assigned) {
+  if (typeof DK_IDS === 'undefined' || !isWeekday(ds)) return [];
+  const rout = store('study-routines') || {};
+  let skills = store('study-skills') || {};
+  if (cloud.role === 'kid' && !TESTDAY()) {
+    const r = DK_update(skills, rout, withToday('sheet-log', store('sheet-log') || []));
+    if (r.changed) { skills = r.skills; store('study-skills', skills); }
+  } else skills = DK_update(skills, rout, []).skills;   // a grown-up's level pick shows right away on this device (not saved from here)
+  const list = DK_IDS.filter(k => DK_on(rout, k) && !assigned.some(a => a.tool === k && sheetDay(a) === ds)).map(k => DK_assignment(k, ds, skills));
+  store('study-dk-auto', { day: ds, list });
+  return list;
+}
 /* ---- His start screen ---- */
 /* Nov 10, 2026 (Dylan: "is it auto assigned for today as well"): 🛠️ Extra help puts itself on his day. Any spelling word he missed
    on today's on-screen worksheets (this device's results; not the school's own sheets, Nov 16) becomes a Fix My Spelling Mistakes sheet (hear it, trace it, spell it),
@@ -3465,7 +3483,7 @@ window.addEventListener('message', e => {
 /* Subjects for his start screen (Nov 20: worksheets grouped by subject). A copy of CLASSES in index.html: add new worksheet tools to both. */
 const KID_CLASSES = [
   { id: 'ela', name: 'ELA', icon: '📖', tools: ['question', 'letter', 'sort', 'respond', 'compare'] },
-  { id: 'math', name: 'Math', icon: '🔢', tools: ['eagles', 'tenmore', 'add3', 'counton'] },
+  { id: 'math', name: 'Math', icon: '🔢', tools: ['coins', 'clock', 'eagles', 'tenmore', 'add3', 'counton'] },
   { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['spellq', 'sight', 'master', 'mtest', 'fixup', 'fixit', 'sound', 'story', 'readaloud', 'chains', 'heart', 'wsearch', 'fillin', 'silente', 'warmup'] },
   { id: 'science', name: 'Science', icon: '🔬', tools: ['weather', 'seasons', 'seacycle', 'quiz', 'raingauge', 'raindraw', 'relearn'] },
   { id: 'social', name: 'Social Studies', icon: '🌎', tools: ['pledge'] },
@@ -3481,6 +3499,7 @@ function renderKidHome() {
   const today = withToday('spell-check-log', store('spell-check-log') || []).filter(r => new Date(r.t).toDateString() === new Date().toDateString() && r.t > (d.resetAt || 0));   // "Reset today" starts his day fresh
   $('kidHi').textContent = kidName() ? `Hi ${kidName()}! 👋` : 'Hi! 👋';
   const sq = store('spell-queue'), sheets = [...(sq && sq.words && sq.words.length ? [{ id: sq.id, tool: 'spellq', title: `✏️ Spelling practice · ${sq.words.length} word${sq.words.length > 1 ? 's' : ''}` }] : []), ...sheetsFor(ymd(Date.now()))];
+  sheets.push(...autoSkills(ymd(Date.now()), sheets));   // Mon–Fri: 🪙 Money Practice + 🕒 Telling Time (Nov 28)
   sheets.push(...autoFriday(ymd(Date.now()), sheets));   // Fridays: Word Master Challenge + Mastered Words Test
   { const fx = autoFixit(ymd(Date.now()), sheets); if (fx) sheets.push(fx); }
   { const rl = autoRelearn(ymd(Date.now()), sheets); if (rl) sheets.push(rl); }
@@ -3530,6 +3549,7 @@ function renderKidHome() {
   const lockLine = st => `🔒 After your ${st.lockedBy.short}`;
   const subLine = a => { const n = ((a.data && a.data.words) || []).length, nq = ((a.data && a.data.qs) || []).length, ns = ((a.data && a.data.sents) || []).length;
     const left = isLeft(a) ? `<small class="left">from ${esc(new Date(sheetDay(a) + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long' }))}</small>` : '';
+    if (a.dk) return `<small>${a.data.fresh ? '⭐ New level! ' : ''}Level ${a.data.level} of 8</small>`;   // Nov 28: Money / Telling Time
     return isExtra(a) ? (n ? `<small>${n} word${n > 1 ? 's' : ''} to fix</small>` : nq ? `<small>${nq} quiz question${nq > 1 ? 's' : ''} to learn</small>` : ns ? `<small>${ns} sentences</small>` : '') + left : left; };
   const kbtn = (a, st) => {
     const locked = !!st.lockedBy, here = !locked && !nextSet; if (here) nextSet = true;

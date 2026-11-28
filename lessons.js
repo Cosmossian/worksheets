@@ -805,7 +805,7 @@ function L_panel(t) {
   }).join('');
   const acts = (L.acts(mode) || []);
   const d = L.data(c), problem = L.check(d), sc = L.schools[s.day];
-  return `<h2>${L_esc(L.name)}</h2><p class="help">${L_esc(L.help)}</p>
+  return `<h2>${L_esc(L.name)}</h2><p class="help">${L_esc(L.help)}</p>${L.panelTop ? L.panelTop() : ''}
     ${L.noSchool ? '' : `<div class="ls-mode" role="group" aria-label="Which version">${L_days(t).map(day => `<button class="school" data-lday="${day}" aria-pressed="${mode === 'school' && s.day === day}">📄 Load ${L_dayLabel(day)} Official School Worksheet</button>`).join('')}<button class="own" data-lmode="own" aria-pressed="${mode === 'own'}">✏️ My own</button></div>`}
     ${L.noSchool ? '' : mode === 'school' ? `<div class="ls-school"><b>📄 ${L_dayLabel(s.day)} official school worksheet:</b> ${L_esc(sc.note)} On his device it’s called “${L_esc(L_schoolTag(s.day) + L.title(c))}”.</div>` : '<p class="help" style="margin-top:-4px">Your own version: change anything, and use it again any time. The school worksheets stay as they are.</p>'}
     ${acts.length ? `<div class="ls-acts">${acts.map(([k, lab]) => `<button class="btn btn-small" data-lact="${k}">${L_esc(lab)}</button>`).join('')}</div>` : ''}

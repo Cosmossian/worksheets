@@ -359,6 +359,8 @@ body.schoolmode .tabs { display: none; }
   <button role="tab" data-tool="tenmore">10 More or Less</button>
   <button role="tab" data-tool="add3">Add Three Numbers</button>
   <button role="tab" data-tool="counton">Count On</button>
+  <button role="tab" data-tool="coins">🪙 Money Practice (daily)</button>
+  <button role="tab" data-tool="clock">🕒 Telling Time (daily)</button>
   <button role="tab" data-tool="sound">Sound Investigator</button>
   <button role="tab" data-tool="story">Story Time</button>
   <button role="tab" data-tool="readaloud">📖 Read Story for Class Recording</button>
@@ -946,10 +948,12 @@ function countEagles() {
 }
 
 </script>
-<script src="lessons.js?v=25"></script>
+<script src="lessons.js?v=26"></script>
 <script src="science.js?v=7"></script>
 <script src="rain.js?v=1"></script>
 <script src="social.js?v=1"></script>
+<script src="dailyskills.js?v=1"></script>
+<script src="skills.js?v=1"></script>
 <script>
 /* First Grade Fun Worksheets — the page you use to make worksheets. */
 
@@ -1240,7 +1244,7 @@ const isFriday = ds => new Date(ds + 'T12:00:00').getDay() === 5;
 /* ---------- Classes: the worksheets grouped like his school subjects ---------- */
 const CLASSES = [
   { id: 'ela', name: 'ELA', icon: '📖', tools: ['question', 'letter', 'sort', 'respond', 'compare'] },
-  { id: 'math', name: 'Math', icon: '🔢', tools: ['eagles', 'tenmore', 'add3', 'counton'] },
+  { id: 'math', name: 'Math', icon: '🔢', tools: ['coins', 'clock', 'eagles', 'tenmore', 'add3', 'counton'] },
   { id: 'music', name: 'Music', icon: '🎵', tools: [] },
   { id: 'phonics', name: 'Phonics', icon: '🔤', tools: ['daily', 'helper', 'sight', 'master', 'fixup', 'fixit', 'sound', 'story', 'readaloud', 'chains', 'heart', 'wsearch', 'fillin', 'silente'] },
   { id: 'pe', name: 'PE', icon: '🏃', tools: [] },
@@ -1257,10 +1261,11 @@ const bankWords = b => b && Array.isArray(b.current) && b.current.length ? b.cur
 async function refreshOnDay(sheetList) {
   const sb = await studySession(); if (!sb) return;
   try {
-    const { data } = await sb.from('study_state').select('key,data').in('key', sheetList ? ['daily', 'spellq', 'sightbank'] : ['daily', 'spellq', 'sheets', 'sightbank']);
+    const { data } = await sb.from('study_state').select('key,data').in('key', sheetList ? ['daily', 'spellq', 'sightbank', 'routines'] : ['daily', 'spellq', 'sheets', 'sightbank', 'routines']);
     const S = Object.fromEntries((data || []).map(r => [r.key, r.data]));
     const list = (sheetList || ((S.sheets && S.sheets.list) || [])).filter(a => !expired(a) && (RECUR.includes(a.tool) || sheetDay(a) >= dayOf(Date.now()))), d = S.daily || {};
     onDay = { tools: new Set(list.map(a => a.tool === 'mtest' ? 'master' : a.tool)), daily: d.on !== false && (bankWords(S.sightbank) || parseWords(d.words || '')).length > 0, spellq: !!(S.spellq && S.spellq.words && S.spellq.words.length) };
+    if (typeof DK_IDS !== 'undefined') DK_IDS.forEach(k => { if (DK_on(S.routines, k)) onDay.tools.add(k); });   // Nov 28: Money / Telling Time are on every school day
     renderClasses();
   } catch (e) { }
 }
@@ -1296,7 +1301,7 @@ async function openDay(ds) {
   const sb = await studySession();
   if (!sb) { list.innerHTML = '<p class="help">Sign in first to see his day.</p>'; return; }
   try {
-    const { data: st } = await sb.from('study_state').select('key,data').in('key', ['daily', 'sheets', 'spellq', 'sightbank', 'points', 'profile', 'chores']);
+    const { data: st } = await sb.from('study_state').select('key,data').in('key', ['daily', 'sheets', 'spellq', 'sightbank', 'points', 'profile', 'chores', 'routines', 'skills']);
     const S = Object.fromEntries((st || []).map(r => [r.key, r.data]));
     const { data: logs } = await sb.from('study_log').select('kind,t,data').neq('kind', 'bugsnap').gte('t', new Date(Date.parse(addDays(ds < td ? ds : td, -31) + 'T00:00:00')).toISOString());
     if (dayView !== ds) return;   // he moved to another day while this loaded
@@ -1330,6 +1335,23 @@ async function openDay(ds) {
       items.push({ stage: dayStage(a), title: esc(a.title), sub: `${esc(TOOL_NAMES[a.tool] || a.tool)} · ${esc(CLASSES.find(c => c.id === classOf(a.tool)).name)} · ${carried ? `<b style="color:var(--warn-ink)">left over from ${esc(dayName(sd))}</b>` : RECUR.includes(a.tool) ? 'every day' : `for ${esc(dayName(sd))}`} · assigned ${esc(checkDate(a.at))}`, st: mine ? `✓ done${g ? `: ${g.letter} (${g.pct}%)` : ''}${tries.length > 1 ? ` · ${tries.length} tries` : ''}` : OPTIONAL.includes(a.tool) ? 'extra (not required)' : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet', ok: !!mine, miss: !mine && over && !OPTIONAL.includes(a.tool),
         acts: a.tool === 'fixup' ? '' : `<button class="btn btn-small" data-tryday="${k}">Try it</button>` });
     });
+    // Nov 28: 🪙 Money Practice and 🕒 Telling Time put themselves on his day every Monday to Friday (spell.html autoSkills, dailyskills.js)
+    if (typeof DK_IDS !== 'undefined' && isWeekday(ds)) {
+      const list = (S.sheets && S.sheets.list) || [], over = ds < td;
+      const view = DK_update(S.skills || {}, S.routines || {}, L.filter(x => x.kind === 'sheet')).skills;   // with his newest results folded in
+      DK_IDS.forEach(kind => {
+        if (list.some(a => a.tool === kind && sheetDay(a) === ds)) return;   // a grown-up assigned one for that day: that one shows instead
+        const id = `${kind}-auto-${ds}`, tries = L.filter(x => x.kind === 'sheet' && x.aid === id).sort((a, b) => b.t - a.t), mine = tries[0];
+        const on = DK_on(S.routines, kind);
+        if (!on && !mine) { if (!over) items.push({ stage: 1, off: true, title: esc(DK_KINDS[kind].title), sub: 'Turned off (Math → ' + esc(DK_KINDS[kind].title) + ' → ✓ On to put it back).', st: 'off his device', ok: false, acts: `<button class="btn btn-small" data-goto="${kind}">Open it</button>` }); return; }
+        const lvl = mine && mine.extra && mine.extra.dk ? mine.extra.dk.level : DK_state(view, kind).level, dk = mine && mine.extra && mine.extra.dk;
+        const k = 'dk-' + kind; window.__autoFix = window.__autoFix || {};
+        window.__autoFix[k] = { id: 'try', tool: kind, title: `${DK_KINDS[kind].title} · Level ${lvl}`, data: { level: lvl, daily: false } };
+        items.push({ stage: 1, title: `${esc(DK_KINDS[kind].title)} · Level ${lvl}`, sub: `Math · every school day by itself · ${esc(DK_KINDS[kind].levels[lvl - 1].name)}${!mine && !over ? `<br>${esc(DK_status(kind, view))}` : ''}`,
+          st: mine ? `✓ done${mine.grade ? `: ${mine.grade.letter} (${mine.grade.pct}%)` : ''}${dk ? ` · level ${dk.level}: ${dk.right} of ${dk.total}` : ''}${tries.length > 1 ? ` · ${tries.length} tries` : ''}` : future ? 'coming up' : over ? '✗ Not completed' : 'not done yet',
+          ok: !!mine, miss: !mine && over, acts: `<button class="btn btn-small" data-tryauto="${k}">Try it</button><button class="btn btn-small" data-goto="${kind}">Level &amp; on/off</button>` });
+      });
+    }
     // Fridays: his device adds the Word Master Challenge and the Mastered Words Test by itself (spell.html autoFriday; same words here)
     if (isFriday(ds) && d.on !== false) {
       const list = (S.sheets && S.sheets.list) || [], f = fridayWords(S.sightbank, ds), over = ds < td;
@@ -1565,6 +1587,7 @@ function renderPanel() {
   }
   ws.classList.remove('embedded'); frame = null;
   $panel.innerHTML = ({ sight: panelSight, master: panelMaster, fixup: panelFixup, question: panelQuestion, steps: panelSteps, eagles: panelEagles, weather: panelWeather }[t] || (() => L_panel(t)))() + onScreenBlock();
+  if (LT[t] && LT[t].afterPanel) LT[t].afterPanel();   // Nov 28: Money / Telling Time fill in his level (skills.js)
   if (t === 'weather') wireWeather();
   if (t === 'master') wireMtest();
   wireOnScreen();
